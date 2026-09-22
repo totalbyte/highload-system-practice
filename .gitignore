@@ -1,0 +1,19 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.idea/
+*.DotSettings.user
+TestResults/
+
+# Environment
+.env
+
+# Office lock files
+~$*
+
+# OS
+.DS_Store
+Thumbs.db

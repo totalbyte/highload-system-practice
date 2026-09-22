@@ -1,0 +1,94 @@
+### Колекція запитів для демо (VS Code REST Client / Rider / Visual Studio).
+### Виконуйте зверху вниз: токен і id опитування підхоплюються з попередніх відповідей.
+
+@baseUrl = http://localhost:8080
+
+### Health check (+ заголовок X-Instance-ID у відповіді)
+GET {{baseUrl}}/health
+
+### Реєстрація
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "demo_user",
+  "email": "demo@example.com",
+  "password": "DemoPass123"
+}
+
+### Логін (сід-користувач) — токен зберігається в змінну
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "user001@example.com",
+  "password": "Password123!"
+}
+
+###
+@token = {{login.response.body.accessToken}}
+
+### Хто я
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{token}}
+
+### Створити опитування (draft)
+# @name createPoll
+POST {{baseUrl}}/api/polls
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Яку БД обрати для курсової?",
+  "description": "Демо-опитування",
+  "options": ["PostgreSQL", "MongoDB", "Redis"],
+  "endsAt": "2030-01-01T00:00:00Z",
+  "isPublic": true,
+  "allowVoteChange": false
+}
+
+###
+@pollId = {{createPoll.response.body.id}}
+
+### Деталі опитування
+GET {{baseUrl}}/api/polls/{{pollId}}
+Authorization: Bearer {{token}}
+
+### Опублікувати (draft → active)
+PATCH {{baseUrl}}/api/polls/{{pollId}}/publish
+Authorization: Bearer {{token}}
+
+### Список активних опитувань
+GET {{baseUrl}}/api/polls?status=active&page=1&pageSize=10
+
+### Список опитувань автора
+GET {{baseUrl}}/api/polls?creatorId=1
+
+### Закрити (active → closed)
+PATCH {{baseUrl}}/api/polls/{{pollId}}/close
+Authorization: Bearer {{token}}
+
+### Видалити закрите опитування → 409 Conflict (видаляти можна лише draft)
+DELETE {{baseUrl}}/api/polls/{{pollId}}
+Authorization: Bearer {{token}}
+
+### Помилка валідації → 422 (1 варіант, дата в минулому)
+POST {{baseUrl}}/api/polls
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "",
+  "options": ["Лише один"],
+  "endsAt": "2020-01-01T00:00:00Z"
+}
+
+### Без токена → 401
+POST {{baseUrl}}/api/polls
+Content-Type: application/json
+
+{}
+
+### Неіснуюче опитування → 404
+GET {{baseUrl}}/api/polls/999999

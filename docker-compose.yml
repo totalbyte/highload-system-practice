@@ -1,0 +1,64 @@
+name: polling-platform
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: src/PollingPlatform.Api/Dockerfile
+    image: polling-platform/backend:latest
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-polling};Username=${POSTGRES_USER:-polling};Password=${POSTGRES_PASSWORD:-polling};Gss Encryption Mode=Disable"
+      Jwt__Secret: ${JWT_SECRET:-local-dev-secret-change-me-0123456789abcdef}
+      Jwt__LifetimeMinutes: ${JWT_LIFETIME_MINUTES:-60}
+      Seed__Enabled: ${SEED_ENABLED:-true}
+      Seed__Users: ${SEED_USERS:-500}
+      Seed__Polls: ${SEED_POLLS:-50}
+    ports:
+      - "${API_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-polling}
+      POSTGRES_USER: ${POSTGRES_USER:-polling}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-polling}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      # Відкрито для локальної розробки (dotnet run / DB-клієнт). Хостовий порт 5433, щоб не конфліктувати з локально встановленим PostgreSQL.
+      - "${POSTGRES_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Веб-інтерфейс для інспекції БД: docker compose --profile tools up -d
+  adminer:
+    image: adminer:latest
+    profiles: ["tools"]
+    ports:
+      - "${ADMINER_PORT:-8081}:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  pgdata:
