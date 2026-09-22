@@ -35,11 +35,19 @@
 - **Participant 2's stages 5–8 are uncommitted** in the working directory (as of 2026-09-22).
 - No branching / PR convention agreed yet.
 - No automated tests yet — verification is the runbook smoke test plus an ad-hoc 40-vote concurrency check.
+- **`.gitattributes` added** (2026-09-22, Participant 2): `* text=auto` — LF in the repository, native endings in the
+  working copy; `.sln` pinned to CRLF, `.sh` to LF, `.docx` binary. Without it line endings depended on each
+  machine's `core.autocrlf`, which eventually shows up as whole-file diffs and needless conflicts. Nothing was
+  renormalized: every tracked text file was already stored with LF.
 
 ## Next steps
 
 - **Both:** defense rehearsal (stage 10) — `docker compose down -v`, cold start, run `requests/polls.http`
   top to bottom, restart the DB and show the data survived.
 - **Participant 1:** review stages 5–8; agree on a branching convention; commit Participant 2's work.
+  - **After pulling `.gitattributes`:** if your `core.autocrlf` is not `true`, Git may show working-copy changes
+    once. Run `git add --renormalize .` and check that `git diff --cached` is empty — if it is, nothing really
+    changed and there is nothing to commit. Please don't delete the file: it is what keeps our diffs clean now that
+    two machines write to the same repo.
 - **Participant 2:** nothing blocking. When lab 2 starts, the first audit target is `ResultsCache` (ADR 0013)
   and the `DataProtection keys not persisted` warning noted in the runbook.

@@ -25,6 +25,9 @@ cache, the error-handling review, and the bottleneck analysis in the README.
   `optionId`, no token, vote in a closed poll, and the hot-poll vote-change sequence.
 - `runbook.md`: smoke test extended with voting/results, the counter-consistency query and the concurrency check;
   new quirks (CRLF in tokens, cache TTL); Participant 2's environment.
+- **`.gitattributes`** added: the repo had none, so line endings depended on each machine's `core.autocrlf` —
+  a standing source of whole-file diffs once two people commit. No renormalization was needed (all tracked text
+  files were already LF in the index). Flagged for Participant 1 in `status.md`.
 
 ## Decisions (link ADRs)
 - [0014](../decisions/0014-vote-transaction-and-counter.md) — transaction, unique index as source of truth,
