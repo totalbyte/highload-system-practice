@@ -56,14 +56,66 @@ GET {{baseUrl}}/api/polls/{{pollId}}
 Authorization: Bearer {{token}}
 
 ### Опублікувати (draft → active)
+# @name publishPoll
 PATCH {{baseUrl}}/api/polls/{{pollId}}/publish
 Authorization: Bearer {{token}}
+
+###
+@optionId = {{publishPoll.response.body.options[0].id}}
 
 ### Список активних опитувань
 GET {{baseUrl}}/api/polls?status=active&page=1&pageSize=10
 
 ### Список опитувань автора
 GET {{baseUrl}}/api/polls?creatorId=1
+
+### Проголосувати → 201 Created
+POST {{baseUrl}}/api/polls/{{pollId}}/vote
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "optionId": {{optionId}}
+}
+
+### Результати: голос врахований (generatedAt — момент розрахунку з БД)
+GET {{baseUrl}}/api/polls/{{pollId}}/results
+
+### Повторний запит: та сама generatedAt, бо відповідь віддається з кешу в пам'яті процесу
+GET {{baseUrl}}/api/polls/{{pollId}}/results
+
+### Повторний голос при allowVoteChange=false → 409 Conflict
+POST {{baseUrl}}/api/polls/{{pollId}}/vote
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "optionId": {{optionId}}
+}
+
+### Варіант з іншого опитування → 404 Not Found
+POST {{baseUrl}}/api/polls/{{pollId}}/vote
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "optionId": 999999
+}
+
+### Голос без optionId → 422
+POST {{baseUrl}}/api/polls/{{pollId}}/vote
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+### Голос без токена → 401
+POST {{baseUrl}}/api/polls/{{pollId}}/vote
+Content-Type: application/json
+
+{
+  "optionId": {{optionId}}
+}
 
 ### Закрити (active → closed)
 PATCH {{baseUrl}}/api/polls/{{pollId}}/close
@@ -90,5 +142,49 @@ Content-Type: application/json
 
 {}
 
+### Голосування в закритому опитуванні → 409 Conflict
+POST {{baseUrl}}/api/polls/{{pollId}}/vote
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "optionId": {{optionId}}
+}
+
 ### Неіснуюче опитування → 404
 GET {{baseUrl}}/api/polls/999999
+
+### --- Гаряче опитування #1 із сіду (allowVoteChange=true): демо зміни голосу ---
+
+### Результати гарячого опитування
+GET {{baseUrl}}/api/polls/1/results
+
+### Голос за варіант 1 → 201
+POST {{baseUrl}}/api/polls/1/vote
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "optionId": 1
+}
+
+### Зміна голосу на варіант 2 → 200 (лічильники: -1 у першого, +1 у другого)
+POST {{baseUrl}}/api/polls/1/vote
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "optionId": 2
+}
+
+### Повтор того самого голосу → 200, лічильники не змінюються (ідемпотентність)
+POST {{baseUrl}}/api/polls/1/vote
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "optionId": 2
+}
+
+### Результати після зміни голосу
+GET {{baseUrl}}/api/polls/1/results

@@ -15,6 +15,8 @@ using PollingPlatform.Api.Data;
 using PollingPlatform.Api.Data.Seeding;
 using PollingPlatform.Api.Domain;
 using PollingPlatform.Api.Polls;
+using PollingPlatform.Api.Results;
+using PollingPlatform.Api.Votes;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,7 +60,13 @@ builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddSingleton<JwtTokenService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<PollService>();
+builder.Services.AddScoped<VoteService>();
+builder.Services.AddScoped<ResultsService>();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
+// Кеш результатів у пам'яті процесу — навмисне рішення лаби 1 (ADR 0013), ціль аудиту стану в лабі 2.
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<ResultsCache>();
 
 // --- API ---
 builder.Services

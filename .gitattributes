@@ -1,0 +1,31 @@
+# Закінчення рядків: у репозиторії завжди LF, у робочій копії — як прийнято в ОС учасника.
+# Без цього файлу результат залежить від core.autocrlf на кожній машині, і той самий файл
+# може потрапити в діф цілком замість двох змінених рядків.
+* text=auto
+
+# Текстові типи проєкту — явно, щоб не покладатися на автовизначення Git.
+*.cs           text diff=csharp
+*.csproj       text
+*.md           text
+*.json         text
+*.yml          text
+*.yaml         text
+*.http         text
+*.sql          text
+*.js           text
+Dockerfile     text
+.dockerignore  text
+.gitignore     text
+.gitattributes text
+
+# Visual Studio завжди переписує .sln з CRLF — фіксуємо, щоб не смикався діф.
+*.sln text eol=crlf
+
+# Скрипти виконуються в Linux-контейнерах: CRLF зламає shebang.
+*.sh text eol=lf
+
+# Бінарні файли — жодної конверсії.
+*.docx binary
+*.pdf  binary
+*.png  binary
+*.jpg  binary

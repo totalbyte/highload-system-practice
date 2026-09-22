@@ -19,10 +19,16 @@ Data/
 Auth/                       AuthController (/api/auth/register, /login, /me), AuthService, JwtTokenService,
                             JwtOptions, AuthModels (DTOs + validators), ClaimsPrincipalExtensions
 Polls/                      PollsController (/api/polls...), PollService (lifecycle), PollModels, PollValidators
+Votes/                      VotesController (POST /api/polls/{id}/vote), VoteService (transaction + counter),
+                            VoteModels, VoteValidators
+Results/                    ResultsController (GET /api/polls/{id}/results), ResultsService, ResultsModels,
+                            ResultsCache (in-process, ADR 0013 — lab 2 audit target)
 Common/
   Exceptions/               AppException (carries StatusCode) + NotFound/Conflict/Unauthorized/Forbidden/Validation;
-                            PollNotFoundException, InvalidPollStateException
-  ErrorHandling/            GlobalExceptionHandler: IExceptionHandler → RFC 7807 ProblemDetails
+                            PollNotFoundException, InvalidPollStateException; VoteExceptions.cs (option not in poll,
+                            not started, voting ended, duplicate vote)
+  ErrorHandling/            GlobalExceptionHandler: IExceptionHandler → RFC 7807 ProblemDetails;
+                            transient DB failures → 503 (ADR 0016)
   Validation/               validator.ValidateOrThrowAsync() → 422
   InstanceIdentity.cs       X-Instance-ID response header
 ```
@@ -48,5 +54,8 @@ Common/
 
 - Poll lifecycle `Draft → Active → Closed`; delete only drafts; publish/close only by the author (ADR 0002).
 - Someone else's draft → 404; someone else's non-draft poll → 403 on management actions (ADR 0003).
-- A poll can be `active` with `ends_at` in the past — there is no background closer; voting must check dates.
-- `PollService.CloseAsync` has `TODO(Учасник 2)`: invalidate the results cache on close.
+- A poll can be `active` with `ends_at` in the past — there is no background closer; voting checks the dates itself
+  (`PollNotStartedException` / `PollVotingEndedException`, both 409).
+- One vote per user is guaranteed by `UNIQUE(poll_id, user_id)`, not by the pre-check; `options.vote_count` is
+  changed only with an SQL-level `+/- delta` inside the vote transaction (ADR 0014).
+- Anything that changes votes or a poll's status must call `ResultsCache.Invalidate(pollId)`.

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Query;
 using PollingPlatform.Api.Common.Exceptions;
 using PollingPlatform.Api.Data;
 using PollingPlatform.Api.Domain;
+using PollingPlatform.Api.Results;
 
 namespace PollingPlatform.Api.Polls;
 
@@ -11,7 +12,7 @@ namespace PollingPlatform.Api.Polls;
 /// Правила видимості: чернетку бачить лише автор; непублічні (IsPublic = false) опитування
 /// не показуються в загальному списку, але доступні за прямим id.
 /// </summary>
-public class PollService(AppDbContext db, TimeProvider timeProvider)
+public class PollService(AppDbContext db, ResultsCache resultsCache, TimeProvider timeProvider)
 {
     public async Task<PollDetailsResponse> CreateAsync(long userId, CreatePollRequest request, CancellationToken ct)
     {
@@ -103,7 +104,8 @@ public class PollService(AppDbContext db, TimeProvider timeProvider)
             throw new InvalidPollStateException(pollId, poll.Status, "close");
 
         await TransitionAsync(pollId, PollStatus.Active, PollStatus.Closed, "close", ct);
-        // TODO(Учасник 2): інвалідувати кеш результатів цього опитування.
+        // Кешована відповідь містить статус опитування, тож після закриття вона застаріла.
+        resultsCache.Invalidate(pollId);
 
         return await GetAsync(pollId, userId, ct);
     }

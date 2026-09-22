@@ -16,8 +16,8 @@ Update this file whenever the API, the schema, or code another participant depen
 | PATCH | `/api/polls/{id}/close` | author | 200 | 403, 404, 409 | P1 |
 | DELETE | `/api/polls/{id}` | author | 204 | 403, 404, 409 | P1 |
 | GET | `/health` | — | 200 / 503 `{status, instance, checks, durationMs}` | | P1 |
-| POST | `/api/polls/{id}/vote` | JWT | — | — | P2, **not implemented** |
-| GET | `/api/polls/{id}/results` | — | — | — | P2, **not implemented** |
+| POST | `/api/polls/{id}/vote` | JWT | 201 new vote / 200 changed or repeated; `{pollId, optionId, votedAt}` | 401, 404, 409, 422 | P2 |
+| GET | `/api/polls/{id}/results` | optional | 200 `{pollId, title, status, totalVotes, generatedAt, options[]}` | 404 | P2 |
 
 - Every response carries `X-Instance-ID` (container hostname or env `INSTANCE_ID`).
 - Errors are RFC 7807 `application/problem+json` with `traceId`; 422 adds `errors: {field: [messages]}`.
@@ -33,8 +33,18 @@ Update this file whenever the API, the schema, or code another participant depen
 | 401 | Missing/invalid token; wrong credentials |
 | 403 | Managing someone else's (non-draft) poll |
 | 404 | Poll doesn't exist, or it's someone else's draft |
-| 409 | Invalid status transition; duplicate email/username (P2: duplicate vote, closed poll) |
+| 409 | Invalid status transition; duplicate email/username; duplicate vote; voting outside `startsAt`…`endsAt` |
 | 422 | Field validation failed |
+| 503 | Transient DB failure that outlived EF's retries (ADR 0016) |
+
+**Voting rules (ADR 0014, 0015):** `{optionId}` body; the unique index `(poll_id, user_id)` — not the pre-check — is
+what guarantees one vote per user; an option from another poll → 404 `PollOptionNotFoundException`; before
+`startsAt` → 409 `PollNotStartedException`, after `endsAt` → 409 `PollVotingEndedException` (status may still be
+`active`); wrong status → 409 `InvalidPollStateException`. With `allowVoteChange = true` a different option returns
+200 and moves both counters, the same option is idempotent 200.
+
+**Results (ADR 0015):** aggregated from `options.vote_count`; `generatedAt` does not change while the cached copy is
+served; the cache entry also holds `CreatorId`, so visibility is decided without a DB query.
 
 ## Database schema
 
@@ -63,35 +73,19 @@ Defined by EF migrations in `src/PollingPlatform.Api/Data/Migrations` (current: 
 - Unique-violation handling pattern — `Auth/AuthService.cs` (`RegisterAsync`).
 - Hot poll #1 in the seed for load tests (ADR 0010).
 
-## What Participant 2 must provide
+## What Participant 2 provides to Participant 1
 
-**`POST /api/polls/{id}/vote` (stage 5):**
-1. Poll exists (someone else's draft → 404), `status = active`, `starts_at <= now < ends_at` — status does **not**
-   flip to closed automatically when `ends_at` passes.
-2. `optionId` belongs to this poll.
-3. In **one transaction inside the execution strategy**: INSERT into `votes` + `UPDATE options SET vote_count =
-   vote_count + 1`. Repeat vote → unique violation → 409 if `allow_vote_change = false`; if `true`, change
-   `option_id` and adjust both counters.
-4. Invalidate the poll's results cache.
+- `VoteService` (`Votes/`) — voting; `ResultsService` (`Results/`) — aggregated results.
+- `ResultsCache` (`Results/ResultsCache.cs`, singleton) — `Get` / `Set` / `Invalidate(pollId)`. **Any code that
+  changes votes or a poll's status must call `Invalidate`.** `PollService.CloseAsync` already does (the
+  `TODO(Учасник 2)` is closed); `PollService` now takes `ResultsCache` in its constructor.
+- New exceptions in `Common/Exceptions/VoteExceptions.cs`: `PollOptionNotFoundException` (404),
+  `PollNotStartedException`, `PollVotingEndedException`, `DuplicateVoteException` (409).
+- `GlobalExceptionHandler` now maps transient DB failures to 503 (ADR 0016).
 
-**`GET /api/polls/{id}/results` (stage 6):** aggregates from `options.vote_count`, cached **in process memory** for
-lab 1 (intentional — lab 2 audit target).
+## Open questions
 
-**Hook in Participant 1's code:** `PollService.CloseAsync` — `TODO(Учасник 2)`: invalidate the results cache on close.
+None open for lab 1 — the stage 5–6 questions were settled on 2026-09-22 and recorded in ADR 0015.
 
-**After implementing:** add the endpoints to the API table above, to `requests/polls.http`, and to `README.md`
-(remove "в роботі").
-
-## Open questions — settle with the user before coding stages 5–6
-
-| Question | Suggestion (not agreed) |
-|---|---|
-| `POST /vote` request body | `{ "optionId": 123 }` |
-| `POST /vote` response | 201 for a new vote, 200 for a changed vote; body `{ pollId, optionId, votedAt }` or fresh results |
-| Re-voting for the **same** option when `allowVoteChange = true` | idempotent 200, counters unchanged |
-| Voting before `starts_at` / after `ends_at` | 409 (`PollClosedException`, or a separate "not started" error) |
-| `GET /results` response shape | `{ pollId, status, totalVotes, options: [{ id, text, votes, percentage }] }` |
-| Who can see results | same visibility as `GET /api/polls/{id}`; anonymous allowed |
-| In-process cache implementation | `IMemoryCache`, short TTL + explicit invalidation on vote/close |
-| Rate limiting (design doc mentions it for Redis) | out of scope for lab 1 |
-| Transient DB errors in the handler | map `NpgsqlException`/timeouts to 503 instead of 500 |
+Out of scope for lab 1, carried forward: rate limiting (design doc places it in Redis, lab 4) and `X-Cache:
+HIT/MISS` headers (a lab 4 requirement — deliberately not added early).

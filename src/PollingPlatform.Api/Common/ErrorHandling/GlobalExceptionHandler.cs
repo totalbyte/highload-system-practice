@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Npgsql;
 using PollingPlatform.Api.Common.Exceptions;
 
 namespace PollingPlatform.Api.Common.ErrorHandling;
@@ -27,6 +28,12 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
                 Title = ae.Title,
                 Detail = ae.Message
             },
+            _ when IsTransient(exception) => new ProblemDetails
+            {
+                Status = StatusCodes.Status503ServiceUnavailable,
+                Title = "Service Unavailable",
+                Detail = "The database is temporarily unavailable. Please retry."
+            },
             _ => new ProblemDetails
             {
                 Status = StatusCodes.Status500InternalServerError,
@@ -46,4 +53,17 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
             Exception = exception
         });
     }
+
+    /// <summary>
+    /// Недоступна або перевантажена БД — це 503, а не 500: інфраструктурний збій, після якого
+    /// запит має сенс повторити. У лабі 3 за цим кодом балансувальник вимикає вузол з пулу,
+    /// у лабі 5 — k6 відрізняє інфраструктурну відмову від помилки застосунку.
+    /// EF уже вичерпав власні повтори (EnableRetryOnFailure), тож сюди доходять стійкі збої.
+    /// </summary>
+    private static bool IsTransient(Exception exception) => exception switch
+    {
+        NpgsqlException { IsTransient: true } => true,
+        TimeoutException => true,
+        _ => exception.InnerException is { } inner && IsTransient(inner)
+    };
 }

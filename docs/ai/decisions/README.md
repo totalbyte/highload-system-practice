@@ -18,6 +18,9 @@ if a decision changes, add a new ADR and set the old one's status to `Superseded
 | [0011](0011-local-environment.md) | Host port 5433, GSS off, Swagger in Production | Accepted |
 | [0012](0012-instance-id-and-health.md) | `X-Instance-ID` header and `/health` from lab 1 | Accepted |
 | [0013](0013-lab1-in-process-results-cache.md) | Lab 1 results cache in process memory, on purpose | Accepted (to be superseded in lab 2/4) |
+| [0014](0014-vote-transaction-and-counter.md) | Vote in one transaction; unique index as source of truth; SQL-level counter | Accepted |
+| [0015](0015-vote-and-results-api-shape.md) | Vote and results API shape | Accepted |
+| [0016](0016-transient-db-errors-503.md) | Transient database errors map to 503 | Accepted |
 
 Template:
 

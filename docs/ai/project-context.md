@@ -53,7 +53,9 @@ counter in the same transaction → invalidate the poll's results cache.
 before it ends, while a live dashboard polls `GET /results`. Loaded resources: INSERT into `votes` + unique-index
 check; `UPDATE options SET vote_count = vote_count + 1` (row-level lock); the DB connection pool; aggregate reads.
 
-**Bottleneck analysis draft (format: Component / Root Cause / Symptoms):**
+**Bottleneck analysis draft (format: Component / Root Cause / Symptoms).** Superseded by the final version in
+`README.md` §Bottleneck Analysis, which records each point's current mitigation state — read that one for the
+defense; this draft is kept as the original design-doc wording.
 1. *`vote_count` update (POST /vote, UPDATE options)* — lock contention: many transactions update the same row and
    the row lock serializes them → p99 latency spikes on POST /vote, transaction queue in `pg_locks`, possible
    deadlocks/timeouts.
