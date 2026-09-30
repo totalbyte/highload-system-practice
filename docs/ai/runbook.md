@@ -9,7 +9,7 @@ docker compose up -d --build          # backend + postgres; migrations + seed ru
 docker compose logs -f backend
 docker compose restart postgres       # data survives (named volume pgdata)
 docker compose down -v                # wipe everything, including data → next `up` is a cold start
-docker compose --profile tools up -d  # + Adminer (DB web UI) on :8081
+docker compose --profile tools up -d  # + Adminer on :8081 and pgAdmin 4 on :5050 (DB web UIs)
 ```
 
 | What | Address |
@@ -19,6 +19,7 @@ docker compose --profile tools up -d  # + Adminer (DB web UI) on :8081
 | Health | http://localhost:8080/health |
 | Postgres from the host | `localhost:5433`, db/user/password `polling` (container-internal port is 5432) |
 | Adminer | http://localhost:8081 (server `postgres`) |
+| pgAdmin 4 | http://localhost:5050 — no login (desktop mode); server "polling (docker)" is pre-registered from `docker/pgadmin/servers.json`; enter DB password `polling` once and tick "Save password". Starts in ~40 s (ADR 0020) |
 
 All settings have defaults in `docker-compose.yml`; override them via `.env` (see `.env.example`). `DB_MAX_POOL_SIZE`
 (default 30) caps the Npgsql pool of one backend instance — keep *instances × pool ≤ 97* (ADR 0018).
@@ -119,7 +120,7 @@ No automated tests yet (`public partial class Program;` is kept for future `WebA
 | `The Entity Framework tools version '10.0.5' is older than ...` | Harmless; `dotnet tool update -g dotnet-ef` |
 | `failed to connect to the docker API` | Docker Desktop isn't running |
 | First request after a DB restart fails | Should not happen (EF retry strategy, ADR 0008); if it does, check the retry config |
-| `FATAL: sorry, too many clients already` (psql, Adminer or the API) | The backend pools together exceed PostgreSQL `max_connections` (100). Check `DB_MAX_POOL_SIZE` × number of instances ≤ 97 (ADR 0018) |
+| `FATAL: sorry, too many clients already` (psql, Adminer, pgAdmin or the API) | The backend pools together exceed PostgreSQL `max_connections` (100). Check `DB_MAX_POOL_SIZE` × number of instances ≤ 97 (ADR 0018) |
 | API requests take ~13–16 s and then return 503 while the DB is down | Expected: EF retries (ADR 0008) plus ~3.3 s Docker DNS lookups for the stopped `postgres` container. `/health` answers 503 within 2 s (ADR 0019) |
 | `/health` says "PostgreSQL did not respond within the timeout" | The probe hit its 2 s timeout — typically the DB container is stopped (its DNS name no longer resolves). Start it; `/health` returns 200 within a second |
 | `~$...docx` files appear in `docs/` | Word lock files while a document is open; ignored by `.gitignore` |

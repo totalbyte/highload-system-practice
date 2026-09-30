@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "polling (docker)",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "polling",
+      "Username": "polling",
+      "SSLMode": "prefer"
+    }
+  }
+}

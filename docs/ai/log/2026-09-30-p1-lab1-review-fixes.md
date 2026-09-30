@@ -1,5 +1,5 @@
 # 2026-09-30 — Participant 1 — fixes for the stage 5–8 review findings
-**Lab:** 1 · **Commits:** not committed
+**Lab:** 1 · **Commits:** `8a2c1e1` (fixes) + a separate pgAdmin commit, both on branch `fix/lab1-review-findings`
 
 ## Goal
 Fix problems 1–4 from `log/2026-09-22-p1-lab1-review.md`, re-verify the whole system, and record the changes in the
@@ -58,8 +58,20 @@ existing docs. Problem 1 is in Participant 2's module (`VoteService`); Participa
   no error entries in the backend log.
 - DB restart → `GET /api/polls/1` 200.
 
+## Later in the same session: pgAdmin 4
+At Participant 1's request, in a separate commit: `pgadmin` service in `docker-compose.yml` (profile `tools`,
+image pinned to `dpage/pgadmin4:9.17.0` — pgAdmin has no LTS line, so an exact tag one release behind the newest
+`9.18.0`), desktop mode without login, server pre-registered from `docker/pgadmin/servers.json`, volume
+`pgadmin-data`, port 5050; `.env.example`, README, runbook updated — ADR [0020](../decisions/0020-pgadmin-pinned.md).
+Verified: UI answers on :5050 after ~40 s, logs show "Added 1 Server(s)", `psql` from the pgAdmin container reaches
+PostgreSQL 17.11.
+
+Code comments added during the fixes were removed at Participant 1's request (the reasoning lives in ADRs 0017–0019).
+The fixes were first committed on `main`, then moved to the new branch `fix/lab1-review-findings`; local `main` was
+reset to `origin/main` (nothing had been pushed).
+
 ## Not done / next steps
-- Commit (awaiting Participant 1's go-ahead); agree on a branching convention.
+- Participant 1 pushes `fix/lab1-review-findings` and opens a PR; agree on a branching convention.
 - Participant 2 should read ADR 0017 (their module changed).
 - Stage 10 — defense rehearsal together.
 - The verification script lives only in Participant 1's temp folder; the checks it runs are described in

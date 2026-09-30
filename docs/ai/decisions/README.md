@@ -24,6 +24,7 @@ if a decision changes, add a new ADR and set the old one's status to `Superseded
 | [0017](0017-serialize-vote-changes.md) | Vote changes serialized with `FOR UPDATE`; option rows locked in id order | Accepted |
 | [0018](0018-connection-pool-budget.md) | `Maximum Pool Size` 30 per instance; instances × pool ≤ `max_connections` | Accepted |
 | [0019](0019-health-check-timeout.md) | `/health` uses its own PostgreSQL probe with a 2 s timeout | Accepted |
+| [0020](0020-pgadmin-pinned.md) | pgAdmin 4 in the `tools` profile, pinned to `9.17.0`, server pre-registered | Accepted |
 
 Template:
 
