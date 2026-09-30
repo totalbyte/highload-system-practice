@@ -72,6 +72,10 @@ Code comments added during the fixes were removed at Participant 1's request (th
 The fixes were first committed on `main`, then moved to the new branch `fix/lab1-review-findings`; local `main` was
 reset to `origin/main` (nothing had been pushed).
 
+Seed made readable (separate commit): each random poll now takes one of 12 topics together with its own options
+(`DataSeeder.Topics`), instead of a topic title plus unrelated random words. Verified on an isolated cold start:
+500 users / 50 polls / 5596 votes, 0 per-option mismatches. ADR 0010 and runbook updated.
+
 ## Not done / next steps
 - Participant 1 pushes `fix/lab1-review-findings` and opens a PR; agree on a branching convention.
 - Participant 2 should read ADR 0017 (their module changed).

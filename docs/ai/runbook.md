@@ -49,7 +49,8 @@ Runs on startup when `Seed:Enabled=true` (default in compose) **and** the `users
 (`Seed:RandomSeed=42`) — every cold start produces the same data.
 
 - 500 users `user001@example.com` … `user500@example.com` (usernames `user001` …), password `Password123!`.
-- 50 polls: ~70% active, ~15% closed, ~15% draft; authors are the first 20 users; ≈4953 votes;
+- 50 polls: ~70% active, ~15% closed, ~15% draft; authors are the first 20 users; 5596 votes; each poll takes one of
+  12 topics with its own matching options (e.g. "Хмарний провайдер #1" → AWS / Azure / GCP);
   `SUM(options.vote_count) = COUNT(votes)`.
 - **Poll #1 (hot poll):** active, no votes, `allowVoteChange=true`, ends in +1 year — target for lab 5 writes.
 
