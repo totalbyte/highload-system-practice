@@ -19,7 +19,7 @@ docker compose --profile tools up -d  # + Adminer on :8081 and pgAdmin 4 on :505
 | Health | http://localhost:8080/health |
 | Postgres from the host | `localhost:5433`, db/user/password `polling` (container-internal port is 5432) |
 | Adminer | http://localhost:8081 (server `postgres`) |
-| pgAdmin 4 | http://localhost:5050 — no login (desktop mode); server "polling (docker)" is pre-registered from `docker/pgadmin/servers.json`; enter DB password `polling` once and tick "Save password". Starts in ~40 s (ADR 0020) |
+| pgAdmin 4 | http://localhost:5050 — no login (desktop mode); server "polling (docker)" is pre-registered from the inline `configs.pgadmin_servers` in `docker-compose.yml`; enter DB password `polling` once and tick "Save password". Starts in ~40 s (ADR 0020) |
 
 All settings have defaults in `docker-compose.yml`; override them via `.env` (see `.env.example`). `DB_MAX_POOL_SIZE`
 (default 30) caps the Npgsql pool of one backend instance — keep *instances × pool ≤ 97* (ADR 0018).
