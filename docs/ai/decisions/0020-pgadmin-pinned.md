@@ -1,5 +1,5 @@
 # 0020. pgAdmin 4 in the `tools` profile, pinned to `9.17.0`, server pre-registered
-**Status:** Accepted · **Date:** 2026-09-30 · **Author:** Participant 1
+**Status:** Accepted, amended 2026-09-30 (pgAdmin moved out of the `tools` profile, see the end) · **Date:** 2026-09-30 · **Author:** Participant 1
 
 ## Context
 The team wanted pgAdmin to browse the database, pinned to a concrete stable version instead of `latest`. pgAdmin 4
@@ -26,3 +26,8 @@ has no LTS line: it ships a 9.x release roughly every month (as of 2026-09-30 th
   `docker compose --profile tools down` and `docker volume rm polling-platform_pgadmin-data` to re-import.
 - Inline `configs.content` needs Docker Compose ≥ 2.23 (both participants have newer versions).
 - pgAdmin takes connections from the same `max_connections` budget (ADR 0018).
+
+## Amendment (2026-09-30): pgAdmin starts with the normal `docker compose up`
+At Participant 1's request pgAdmin was taken out of the `tools` profile (Adminer stays there). It does not slow down
+the graded cold start: `up -d` returns once containers are created, pgAdmin boots in parallel (~40 s) and the backend
+does not depend on it. It still competes for the `max_connections` budget (ADR 0018).

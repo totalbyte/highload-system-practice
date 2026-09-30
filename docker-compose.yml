@@ -56,10 +56,9 @@ services:
     networks:
       - app-network
 
-  # pgAdmin 4 з уже доданим сервером нашої БД: docker compose --profile tools up -d
+  # pgAdmin 4 з уже доданим сервером нашої БД: http://localhost:5050
   pgadmin:
     image: dpage/pgadmin4:9.17.0
-    profiles: ["tools"]
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@polling.dev}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}

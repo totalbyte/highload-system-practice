@@ -9,7 +9,7 @@ docker compose up -d --build          # backend + postgres; migrations + seed ru
 docker compose logs -f backend
 docker compose restart postgres       # data survives (named volume pgdata)
 docker compose down -v                # wipe everything, including data → next `up` is a cold start
-docker compose --profile tools up -d  # + Adminer on :8081 and pgAdmin 4 on :5050 (DB web UIs)
+docker compose --profile tools up -d  # + Adminer on :8081 (pgAdmin 4 on :5050 starts with the normal `up`)
 ```
 
 | What | Address |

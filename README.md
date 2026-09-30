@@ -21,7 +21,7 @@ docker compose up -d --build
 | Health check | http://localhost:8080/health |
 | PostgreSQL (з хоста) | `localhost:5433`, БД/користувач/пароль `polling` |
 | Adminer (опційно) | `docker compose --profile tools up -d` → http://localhost:8081 |
-| pgAdmin 4 (опційно) | `docker compose --profile tools up -d` → http://localhost:5050, сервер `polling (docker)` уже додано, пароль БД `polling` |
+| pgAdmin 4 | http://localhost:5050 (піднімається разом зі стеком, ~40 с), сервер `polling (docker)` уже додано, пароль БД `polling` |
 
 При старті backend сам застосовує міграції та заповнює порожню БД тестовими даними. Жодних ручних кроків не потрібно. Значення за замовчуванням можна перевизначити через `.env` (див. [`.env.example`](.env.example)).
 
