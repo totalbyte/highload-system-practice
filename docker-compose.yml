@@ -32,7 +32,6 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      # Відкрито для локальної розробки (dotnet run / DB-клієнт). Хостовий порт 5433, щоб не конфліктувати з локально встановленим PostgreSQL.
       - "${POSTGRES_PORT:-5433}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
@@ -43,7 +42,6 @@ services:
     networks:
       - app-network
 
-  # Веб-інтерфейс для інспекції БД: docker compose --profile tools up -d
   adminer:
     image: adminer:latest
     profiles: ["tools"]
@@ -56,7 +54,6 @@ services:
     networks:
       - app-network
 
-  # pgAdmin 4 з уже доданим сервером нашої БД: http://localhost:5050
   pgadmin:
     image: dpage/pgadmin4:9.17.0
     environment:
