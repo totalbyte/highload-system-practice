@@ -89,7 +89,7 @@ builder.Services.AddHealthChecks().Add(new HealthCheckRegistration(
     _ => new PostgresHealthCheck(postgresConnectionString),
     failureStatus: HealthStatus.Unhealthy,
     tags: null,
-    timeout: TimeSpan.FromSeconds(2)));
+    timeout: TimeSpan.FromSeconds(builder.Configuration.GetValue("HealthChecks:DbTimeoutSeconds", 2))));
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>

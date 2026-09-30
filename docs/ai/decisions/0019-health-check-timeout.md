@@ -14,7 +14,8 @@ stopped: `AddDbContextCheck` goes through the EF retry strategy (ADR 0008). A lo
 ## Decision
 - `Common/PostgresHealthCheck.cs`: a small `IHealthCheck` that opens its own `NpgsqlConnection` (same connection
   string and pool as EF, but no DbContext and no retry strategy) and runs `SELECT 1`.
-- Registered with `timeout: 2 s`; the probe is awaited with `WaitAsync(token)`, so the check returns at the timeout
+- Registered with a 2 s timeout, configurable as `HealthChecks:DbTimeoutSeconds` (`appsettings.json`, env
+  `HealthChecks__DbTimeoutSeconds`); the probe is awaited with `WaitAsync(token)`, so the check returns at the timeout
   even when DNS hangs. The abandoned probe finishes in the background and disposes its own connection.
 - A timeout returns `Unhealthy` with the message "PostgreSQL did not respond within the timeout" (no stack trace in
   the logs — the LB will poll this endpoint every few seconds while the DB is down).

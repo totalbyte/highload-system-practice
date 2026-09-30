@@ -122,7 +122,7 @@ No automated tests yet (`public partial class Program;` is kept for future `WebA
 | First request after a DB restart fails | Should not happen (EF retry strategy, ADR 0008); if it does, check the retry config |
 | `FATAL: sorry, too many clients already` (psql, Adminer, pgAdmin or the API) | The backend pools together exceed PostgreSQL `max_connections` (100). Check `DB_MAX_POOL_SIZE` × number of instances ≤ 97 (ADR 0018) |
 | API requests take ~13–16 s and then return 503 while the DB is down | Expected: EF retries (ADR 0008) plus ~3.3 s Docker DNS lookups for the stopped `postgres` container. `/health` answers 503 within 2 s (ADR 0019) |
-| `/health` says "PostgreSQL did not respond within the timeout" | The probe hit its 2 s timeout — typically the DB container is stopped (its DNS name no longer resolves). Start it; `/health` returns 200 within a second |
+| `/health` says "PostgreSQL did not respond within the timeout" | The probe hit its 2 s timeout (`HealthChecks:DbTimeoutSeconds`) — typically the DB container is stopped (its DNS name no longer resolves). Start it; `/health` returns 200 within a second |
 | `~$...docx` files appear in `docs/` | Word lock files while a document is open; ignored by `.gitignore` |
 
 ## Environment on Participant 2's machine
