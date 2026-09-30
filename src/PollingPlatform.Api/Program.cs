@@ -21,10 +21,12 @@ using PollingPlatform.Api.Votes;
 var builder = WebApplication.CreateBuilder(args);
 
 // --- Persistence ---
+var postgresConnectionString = builder.Configuration.GetConnectionString("Postgres")
+    ?? throw new InvalidOperationException("Connection string 'Postgres' is not configured.");
+
 builder.Services.AddDbContext<AppDbContext>(options => options
     .UseNpgsql(
-        builder.Configuration.GetConnectionString("Postgres")
-            ?? throw new InvalidOperationException("Connection string 'Postgres' is not configured."),
+        postgresConnectionString,
         // Повтор при транзієнтних збоях (напр. «мертві» з'єднання в пулі після рестарту Postgres).
         // Наслідок: явні транзакції треба загортати в db.Database.CreateExecutionStrategy().ExecuteAsync(...).
         npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(2), errorCodesToAdd: null))
@@ -82,7 +84,12 @@ builder.Services.AddProblemDetails(options =>
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddSingleton<InstanceIdentity>();
-builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>("postgres");
+builder.Services.AddHealthChecks().Add(new HealthCheckRegistration(
+    "postgres",
+    _ => new PostgresHealthCheck(postgresConnectionString),
+    failureStatus: HealthStatus.Unhealthy,
+    tags: null,
+    timeout: TimeSpan.FromSeconds(builder.Configuration.GetValue("HealthChecks:DbTimeoutSeconds", 2))));
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>

@@ -1,5 +1,5 @@
 # 0012. `X-Instance-ID` header and `/health` from lab 1
-**Status:** Accepted · **Date:** 2026-09-22 · **Author:** Participant 1
+**Status:** Accepted, amended by 0019 (health-check probe and timeout) · **Date:** 2026-09-22 · **Author:** Participant 1
 
 ## Context
 Lab 2 requires identifying which instance served a request; lab 3 requires a health endpoint for the load balancer.

@@ -1,5 +1,5 @@
 # 0014. Vote in one transaction; the unique index is the source of truth; SQL-level counter increment
-**Status:** Accepted · **Date:** 2026-09-22 · **Author:** Participant 2
+**Status:** Accepted, amended by 0017 (vote-change race) · **Date:** 2026-09-22 · **Author:** Participant 2
 
 ## Context
 `POST /api/polls/{id}/vote` is the system's peak operation (high-load scenario: a vote spike into one poll). It must

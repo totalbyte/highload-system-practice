@@ -92,6 +92,7 @@ public class PollService(AppDbContext db, ResultsCache resultsCache, TimeProvide
 
         await TransitionAsync(pollId, PollStatus.Draft, PollStatus.Active, "publish", ct,
             s => s.SetProperty(p => p.StartsAt, p => p.StartsAt ?? now));
+        resultsCache.Invalidate(pollId);
 
         return await GetAsync(pollId, userId, ct);
     }
@@ -124,6 +125,8 @@ public class PollService(AppDbContext db, ResultsCache resultsCache, TimeProvide
 
         if (deleted == 0)
             throw await StateChangedConcurrentlyAsync(pollId, "delete", ct);
+
+        resultsCache.Invalidate(pollId);
     }
 
     private sealed record PollState(long CreatorId, PollStatus Status, DateTimeOffset EndsAt);

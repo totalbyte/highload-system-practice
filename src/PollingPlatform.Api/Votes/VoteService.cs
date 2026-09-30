@@ -68,7 +68,7 @@ public class VoteService(AppDbContext db, ResultsCache resultsCache, TimeProvide
         await using var tx = await db.Database.BeginTransactionAsync(ct);
 
         var existing = await db.Votes
-            .Where(v => v.PollId == pollId && v.UserId == userId)
+            .FromSql($"SELECT * FROM votes WHERE poll_id = {pollId} AND user_id = {userId} FOR UPDATE")
             .Select(v => new ExistingVote(v.Id, v.OptionId, v.CreatedAt))
             .FirstOrDefaultAsync(ct);
 
@@ -93,8 +93,8 @@ public class VoteService(AppDbContext db, ResultsCache resultsCache, TimeProvide
                     .SetProperty(v => v.OptionId, optionId)
                     .SetProperty(v => v.CreatedAt, now), ct);
 
-            await ChangeVoteCountAsync(existing.OptionId, -1, ct);
-            await ChangeVoteCountAsync(optionId, +1, ct);
+            foreach (var (id, delta) in new[] { (existing.OptionId, -1), (optionId, +1) }.OrderBy(c => c.Item1))
+                await ChangeVoteCountAsync(id, delta, ct);
             result = new CastVoteResult(pollId, optionId, now, Created: false);
         }
 

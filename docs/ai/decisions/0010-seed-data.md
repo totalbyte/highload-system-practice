@@ -19,3 +19,6 @@ vote with one account — they'd get 409 instead of real load. Demos also need r
 - Bug found and fixed: closed polls could get `ends_at < starts_at` (CHECK violation); now
   `ends_at = created_at + 1..19 h`.
 - Verified on cold start: 500 users, 50 polls, 4953 votes, `SUM(vote_count) = COUNT(votes)`.
+- 2026-09-30: random option words replaced by 12 topics, each with its own matching options (titles and options
+  used to be unrelated, which looked like nonsense in the DB). Cold start now gives 5596 votes, all per-option
+  counters consistent.
