@@ -20,8 +20,9 @@ docker compose --profile tools up -d  # + Adminer (DB web UI) on :8081
 | Postgres from the host | `localhost:5433`, db/user/password `polling` (container-internal port is 5432) |
 | Adminer | http://localhost:8081 (server `postgres`) |
 
-All settings have defaults in `docker-compose.yml`; override them via `.env` (see `.env.example`).
-Cold start from `down -v` to healthy takes ≈13 s (measured 2026-09-22).
+All settings have defaults in `docker-compose.yml`; override them via `.env` (see `.env.example`). `DB_MAX_POOL_SIZE`
+(default 30) caps the Npgsql pool of one backend instance — keep *instances × pool ≤ 97* (ADR 0018).
+Cold start from `down -v` to healthy takes ≈11–13 s (measured 2026-09-22 and 2026-09-30).
 
 ## Run the backend locally (without Docker for the backend)
 
@@ -76,16 +77,31 @@ curl -s -X PATCH $B/api/polls/$P/close -H "Authorization: Bearer $T" >/dev/null
 curl -s $B/api/polls/$P/results | grep -o '"status":"[a-z]*"'       # "closed" → close invalidated the cache
 ```
 
-**Counter consistency** (must always hold — `options.vote_count` mirrors the `votes` rows):
+**Counter consistency** (must always hold — `options.vote_count` mirrors the `votes` rows). Check it **per option**:
+a vote change is −1/+1, so a race can skew individual options while the global SUM still matches (ADR 0017).
 
 ```bash
 docker compose exec -T postgres psql -U polling -d polling -tAc \
-  "SELECT (SELECT COALESCE(SUM(vote_count),0) FROM options) = (SELECT COUNT(*) FROM votes)"   # t
+  "SELECT count(*) FROM options o WHERE o.vote_count <> (SELECT count(*) FROM votes v WHERE v.option_id = o.id)"   # 0
 ```
 
-**Concurrency check** (the core claim of the project — run it after touching the vote path): log in as N different
-seed users, fire their votes into the hot poll in parallel, then re-run the consistency query above. 40 parallel
-votes were verified on 2026-09-22 with no lost updates. Strip `\r` from tokens read out of a file (see quirks).
+Local data already skewed by an old bug can be repaired (data only, not schema) with
+`UPDATE options o SET vote_count = (SELECT count(*) FROM votes v WHERE v.option_id = o.id)` — or `docker compose down -v`.
+
+**Concurrency checks** (the core claim of the project — run all three after touching the vote path, then the
+per-option consistency query above). Use a parallel HTTP client (e.g. Python `ThreadPoolExecutor`), not sequential
+curl:
+1. **Many users, first votes:** N different seed users vote into the hot poll at once → all 201 (200 if they had
+   already voted), no 5xx.
+2. **One user, parallel changes** on an `allowVoteChange` poll: 40 requests alternating options → all 200, exactly one
+   vote row for the user. Run it on a **fresh** poll too (small counters used to fail with 500 on
+   `ck_options_vote_count`).
+3. **Opposite changes:** half of 100 users change A→B while the other half change B→A at the same moment → all 200,
+   no `deadlock detected` in `docker compose logs postgres`.
+
+Last verified 2026-09-30 (48/48 checks on the running stack and on a cold-started one): 200 parallel first votes in
+~0.6 s, scenarios 2–3 exact, the backend held 30 connections afterwards and `psql` still connected.
+Strip `\r` from tokens read out of a file (see quirks).
 
 Full demo scenario with error cases: `requests/polls.http` (VS Code REST Client / Rider / Visual Studio).
 No automated tests yet (`public partial class Program;` is kept for future `WebApplicationFactory` tests).
@@ -103,6 +119,9 @@ No automated tests yet (`public partial class Program;` is kept for future `WebA
 | `The Entity Framework tools version '10.0.5' is older than ...` | Harmless; `dotnet tool update -g dotnet-ef` |
 | `failed to connect to the docker API` | Docker Desktop isn't running |
 | First request after a DB restart fails | Should not happen (EF retry strategy, ADR 0008); if it does, check the retry config |
+| `FATAL: sorry, too many clients already` (psql, Adminer or the API) | The backend pools together exceed PostgreSQL `max_connections` (100). Check `DB_MAX_POOL_SIZE` × number of instances ≤ 97 (ADR 0018) |
+| API requests take ~13–16 s and then return 503 while the DB is down | Expected: EF retries (ADR 0008) plus ~3.3 s Docker DNS lookups for the stopped `postgres` container. `/health` answers 503 within 2 s (ADR 0019) |
+| `/health` says "PostgreSQL did not respond within the timeout" | The probe hit its 2 s timeout — typically the DB container is stopped (its DNS name no longer resolves). Start it; `/health` returns 200 within a second |
 | `~$...docx` files appear in `docs/` | Word lock files while a document is open; ignored by `.gitignore` |
 
 ## Environment on Participant 2's machine
