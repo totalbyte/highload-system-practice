@@ -31,6 +31,7 @@ Common/
                             transient DB failures → 503 (ADR 0016)
   Validation/               validator.ValidateOrThrowAsync() → 422
   InstanceIdentity.cs       X-Instance-ID response header
+  PostgresHealthCheck.cs    /health DB probe: own NpgsqlConnection, 2 s timeout, no EF retries (ADR 0019)
 ```
 
 ## Conventions (follow them in new code)
@@ -58,4 +59,9 @@ Common/
   (`PollNotStartedException` / `PollVotingEndedException`, both 409).
 - One vote per user is guaranteed by `UNIQUE(poll_id, user_id)`, not by the pre-check; `options.vote_count` is
   changed only with an SQL-level `+/- delta` inside the vote transaction (ADR 0014).
-- Anything that changes votes or a poll's status must call `ResultsCache.Invalidate(pollId)`.
+- In the vote transaction the user's existing vote is read `FOR UPDATE`, and when a vote moves, the two `options`
+  rows are updated in ascending id order (ADR 0017). Removing either reintroduces the counter race / deadlocks.
+  Check counters **per option**, not by `SUM(vote_count) = COUNT(votes)` — the SUM hides the race.
+- Anything that changes votes or a poll's status (vote, publish, close, delete) must call
+  `ResultsCache.Invalidate(pollId)`.
+- `/health` must not go through the DbContext / EF retry strategy and must answer within 2 s (ADR 0019).

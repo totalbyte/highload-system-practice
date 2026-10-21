@@ -15,7 +15,7 @@ Update this file whenever the API, the schema, or code another participant depen
 | PATCH | `/api/polls/{id}/publish` | author | 200 | 403, 404, 409 | P1 |
 | PATCH | `/api/polls/{id}/close` | author | 200 | 403, 404, 409 | P1 |
 | DELETE | `/api/polls/{id}` | author | 204 | 403, 404, 409 | P1 |
-| GET | `/health` | — | 200 / 503 `{status, instance, checks, durationMs}` | | P1 |
+| GET | `/health` | — | 200 / 503 `{status, instance, checks, durationMs}`, answers within 2 s (ADR 0019) | | P1 |
 | POST | `/api/polls/{id}/vote` | JWT | 201 new vote / 200 changed or repeated; `{pollId, optionId, votedAt}` | 401, 404, 409, 422 | P2 |
 | GET | `/api/polls/{id}/results` | optional | 200 `{pollId, title, status, totalVotes, generatedAt, options[]}` | 404 | P2 |
 
@@ -41,7 +41,8 @@ Update this file whenever the API, the schema, or code another participant depen
 what guarantees one vote per user; an option from another poll → 404 `PollOptionNotFoundException`; before
 `startsAt` → 409 `PollNotStartedException`, after `endsAt` → 409 `PollVotingEndedException` (status may still be
 `active`); wrong status → 409 `InvalidPollStateException`. With `allowVoteChange = true` a different option returns
-200 and moves both counters, the same option is idempotent 200.
+200 and moves both counters, the same option is idempotent 200. Parallel requests of the **same** user are serialized
+on their vote row (`FOR UPDATE`) — the last one to commit wins and the counters stay exact per option (ADR 0017).
 
 **Results (ADR 0015):** aggregated from `options.vote_count`; `generatedAt` does not change while the cached copy is
 served; the cache entry also holds `CreatorId`, so visibility is decided without a DB query.
@@ -77,8 +78,9 @@ Defined by EF migrations in `src/PollingPlatform.Api/Data/Migrations` (current: 
 
 - `VoteService` (`Votes/`) — voting; `ResultsService` (`Results/`) — aggregated results.
 - `ResultsCache` (`Results/ResultsCache.cs`, singleton) — `Get` / `Set` / `Invalidate(pollId)`. **Any code that
-  changes votes or a poll's status must call `Invalidate`.** `PollService.CloseAsync` already does (the
-  `TODO(Учасник 2)` is closed); `PollService` now takes `ResultsCache` in its constructor.
+  changes votes or a poll's status must call `Invalidate`.** `PollService` takes `ResultsCache` in its constructor
+  and invalidates in `PublishAsync`, `CloseAsync` and `DeleteAsync` (publish/delete were added on 2026-09-30 after the
+  review found stale draft entries: 404 on results for up to the 10 s TTL after publishing).
 - New exceptions in `Common/Exceptions/VoteExceptions.cs`: `PollOptionNotFoundException` (404),
   `PollNotStartedException`, `PollVotingEndedException`, `DuplicateVoteException` (409).
 - `GlobalExceptionHandler` now maps transient DB failures to 503 (ADR 0016).

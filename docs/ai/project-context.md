@@ -93,8 +93,14 @@ Every participant is questioned about the **whole** system, not only their own p
 - **Lab 2:** state-audit candidates — the in-memory results cache, DataProtection keys (stored in the container
   filesystem; we don't use them, but they show up in logs), any static/singleton holding data. For 2 instances in
   compose, remove the fixed backend `ports` mapping or give each instance its own. Verify that two instances starting
-  on an empty DB don't race on migrations (ADR 0009).
-- **Lab 3:** Nginx in front of the backend; the backend stops publishing its port externally; `/health` is ready.
-- **Lab 4:** Redis; keys like `polls:results:{pollId}`; invalidation on vote/close.
+  on an empty DB don't race on migrations (ADR 0009). Keep the connection budget: instances × `DB_MAX_POOL_SIZE`
+  (30) ≤ 97 (ADR 0018).
+- **Lab 3:** Nginx in front of the backend; the backend stops publishing its port externally; `/health` is ready and
+  answers within 2 s even when the DB is down (ADR 0019) — set the LB check timeout above that (e.g. 3 s). With 3+
+  instances re-check the connection budget (ADR 0018).
+- **Lab 4:** Redis; keys like `polls:results:{pollId}`; invalidation on vote, publish, close and delete. Known,
+  accepted lab 1 gap to discuss there: a `GET /results` computed just before a vote commits can be written to the
+  cache right after that vote's invalidation → stale for up to one TTL (10 s). Typical fixes: versioned keys or
+  delete-after-write with a short delay.
 - **Lab 5:** k6 in `/load-tests`; log seed users in during `setup()` and share tokens via `SharedArray` (login is
   deliberately CPU-heavy); write scenario → hot poll #1; read scenario → `GET /results`.

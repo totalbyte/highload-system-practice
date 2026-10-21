@@ -16,11 +16,15 @@ if a decision changes, add a new ADR and set the old one's status to `Superseded
 | [0009](0009-startup-migrations-and-seed-locking.md) | Migrations + seed on startup, seed under an advisory lock | Accepted |
 | [0010](0010-seed-data.md) | Deterministic seed data with a user pool and a hot poll | Accepted |
 | [0011](0011-local-environment.md) | Host port 5433, GSS off, Swagger in Production | Accepted |
-| [0012](0012-instance-id-and-health.md) | `X-Instance-ID` header and `/health` from lab 1 | Accepted |
+| [0012](0012-instance-id-and-health.md) | `X-Instance-ID` header and `/health` from lab 1 | Accepted, amended by 0019 |
 | [0013](0013-lab1-in-process-results-cache.md) | Lab 1 results cache in process memory, on purpose | Accepted (to be superseded in lab 2/4) |
-| [0014](0014-vote-transaction-and-counter.md) | Vote in one transaction; unique index as source of truth; SQL-level counter | Accepted |
+| [0014](0014-vote-transaction-and-counter.md) | Vote in one transaction; unique index as source of truth; SQL-level counter | Accepted, amended by 0017 |
 | [0015](0015-vote-and-results-api-shape.md) | Vote and results API shape | Accepted |
 | [0016](0016-transient-db-errors-503.md) | Transient database errors map to 503 | Accepted |
+| [0017](0017-serialize-vote-changes.md) | Vote changes serialized with `FOR UPDATE`; option rows locked in id order | Accepted |
+| [0018](0018-connection-pool-budget.md) | `Maximum Pool Size` 30 per instance; instances × pool ≤ `max_connections` | Accepted |
+| [0019](0019-health-check-timeout.md) | `/health` uses its own PostgreSQL probe with a 2 s timeout | Accepted |
+| [0020](0020-pgadmin-pinned.md) | pgAdmin 4 pinned to `9.17.0`, server pre-registered (starts with the stack since the amendment) | Accepted, amended |
 
 Template:
 

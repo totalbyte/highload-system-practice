@@ -20,17 +20,20 @@ public class DataSeeder(
     // Довільна константа для pg_advisory_xact_lock: серіалізує сідінг між інстансами, що стартують одночасно.
     private const long SeedLockKey = 7_140_001;
 
-    private static readonly string[] Topics =
+    private static readonly (string Title, string[] Options)[] Topics =
     [
-        "Улюблена мова програмування", "Найкращий редактор коду", "Формат навчання", "Час для пар",
-        "Кава чи чай", "Найкраща СУБД", "Хмарний провайдер", "Операційна система", "Тема диплома",
-        "Фреймворк для фронтенду", "Місце для хакатону", "Музика під час кодингу"
-    ];
-
-    private static readonly string[] OptionWords =
-    [
-        "C#", "Go", "Python", "Rust", "TypeScript", "Java", "PostgreSQL", "Redis", "MongoDB", "Linux",
-        "Windows", "macOS", "Так", "Ні", "Ранок", "Вечір", "Онлайн", "Офлайн", "Кава", "Чай", "AWS", "Azure", "GCP"
+        ("Улюблена мова програмування", ["C#", "Go", "Python", "Rust", "TypeScript"]),
+        ("Найкращий редактор коду", ["VS Code", "Rider", "Vim", "Visual Studio"]),
+        ("Зручний формат навчання", ["Онлайн", "Офлайн", "Змішаний"]),
+        ("Коли краще ставити пари", ["Зранку", "Вдень", "Ввечері"]),
+        ("Кава чи чай", ["Кава", "Чай", "Обидва", "Нічого"]),
+        ("Найкраща СУБД для курсової", ["PostgreSQL", "MySQL", "MongoDB", "SQLite"]),
+        ("Хмарний провайдер", ["AWS", "Azure", "GCP"]),
+        ("Операційна система для розробки", ["Windows", "Linux", "macOS"]),
+        ("Фреймворк для фронтенду", ["React", "Angular", "Vue", "Svelte"]),
+        ("Музика під час кодингу", ["Lo-fi", "Рок", "Електронна", "Тиша"]),
+        ("Чи потрібен Docker у навчальних проєктах", ["Так", "Ні", "Лише для великих"]),
+        ("Кеш для високонавантаженого API", ["Redis", "Memcached", "У пам'яті процесу"])
     ];
 
     public async Task SeedAsync(CancellationToken ct = default)
@@ -112,11 +115,11 @@ public class DataSeeder(
         var status = roll < 0.70 ? PollStatus.Active : roll < 0.85 ? PollStatus.Closed : PollStatus.Draft;
         var createdAt = now.AddDays(-random.Next(1, 30)).AddMinutes(-random.Next(0, 1440));
 
-        var optionTexts = OptionWords.OrderBy(_ => random.Next()).Take(random.Next(2, 6)).ToList();
+        var topic = Topics[random.Next(Topics.Length)];
 
         return new Poll
         {
-            Title = $"{Topics[random.Next(Topics.Length)]} #{index}",
+            Title = $"{topic.Title} #{index}",
             Description = random.NextDouble() < 0.5 ? "Згенероване опитування для тестування." : null,
             // Автори — перші 20 користувачів, щоб фільтр за creatorId повертав змістовні списки.
             CreatorId = users[random.Next(Math.Min(20, users.Count))].Id,
@@ -127,7 +130,7 @@ public class DataSeeder(
             // createdAt щонайменше добу тому, тож закрите опитування завершилось у минулому і після старту.
             EndsAt = status == PollStatus.Closed ? createdAt.AddHours(random.Next(1, 20)) : now.AddDays(random.Next(1, 60)),
             CreatedAt = createdAt,
-            Options = optionTexts.Select((text, i) => new PollOption { Text = text, Position = i + 1 }).ToList()
+            Options = topic.Options.Select((text, i) => new PollOption { Text = text, Position = i + 1 }).ToList()
         };
     }
 
