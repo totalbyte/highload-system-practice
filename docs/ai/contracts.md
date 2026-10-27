@@ -17,7 +17,7 @@ Update this file whenever the API, the schema, or code another participant depen
 | DELETE | `/api/polls/{id}` | author | 204 | 403, 404, 409 | P1 |
 | GET | `/health` | — | 200 / 503 `{status, instance, checks, durationMs}`, answers within 2 s (ADR 0019) | | P1 |
 | POST | `/api/polls/{id}/vote` | JWT | 201 new vote / 200 changed or repeated; `{pollId, optionId, votedAt}` | 401, 404, 409, 422 | P2 |
-| GET | `/api/polls/{id}/results` | optional | 200 `{pollId, title, status, totalVotes, generatedAt, options[]}` | 404 | P2 |
+| GET | `/api/polls/{id}/results` | optional | 200 `{pollId, title, status, totalVotes, generatedAt, options[]}` | 404, 503 (Redis down, ADR 0027) | P2 |
 
 - Every response carries `X-Instance-ID` (container hostname or env `INSTANCE_ID`). In compose: `backend-1` on
   http://localhost:8080 and `backend-2` on http://localhost:8082 (ADR 0021).

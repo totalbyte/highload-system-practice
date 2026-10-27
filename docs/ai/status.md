@@ -35,7 +35,7 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 | П2-5 Stateless request flow for `POST /vote` | ✅ in README (table + sequence diagram); matches the code after П2-3 |
 | П2-6 The three concurrency checks across two instances | ✅ `scripts/concurrency-checks.py`: green in 4 runs; proven to catch the vote-change race (fails without `FOR UPDATE`) |
 | П2-7 Instance-loss test (`docker compose kill` during voting) | ✅ `scripts/kill-test.py`: 3 kill runs + 1 stop run green; PostgreSQL rolled back 1/3/10 open transactions; one retry got 409 (committed, response lost); Docker does not auto-restart after a manual kill |
-| П2-8 README sections, docs | ⏳ |
+| П2-8 README sections, docs | ✅ README (audit, before/after, Request Flow, Redis outage, instance loss), runbook, contracts, ADRs 0026–0027; full re-run on a cold start |
 
 ### Joint (after all lab 2 branches are merged)
 
@@ -68,7 +68,7 @@ state) · С-5 cold-start defense rehearsal · С-6 `labs/lab2-summary.md` — a
 - **Both:** С-1 — read both `docs/lab2/participant-*.md` files and confirm or adjust the proposals.
 - **Participant 1:** commit `lab2/p1-infra` (П1-1 + П1-2), push, open the PR into `main` and merge early — it
   unblocks Participant 2. Then branch `lab2/p1-platform` from the updated `main` for П1-3…П1-7.
-- **Participant 2:** П2-1 and П2-5 while waiting (no infra dependency); П2-2 strictly before П2-3. Read ADR 0017
-  (merged with PR #1: `VoteService` locks the vote row `FOR UPDATE`, option counters updated in ascending id order)
-  before touching the vote path.
+- **Participant 2:** П2-1…П2-8 done on `lab2/p2-voting` (ADRs 0026, 0027; four scripts in `scripts/`). Open the PR
+  into `main` for Participant 1's review (С-2 — especially the three `InvalidateAsync` lines in `PollService` and
+  ADR 0027's backlog-timeout note); then the joint tasks С-3…С-6.
 - **Lab 1 leftovers (if lab 1 is not defended yet):** cold-start defense rehearsal and `labs/lab1-summary.md`.

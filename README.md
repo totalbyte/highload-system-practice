@@ -172,6 +172,7 @@ src/PollingPlatform.Api/
   Common/        бізнес-винятки → HTTP-коди, обробник помилок, X-Instance-ID
 docker-compose.yml
 requests/        колекція запитів для демо
+scripts/         перевірки лаби 2 на двох інстансах (Python, лише стандартна бібліотека; запуск — у runbook)
 docs/            методички та дизайн-документи
 docs/lab2/       розподіл задач лаби 2 між учасниками
 docs/ai/         контекст для AI-агентів: стан, ADR, контракти, runbook, журнал сесій
