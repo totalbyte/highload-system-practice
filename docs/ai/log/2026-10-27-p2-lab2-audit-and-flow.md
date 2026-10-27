@@ -15,8 +15,12 @@ the `lab2/p1-infra` branch (Redis + two instances): П2-1 and П2-5.
   sessions; review of every registration lifetime) — not copied from the indicative table in `participant-2.md`.
 - **П2-5:** stateless request flow for `POST /vote`: the four 2.3 requirements mapped to the code, a mermaid sequence
   diagram (target state after П2-3), the per-option invariant, and what happens if an instance dies mid-request.
-- Both drafts are in `docs/lab2/p2-readme-drafts.md`: the lab 2 README skeleton arrives with П1-1, and writing
-  README sections now would conflict with it. The file is to be moved into README and deleted after that merge.
+- Both drafts were first kept in `docs/lab2/p2-readme-drafts.md` (commit `e92f372`), because the lab 2 README
+  skeleton was still to come with П1-1. After `lab2/p1-infra` was merged (PR #2), `main` was merged into
+  `lab2/p2-voting` (no conflicts), both drafts moved into the README skeleton («Аудит стану → Голосування й
+  результати», «Stateless Request Flow») and the drafts file was deleted.
+- README bottleneck #2 no longer says the cache moves to Redis "in lab 4" — it moves in lab 2 (П2-3); lab 4 is
+  Cache-Aside, key schema, TTL rationale and DB fallback (as Participant 1 pointed out).
 
 ## Decisions (link ADRs)
 None — no non-obvious technical decision yet. Drafts-file placement is a temporary workflow choice, noted above.
