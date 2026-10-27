@@ -110,7 +110,16 @@ No ADRs — the proposals below are not yet confirmed by Participant 2 (task С-
   mismatches, no "not persisted outside of the container" warning. All Participant 1 README placeholders are filled;
   the remaining four belong to Participant 2.
 
+## Merging lab 2 into main
+- Before the PRs: trial merge of `lab2/p1-platform` and `lab2/p2-voting` in a scratch worktree — code merged
+  cleanly, 3 doc conflicts (README structure lines, ADR index, status "Next steps"); on the merged code all checks
+  passed, step 8 of the chain = 1. Worktree removed afterwards.
+- PR #4 (`lab2/p1-platform`) merged first (`7d6ede8`); Participant 2 merged `main` into `lab2/p2-voting`, resolved
+  the 3 conflicts as agreed (checked: no markers, ADR index 0020–0023, 0026, 0027) and PR #3 was merged (`288534e`).
+- On `main`, cold start: smoke 11/11 on both instances, `cross-instance.sh` 8/8, Participant 2's four scripts passed.
+- README: removed the "target state, cache moves in П2-3" note under the C4 diagram; replaced the stale chain output
+  with the current one (step 8 `totalVotes: 1`).
+
 ## Not done / next steps
-- Push `lab2/p1-platform`, open the PR; after П2-3 rerun `scripts/cross-instance.sh` and update its README output.
-- Participant 2 to review the task split and confirm the proposals (С-1).
-- Participant 2 is no longer blocked: `main` has both instances and Redis.
+- Joint tasks: С-3 consolidated audit table, С-4 code audit (Participant 1 leads), С-5 cold-start rehearsal,
+  С-6 `docs/ai/labs/lab2-summary.md`.

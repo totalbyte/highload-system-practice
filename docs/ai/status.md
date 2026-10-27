@@ -1,14 +1,13 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-10-27 by Participant 1 (lab 2 task split, П1-1…П1-7, see `log/2026-10-27-p1-lab2-task-split.md`).
+> Last updated: 2026-10-27 by Participant 1 (lab 2 merged and verified on `main`, see `log/2026-10-27-p1-lab2-task-split.md`).
 
 ## Current lab: 2 — Stateless architecture
 
 Task lists (Ukrainian, task ids П1-N / П2-N / С-N): [`docs/lab2/participant-1.md`](../lab2/participant-1.md),
 [`docs/lab2/participant-2.md`](../lab2/participant-2.md). Their «Домовленості» section (branches, file ownership,
-ADR number ranges 0021–0025 / 0026–0030, ports 8080 / 8082, Redis contract) is a **proposal not yet confirmed by
-Participant 2** (task С-1).
+ADR number ranges, ports 8080 / 8082, Redis contract) was followed by both participants.
 
 To avoid merge conflicts, each participant edits **only their own table** below.
 
@@ -18,11 +17,11 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 |---|---|
 | П1-1 Redis + `backend-1` / `backend-2` in compose (branch `lab2/p1-infra`) | ✅ merged into `main` via PR #2 (`78128e9`), ADR 0021 |
 | П1-2 Concurrent cold start of two instances on an empty DB (ADR 0009 "Unverified") | ✅ merged via PR #2: 12 simultaneous cold starts all clean, no migrator needed (ADR 0022) |
-| П1-3 DataProtection keys → shared store | ✅ committed on `lab2/p1-platform` (`17bbae3`, ADR 0023) |
-| П1-4 State audit: platform modules | ✅ committed on `lab2/p1-platform` (`4d877a4`) |
-| П1-5 Cross-instance consistency chain (`requests/cross-instance.http`, `scripts/cross-instance.sh`) | 🟡 committed on `lab2/p1-platform` (`9c2c8d2`): 8-step curl chain; step 8 shows stale results by design until П2-3; rerun after П2-3 is merged |
-| П1-6 C4 component diagram + multi-instance deployment docs | ✅ committed on `lab2/p1-platform` (`f1a4525`) — diagram shows the lab 2 target state (cache in Redis after П2-3); Participant 2 to check their components |
-| П1-7 Smoke test on both instances, docs | ✅ cold start: smoke test 11/11 on 8080 and 8082, survives `restart postgres`, counters consistent; next — PR for `lab2/p1-platform` |
+| П1-3 DataProtection keys → shared store | ✅ merged via PR #4 (ADR 0023) |
+| П1-4 State audit: platform modules | ✅ merged via PR #4 |
+| П1-5 Cross-instance consistency chain (`requests/cross-instance.http`, `scripts/cross-instance.sh`) | ✅ merged via PR #4; on `main` after PR #3 all 8 steps consistent (step 8 `totalVotes: 1`), README output updated |
+| П1-6 C4 component diagram + multi-instance deployment docs | ✅ merged via PR #4; target-state note removed now that the cache is in Redis |
+| П1-7 Smoke test on both instances, docs | ✅ merged via PR #4 |
 
 ### Participant 2
 
@@ -47,7 +46,7 @@ state) · С-5 cold-start defense rehearsal · С-6 `labs/lab2-summary.md` — a
 | Lab | Status |
 |---|---|
 | 1 System Design + MVP | 🟡 stages 1–9 done; stage 10 (cold-start defense rehearsal) and `labs/lab1-summary.md` not recorded |
-| 2 Stateless | 🟡 planned (task split 2026-10-27); groundwork from lab 1: JWT, `X-Instance-ID`, advisory-locked seed |
+| 2 Stateless | 🟡 all П1/П2 tasks merged into `main` (PR #2, #4, #3) and verified on a cold start; joint tasks С-3…С-6 left |
 | 3 Horizontal Scaling | ⏳ (groundwork: `/health`) |
 | 4 Distributed Caching | ⏳ |
 | 5 Load Testing | ⏳ (groundwork: 500 seed users, hot poll #1) |
@@ -57,16 +56,17 @@ state) · С-5 cold-start defense rehearsal · С-6 `labs/lab2-summary.md` — a
 - Branch `main`, remote `origin` = https://github.com/totalbyte/highload-system-practice.
 - `fix/lab1-review-findings` (review fixes, ADRs 0017–0019, pgAdmin ADR 0020) is merged into `main` via PR #1
   (`06692fe`, 2026-10-21).
-- `lab2/p1-infra` merged via PR #2 (`78128e9`, 2026-10-27; GitGuardian flagged the long-standing local-dev
-  default DB password `polling` in compose — a false positive). Participant 1 now works on `lab2/p1-platform`.
+- Lab 2 merged into `main` on 2026-10-27: PR #2 `lab2/p1-infra` (`78128e9`), PR #4 `lab2/p1-platform` (`7d6ede8`),
+  PR #3 `lab2/p2-voting` (`288534e`). GitGuardian flags the long-standing local-dev default DB password `polling` in
+  compose (incident 37528464) — a false positive.
 - No branching convention agreed yet; the lab 2 files propose `lab2/p1-infra`, `lab2/p1-platform`, `lab2/p2-voting`.
-- No automated tests — verification is the runbook smoke test, the three concurrency checks and the per-option
-  counter query (last full run 2026-09-30: 48/48, also on a cold start).
+- No automated tests — verification is the runbook smoke test and the lab 2 scripts in `scripts/`. Last full run on
+  `main` 2026-10-27 (cold start): smoke 11/11 on both instances, `cross-instance.sh` 8/8, `results-cache-demo`,
+  `concurrency-checks`, `kill-test`, `redis-outage-check` all passed.
 - `.gitattributes` keeps LF in the repository. If Git shows whole-file changes after a pull, run
   `git add --renormalize .` and check that `git diff --cached` is empty — then nothing really changed.
 
 ## Next steps
 
-- **Both:** С-1 — read both `docs/lab2/participant-*.md` files and confirm or adjust the proposals.
 - **Lab 2:** both branches merged (PR #4, PR #3); joint tasks next — С-3 audit table, С-4 code audit (Participant 1 leads), С-5 rehearsal, С-6 `labs/lab2-summary.md`.
 - **Lab 1 leftovers (if lab 1 is not defended yet):** cold-start defense rehearsal and `labs/lab1-summary.md`.

@@ -181,7 +181,6 @@ flowchart LR
 - **Однакова конфігурація:** обидва інстанси — один YAML-якір у `docker-compose.yml` (той самий JWT-секрет і рядки підключення); відрізняються лише `INSTANCE_ID` і портом ([ADR 0021](docs/ai/decisions/0021-redis-and-two-backend-instances.md)).
 - **Узгодженість записів** тримає PostgreSQL: транзакція «голос + лічильник», `UNIQUE(poll_id, user_id)`, `FOR UPDATE`; міграції й сід при одночасному старті серіалізуються блокуваннями в БД ([ADR 0022](docs/ai/decisions/0022-concurrent-startup-verified.md)).
 - **Балансувальника ще немає** (лаба 3): клієнт сам обирає інстанс портом.
-- Схема показує цільовий стан лаби 2: кеш результатів переїжджає з пам'яті процесу в Redis у задачі П2-3 (Учасник 2).
 
 ## Структура репозиторію
 
@@ -552,7 +551,26 @@ bash scripts/cross-instance.sh     # curl; кожен крок друкує X-In
 | 7 | `POST /api/polls/{id}/vote` | `backend-1` | 201 |
 | 8 | `GET /api/polls/{id}/results` | `backend-2` | `totalVotes = 1` |
 
-**Поки кеш результатів у пам'яті процесу** (до П2-3) кроки 1–7 узгоджені, а крок 8 повертає `totalVotes: 0`: голос скинув кеш лише на `backend-1`, а `backend-2` до 10 с (TTL) віддає копію, яку закешував на кроці 6. Опитування, статуси й токени живуть у PostgreSQL і JWT, тому розходяться лише результати — саме їх виносить у Redis П2-3.
+**Результат** (кеш результатів у Redis, спільний для інстансів, [ADR 0026](docs/ai/decisions/0026-results-cache-in-redis.md)):
+
+```
+1   POST   :8080/api/auth/login                 backend-1, HTTP 200
+2   POST   :8080/api/polls                      backend-1, HTTP 201
+    status: draft
+3   GET    :8082/api/polls/63                   backend-2, HTTP 200
+    status: draft
+4   PATCH  :8082/api/polls/63/publish           backend-2, HTTP 200
+    status: active
+5   GET    :8080/api/polls/63                   backend-1, HTTP 200
+    status: active
+6   GET    :8082/api/polls/63/results           backend-2, HTTP 200
+    totalVotes: 0
+7   POST   :8080/api/polls/63/vote              backend-1, HTTP 201
+8   GET    :8082/api/polls/63/results           backend-2, HTTP 200
+    totalVotes: 1   (очікується 1)
+```
+
+Усі кроки узгоджені: після голосу через `backend-1` інстанс `backend-2` одразу бачить `totalVotes: 1`. Поки кеш був у пам'яті процесу, крок 8 повертав `0` до 10 с (TTL) — `backend-2` віддавав копію, закешовану на кроці 6; демо «до» — у підрозділі «Усунені in-memory залежності».
 
 ### Відмовостійкість: втрата інстансу
 
