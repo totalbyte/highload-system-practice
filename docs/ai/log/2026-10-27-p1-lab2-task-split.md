@@ -1,5 +1,5 @@
-# 2026-10-27 — Participant 1 — Lab 2 task split + П1-1…П1-4 (Redis, two instances, concurrent startup, DataProtection, platform audit)
-**Lab:** 2 · **Commits:** `320ca8e` (task split, on `main`); `c6f81ac` (П1-1, П1-2) merged via PR #2 as `78128e9`; П1-3 `17bbae3` on `lab2/p1-platform`; П1-4 not committed
+# 2026-10-27 — Participant 1 — Lab 2 task split + П1-1…П1-5 (Redis, two instances, concurrent startup, DataProtection, platform audit, cross-instance chain)
+**Lab:** 2 · **Commits:** `320ca8e` (task split, on `main`); `c6f81ac` (П1-1, П1-2) merged via PR #2 as `78128e9`; П1-3 `17bbae3` on `lab2/p1-platform`; П1-4 `4d877a4`; П1-5 not committed
 
 ## Goal
 Read the lab 2 assignment and the repository, split lab 2 between the two participants so both can work in parallel
@@ -83,7 +83,16 @@ No ADRs — the proposals below are not yet confirmed by Participant 2 (task С-
 - Hidden-affinity demo for the defense: temporary `docker compose run` instance on :8083 with another `Jwt__Secret`
   → `401 invalid_token ... signature key was not found` for a token from `backend-1`; container stopped afterwards.
 
+## П1-5: cross-instance consistency chain
+- First version had 14 steps / 21 automated checks (delete and duplicate-vote steps, assertions, exit code).
+  Participant 1 asked not to over-engineer beyond the lab, so it was cut to the lab's chain plus the results steps.
+- `scripts/cross-instance.sh`: 8 plain curl steps alternating instances, each prints `X-Instance-ID`, HTTP code and
+  one key field; `requests/cross-instance.http` — the same steps for REST Client.
+- Current output: steps 1–7 consistent, step 8 `totalVotes: 0` instead of 1 — `backend-2` serves the copy it cached
+  in step 6 (in-memory cache, up to the 10 s TTL). Expected until Participant 2's П2-3.
+- README section and `docs/lab2/participant-1.md` (П1-5) updated to the 8-step version.
+
 ## Not done / next steps
-- Continue `lab2/p1-platform`: П1-5 (cross-instance chain) → П1-6 → П1-7.
+- Continue `lab2/p1-platform`: П1-6 (C4 component diagram, deployment docs) → П1-7; rerun the chain after П2-3.
 - Participant 2 to review the task split and confirm the proposals (С-1).
 - Participant 2 is no longer blocked: `main` has both instances and Redis.

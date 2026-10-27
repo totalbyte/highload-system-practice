@@ -298,7 +298,26 @@ _Заповнює Учасник 1 (П1-6)._
 
 ### Перевірка cross-instance консистентності
 
-_Заповнює Учасник 1 (П1-5)._
+Ланцюжок запитів, де кроки йдуть на різні інстанси (п. 2.5 методички: POST → Instance 1, GET → Instance 2, PUT → Instance 2, GET → Instance 1). PUT у нашому API немає — зміну стану робить `PATCH …/publish`. Cookies не використовуються, інстанс обирається портом, тож sticky sessions немає.
+
+```bash
+bash scripts/cross-instance.sh     # curl; кожен крок друкує X-Instance-ID, HTTP-код і ключове поле
+```
+
+Те саме вручну — [`requests/cross-instance.http`](requests/cross-instance.http) (VS Code REST Client / Rider / Visual Studio).
+
+| Крок | Запит | Інстанс | Очікування |
+|---|---|---|---|
+| 1 | `POST /api/auth/login` | `backend-1` | 200, токен |
+| 2 | `POST /api/polls` | `backend-1` | 201, `draft` |
+| 3 | `GET /api/polls/{id}` | `backend-2` | `draft` — токен від `backend-1` прийнято |
+| 4 | `PATCH /api/polls/{id}/publish` | `backend-2` | `active` |
+| 5 | `GET /api/polls/{id}` | `backend-1` | `active` |
+| 6 | `GET /api/polls/{id}/results` | `backend-2` | `totalVotes = 0` |
+| 7 | `POST /api/polls/{id}/vote` | `backend-1` | 201 |
+| 8 | `GET /api/polls/{id}/results` | `backend-2` | `totalVotes = 1` |
+
+**Поки кеш результатів у пам'яті процесу** (до П2-3) кроки 1–7 узгоджені, а крок 8 повертає `totalVotes: 0`: голос скинув кеш лише на `backend-1`, а `backend-2` до 10 с (TTL) віддає копію, яку закешував на кроці 6. Опитування, статуси й токени живуть у PostgreSQL і JWT, тому розходяться лише результати — саме їх виносить у Redis П2-3.
 
 ### Відмовостійкість: втрата інстансу
 

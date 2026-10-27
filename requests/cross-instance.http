@@ -1,0 +1,59 @@
+### Лаба 2, п. 2.5 — Cross-Instance Consistency (VS Code REST Client / Rider / Visual Studio).
+### Виконуйте зверху вниз; кроки йдуть на різні інстанси — дивіться заголовок X-Instance-ID у відповіді.
+### Cookies не використовуються, тож sticky sessions немає. Те саме через curl: scripts/cross-instance.sh.
+
+@i1 = http://localhost:8080
+@i2 = http://localhost:8082
+
+### 1. Логін → backend-1
+# @name login
+POST {{i1}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "user001@example.com",
+  "password": "Password123!"
+}
+
+###
+@token = {{login.response.body.accessToken}}
+
+### 2. POST → backend-1: нове опитування (draft)
+# @name createPoll
+POST {{i1}}/api/polls
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Cross-instance check",
+  "options": ["A", "B"],
+  "endsAt": "2030-01-01T00:00:00Z"
+}
+
+###
+@pollId = {{createPoll.response.body.id}}
+@optionId = {{createPoll.response.body.options[0].id}}
+
+### 3. GET → backend-2: те саме опитування, токен виданий іншим інстансом (draft)
+GET {{i2}}/api/polls/{{pollId}}
+Authorization: Bearer {{token}}
+
+### 4. PATCH (роль PUT із методички) → backend-2: публікація (active)
+PATCH {{i2}}/api/polls/{{pollId}}/publish
+Authorization: Bearer {{token}}
+
+### 5. GET → backend-1: свіжий статус (active)
+GET {{i1}}/api/polls/{{pollId}}
+
+### 6. Результати → backend-2 (totalVotes = 0)
+GET {{i2}}/api/polls/{{pollId}}/results
+
+### 7. Голос → backend-1 (201)
+POST {{i1}}/api/polls/{{pollId}}/vote
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "optionId": {{optionId}} }
+
+### 8. Результати → backend-2 (очікується totalVotes = 1; поки кеш у пам'яті процесу — старе 0 до 10 с)
+GET {{i2}}/api/polls/{{pollId}}/results

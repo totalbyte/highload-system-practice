@@ -169,42 +169,30 @@ DataProtection зараз не використовуємо, але саме т�
 - [ ] рядки внесено в підрозділ «Аудит стану — платформа» README;
 - [ ] для кожного `static` / singleton у своїх модулях є пояснення, чому він безпечний (знадобиться в С-4).
 
-### П1-5. Cross-Instance Consistency (2.5, §3) — ≈40–50 хв
+### П1-5. Cross-Instance Consistency (2.5, §3) — ≈20–30 хв
 
 Методичка: послідовний ланцюжок «POST → Instance 1, GET → Instance 2, PUT → Instance 2, GET → Instance 1» з
-підтвердженням актуальності даних **без sticky sessions**. PUT у нашому API немає — його роль виконують `PATCH
-…/publish` і `PATCH …/close`. Ланцюжок покриває і опитування, і голоси з результатами — кожен крок друкує
-`X-Instance-ID` і ключове поле відповіді:
+підтвердженням актуальності даних **без sticky sessions**, плюс приклади запитів (cURL / Postman) у README. PUT у
+нашому API немає — його роль виконує `PATCH …/publish`. Окрім прикладу з методички — голос і результати через різні
+інстанси, бо саме результати — єдиний стан у пам'яті процесу:
 
 | # | Запит | Інстанс | Очікування |
 |---|---|---|---|
 | 1 | `POST /api/auth/login` | backend-1 | 200, токен |
-| 2 | `POST /api/polls` (`allowVoteChange: true`) | backend-1 | 201, `draft`, id = P |
-| 3 | `GET /api/polls/{P}` (той самий токен) | backend-2 | 200, `draft` — токен від іншого інстансу прийнято |
-| 4 | `PATCH /api/polls/{P}/publish` | backend-2 | 200, `active` |
-| 5 | `GET /api/polls/{P}` | backend-1 | `active` — свіжі дані |
-| 6 | `GET /api/polls/{P}/results` | backend-1 і backend-2 | `totalVotes = 0` на обох (навмисно «прогріває» кеш обох) |
-| 7 | `POST /api/polls/{P}/vote` (варіант 1) | backend-1 | 201 |
-| 8 | `GET /api/polls/{P}/results` | backend-2, потім backend-1 | одразу `totalVotes = 1` на обох |
-| 9 | `POST /api/polls/{P}/vote` (варіант 2) | backend-2 | 200 — голос змінено |
-| 10 | `GET /api/polls/{P}/results` | backend-1 | голос уже на варіанті 2 |
-| 11 | `PATCH /api/polls/{P}/close` → `GET …/results` | backend-1 → backend-2 | `closed` |
-| 12 | нова чернетка: `POST` → `DELETE` → `GET` | backend-2 → backend-1 → backend-2 | 201 → 204 → 404 |
-| 13 | опитування з `allowVoteChange: false`: голос → повтор | backend-1 → backend-2 | 201 → 409: дубль ловить БД, а не пам'ять інстансу |
+| 2 | `POST /api/polls` | backend-1 | 201, `draft` |
+| 3 | `GET /api/polls/{id}` | backend-2 | `draft` — токен від іншого інстансу прийнято |
+| 4 | `PATCH /api/polls/{id}/publish` | backend-2 | `active` |
+| 5 | `GET /api/polls/{id}` | backend-1 | `active` |
+| 6 | `GET /api/polls/{id}/results` | backend-2 | `totalVotes = 0` |
+| 7 | `POST /api/polls/{id}/vote` | backend-1 | 201 |
+| 8 | `GET /api/polls/{id}/results` | backend-2 | `totalVotes = 1` |
 
-Клієнт не надсилає cookies і сам обирає інстанс — sticky sessions немає.
-
-Результат:
-
-- `requests/cross-instance.http` (змінні `@i1 = http://localhost:8080`, `@i2 = http://localhost:8082`) — для
-  REST Client / Rider / Postman;
-- `scripts/cross-instance.sh` (curl, Git Bash): перевіряє очікування і виходить з ненульовим кодом при розбіжності;
-  токен очищати від `\r` (див. runbook).
+Результат: `requests/cross-instance.http` і `scripts/cross-instance.sh` (звичайні curl-запити, кожен крок друкує
+`X-Instance-ID`, HTTP-код і ключове поле).
 
 Готово, коли:
 
-- [ ] скрипт проходить на холодному старті **після мерджу П2-3**. До нього кроки 8 і 10 падають протягом 10 с — це
-      очікувано: саме цю проблему виправляє Учасник 2;
+- [ ] ланцюжок проходить на холодному старті **після мерджу П2-3**. До нього крок 8 показує `0` — це очікувано;
 - [ ] приклад виводу з `X-Instance-ID` — у README.
 
 ### П1-6. Архітектурна схема та інструкція розгортання (2.6, §3) — ≈25–35 хв
@@ -307,7 +295,7 @@ DataProtection), ідентичність користувача — у JWT на
 | П1-2 Одночасний старт на чистій БД | 20–30 хв (+≈40 хв, якщо потрібен `migrator`) |
 | П1-3 Ключі DataProtection | 15–20 хв |
 | П1-4 Аудит платформної частини | 20–30 хв |
-| П1-5 Cross-instance ланцюжок | 40–50 хв |
+| П1-5 Cross-instance ланцюжок | 20–30 хв |
 | П1-6 C4 і інструкція розгортання | 25–35 хв |
 | П1-7 Закриття | 20–30 хв |
 | С-3, С-4 (веде Учасник 1) | 30–40 хв |
