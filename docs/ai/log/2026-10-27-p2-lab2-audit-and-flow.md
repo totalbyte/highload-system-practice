@@ -1,5 +1,6 @@
-# 2026-10-27 — Participant 2 — lab 2: state audit (П2-1), stateless request flow (П2-5), "before" demo (П2-2)
-**Lab:** 2 · **Commits:** not committed (branch `lab2/p2-voting`, local only)
+# 2026-10-27 — Participant 2 — lab 2: state audit (П2-1), stateless request flow (П2-5), "before" demo (П2-2), cache in Redis (П2-3)
+**Lab:** 2 · **Commits:** on branch `lab2/p2-voting` — `e92f372` (drafts), `e5c3431` (drafts → README), `f75eea5` (П2-2),
+then П2-3; lab 1 guide separately on `main` as `10fe4fd`
 
 ## Goal
 Pull the lab 2 task split and Participant 1's review fixes, then start the Participant 2 tasks that do not depend on
@@ -33,8 +34,17 @@ the `lab2/p1-infra` branch (Redis + two instances): П2-1 and П2-5.
   team default is unchanged. Recorded in runbook troubleshooting and Participant 2's environment. Seed ran once on
   the concurrent start: 500 users, 50 polls, 0 per-option counter mismatches.
 
+- **П2-3 (cache → Redis):** `ResultsCache` rewritten on the shared `IConnectionMultiplexer` (`IDatabase`, no new
+  packages): `GetAsync` / `SetAsync` (JSON, `SET … EX 10`) / `InvalidateAsync` (`DEL`); callers updated in
+  `ResultsService`, `VoteService` and the three invalidation points in `PollService` (publish/close/delete — only those
+  lines in Participant 1's file); `AddMemoryCache()` removed. StackExchange.Redis is **3.x**: TTL goes through the
+  `Expiration` type (checked against the package's XML docs, not from memory). Docs: README «Після» with the real
+  output, the Request Flow note, structure and bottleneck #2; ADR 0013 → superseded; contracts (new API + Redis
+  format); runbook; both `CLAUDE.md` files; `project-context.md`.
+
 ## Decisions (link ADRs)
-None — no non-obvious technical decision yet. Drafts-file placement is a temporary workflow choice, noted above.
+- [0026](../decisions/0026-results-cache-in-redis.md) — results cache in Redis as is (key, JSON, TTL 10 s, `DEL`),
+  async API; supersedes 0013. Enum stored as a camelCase string so the value is readable in `redis-cli`.
 
 ## Problems & fixes
 Audit findings missing from the indicative table, recorded in the drafts file:
@@ -53,11 +63,22 @@ the vote-change race that check missed (it compared SUMs). The guide was brought
 fast-forwarded onto it, so the lab 2 PR stays free of lab 1 changes.
 
 ## Verified (how)
+П2-3, on the stack rebuilt with `docker compose up -d --build`: `dotnet build` clean; `results-cache-demo.py` →
+«no» / «no» in 3 runs; `TTL results:1` = 9 after a read, `EXISTS` = 0 after a vote; response format unchanged
+(`status` as `"active"`, `generatedAt`, percentages). Parallel checks split across backend-1/backend-2: 120 first
+votes → all 201 and identical results on both; 40 changes by one user → all 200, total 1; 100 opposite changes → all
+200, 50/50; per-option counter mismatches 0; no deadlocks or `fail:` entries in the logs. Runbook smoke test (create
+201, list 200, no token 401, DB restart → 200 on both instances).
+
+Earlier in the session (П2-1, П2-5 drafts):
 Documentation only, no code changed — no build or smoke test needed. Every claim in the audit and the flow was
 checked against the current `VoteService.cs`, `ResultsService.cs`, `ResultsCache.cs`, `PollService.cs`,
 `GlobalExceptionHandler.cs` and `Program.cs` on `origin/main` `320ca8e`.
 
 ## Not done / next steps
-- П2-2, П2-3 blocked until `lab2/p1-infra` is merged; П2-2 strictly before П2-3.
-- С-1: confirm the proposals in `docs/lab2/participant-*.md` with Participant 1.
-- After П2-3: re-check the П2-5 invalidation step against the code; move both drafts into README.
+- П2-4: Redis down → 503 instead of 500; a vote already committed must not be reported as failed when only the
+  invalidation fails (ADR in the 0026–0030 range).
+- П2-6 (the three concurrency checks across two instances as a script in `scripts/`), П2-7 (instance-loss test),
+  П2-8 (remaining README sections, runbook).
+- С-1: confirm the proposals in `docs/lab2/participant-*.md` with Participant 1; С-2: Participant 1 reviews the three
+  `InvalidateAsync` lines in `PollService`.

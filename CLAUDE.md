@@ -53,8 +53,9 @@ Seed users: `user001@example.com` … `user500@example.com`, password `Password1
 - Explicit DB transactions must run inside `db.Database.CreateExecutionStrategy().ExecuteAsync(...)` (the EF retry
   strategy is on — see ADR 0008). Otherwise EF throws at runtime.
 - Follow the coding conventions in `src/PollingPlatform.Api/CLAUDE.md` so the codebase reads as one system.
-- Don't make stateless/caching "improvements" ahead of the lab that asks for them: e.g. the lab 1 results cache is
-  **deliberately** in process memory — it is the lab 2 state-audit target.
+- Don't make stateless/caching "improvements" ahead of the lab that asks for them: e.g. the results cache stayed in
+  process memory until lab 2 moved it to Redis "as is" (ADR 0026); key schema, TTL rationale, `X-Cache` and DB
+  fallback still wait for lab 4.
 - Don't commit, push or create branches unless the user asks. No branching convention has been agreed yet.
 - Never write personal names in repo files (code, docs, logs, ADRs, README): refer to people only as
   Participant 1 / Participant 2 (Учасник 1 / Учасник 2).

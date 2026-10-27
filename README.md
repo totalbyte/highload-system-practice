@@ -166,7 +166,7 @@ src/PollingPlatform.Api/
   Auth/          JWT, реєстрація/логін, ClaimsPrincipal.GetUserId()
   Polls/         CRUD і життєвий цикл опитувань
   Votes/         голосування: транзакція + атомарний лічильник
-  Results/       агреговані результати і кеш у пам'яті процесу
+  Results/       агреговані результати і їхній кеш (з лаби 2 — у Redis)
   Domain/        сутності User, Poll, PollOption, Vote
   Data/          DbContext, конфігурації EF, міграції, сід
   Common/        бізнес-винятки → HTTP-коди, обробник помилок, X-Instance-ID
@@ -214,7 +214,7 @@ R — Responsible, A — Accountable, C — Consulted, I — Informed.
 - **Компонент:** ендпоінт агрегованих результатів — найчастіше читання (дашборд оновлюється в усіх глядачів одночасно).
 - **Root Cause:** без кешу кожен запит іде в БД по агрегат. Читань на порядок більше, ніж записів, тож саме вони з'їдають CPU та I/O основної БД.
 - **Симптоматика:** падіння Throughput/RPS, зростання CPU і I/O Wait на контейнері БД, деградація *усіх* ендпоінтів, бо вони ділять один connection pool.
-- **Стан:** пом'якшено на двох рівнях — агрегат читається з денормалізованого `vote_count` (без `COUNT`/`JOIN` по `votes`), а відповідь кешується в пам'яті процесу з явною інвалідацією на голос, publish, close і delete. Кеш **навмисно локальний** (ADR 0013): у лабі 2 він розійдеться між інстансами і тому переїде в Redis (П2-3), а в лабі 4 оформиться як Cache-Aside зі схемою ключів, обґрунтуванням TTL і fallback на БД.
+- **Стан:** пом'якшено на двох рівнях — агрегат читається з денормалізованого `vote_count` (без `COUNT`/`JOIN` по `votes`), а відповідь кешується з явною інвалідацією на голос, publish, close і delete. У лабі 1 кеш був **навмисно локальним** (ADR 0013); у лабі 2 він розійшовся між інстансами і переїхав у Redis (ADR 0026), а в лабі 4 оформиться як Cache-Aside зі схемою ключів, обґрунтуванням TTL і fallback на БД.
 
 ### 3. Вичерпання пулу з'єднань до БД
 
@@ -298,7 +298,29 @@ Scenario B: publish through backend-1, read through backend-2
 
 Обидва випадки — прихована affinity: правильність відповіді залежить від того, на який інстанс потрапив запит. Sticky sessions лише сховали б це — клієнт «прилипав» би до одного інстансу, але різні клієнти так само бачили б різне. Тому кеш — **critical stateful dependency**, і його виносимо в спільне сховище.
 
-**Після: кеш у Redis** — _П2-3._
+**Після: кеш у Redis (ADR 0026).** `ResultsCache` працює через спільний для процесу `IConnectionMultiplexer`: ключ `results:{pollId}`, значення — JSON, TTL 10 с, інвалідація — `DEL`. `AddMemoryCache()` прибрано; `ResultsCache` лишився singleton, бо даних у ньому більше немає — лише посилання на з'єднання. Той самий скрипт, без жодних змін:
+
+```text
+Scenario A: vote through backend-1, read through backend-2
+  1. warm cache:     GET results               backend-2  HTTP 200  totalVotes=0  status=active  generatedAt=2026-10-27T10:25:50.5231928+00:00
+  2. vote:           POST vote                 backend-1  HTTP 201
+  3. right after:    GET results               backend-2  HTTP 200  totalVotes=1  status=active  generatedAt=2026-10-27T10:25:51.063114+00:00
+     right after:    GET results               backend-1  HTTP 200  totalVotes=1  status=active  generatedAt=2026-10-27T10:25:51.063114+00:00
+
+Scenario B: publish through backend-1, read through backend-2
+  1. author previews draft: GET results        backend-2  HTTP 200  totalVotes=0  status=draft  generatedAt=2026-10-27T10:25:51.2707272+00:00
+  2. publish:        PATCH publish             backend-1  HTTP 200
+  3. anonymous:      GET results               backend-2  HTTP 200  totalVotes=0  status=active  generatedAt=2026-10-27T10:25:51.3377633+00:00
+     anonymous:      GET results               backend-1  HTTP 200  totalVotes=0  status=active  generatedAt=2026-10-27T10:25:51.3377633+00:00
+
+Summary
+  backend-2 served stale vote counts after a vote on backend-1:  no
+  backend-2 answered 404 for a poll published on backend-1:      no
+```
+
+Найпереконливіше тут — **однаковий `generatedAt` на обох інстансах** на кроці 3: агрегат порахував один інстанс, а другий віддав саме цю копію з Redis. Інвалідація, зроблена backend-1, тепер одразу видна backend-2, а TTL знову лише страховка. Перевірка в Redis: `docker compose exec redis redis-cli TTL results:1` після читання — не більше 10; після голосу `EXISTS results:1` → 0.
+
+Що перенос у Redis **не** усуває: гонку «агрегат порахували до коміту голосу, а в кеш поклали вже після інвалідації» — застаріле значення може прожити до TTL. Це тема лаби 4, разом зі схемою ключів, обґрунтуванням TTL і fallback на БД.
 
 _Ключі DataProtection — Учасник 1 (П1-3)._
 
@@ -313,7 +335,7 @@ _Ключі DataProtection — Учасник 1 (П1-3)._
 | Атомарні зміни у зовнішньому сховищі | Одна транзакція в execution strategy: наявний голос `SELECT … FOR UPDATE` → `INSERT` (новий голос; дубль ловить унікальний індекс) **або** `UPDATE votes` + `vote_count ± 1` у порядку зростання id варіантів (зміна) **або** нічого (той самий варіант) → `COMMIT`. Після коміту — інвалідація `results:{pollId}` | `VoteService.CastOnceAsync`, `InsertVoteAsync`, `ChangeVoteCountAsync` |
 | Відсутність залишкових мутацій у пам'яті | `VoteService` і `AppDbContext` scoped — знищуються після відповіді; `static`-полів із даними немає; наступний запит того ж користувача може піти на інший інстанс | `Program.cs` — `AddScoped` |
 
-> **До П2-3 вимога останнього рядка не виконана.** Інвалідація — це `IMemoryCache.Remove` на поточному інстансі, тобто запит голосування змінює пам'ять процесу, і ця зміна переживає запит. Після П2-3 цей крок стає `DEL results:{pollId}` у Redis. Діаграма — цільовий стан.
+> Останній рядок виконується лише з лаби 2 (ADR 0026). У лабі 1 інвалідація була `IMemoryCache.Remove` на поточному інстансі — запит голосування змінював пам'ять процесу, і ця зміна переживала запит. Тепер це `DEL results:{pollId}` у Redis, і в пам'яті процесу нічого не лишається.
 
 ```mermaid
 sequenceDiagram

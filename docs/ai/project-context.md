@@ -72,7 +72,7 @@ implements only Client → API → PostgreSQL.
 
 **Execution-plan decisions that must hold:** JWT from day one (no server sessions); seed script with a user pool
 (lab 5 needs many distinct voters, otherwise every write returns 409); results cache **deliberately in process
-memory** in lab 1 (lab 2 state-audit target); `/health` + `X-Instance-ID` early (labs 2–3).
+memory** in lab 1 (lab 2 state-audit target — moved to Redis in lab 2, ADR 0026); `/health` + `X-Instance-ID` early (labs 2–3).
 
 **Storyline across labs:** the `vote_count` counter is bottleneck #1 in lab 1; an in-memory copy would diverge
 between two instances in lab 2; its aggregate is cached and invalidated in lab 4; it is the likely saturation point

@@ -15,7 +15,7 @@ public class ResultsService(AppDbContext db, ResultsCache cache, TimeProvider ti
     public async Task<PollResultsResponse> GetAsync(long pollId, long? currentUserId, CancellationToken ct)
     {
         // Кеш містить і CreatorId, тому на попадання видимість перевіряється без звернення до БД.
-        var entry = cache.Get(pollId) ?? await LoadAndCacheAsync(pollId, ct);
+        var entry = await cache.GetAsync(pollId) ?? await LoadAndCacheAsync(pollId, ct);
 
         if (entry.Response.Status == PollStatus.Draft && entry.CreatorId != currentUserId)
             throw new PollNotFoundException(pollId);
@@ -52,7 +52,7 @@ public class ResultsService(AppDbContext db, ResultsCache cache, TimeProvider ti
             poll.CreatorId,
             new PollResultsResponse(pollId, poll.Title, poll.Status, totalVotes, timeProvider.GetUtcNow(), options));
 
-        cache.Set(pollId, entry);
+        await cache.SetAsync(pollId, entry);
         return entry;
     }
 }

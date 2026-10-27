@@ -111,9 +111,11 @@ Strip `\r` from tokens read out of a file (see quirks).
 **Results cache across instances (lab 2, П2-2/П2-3):** `python scripts/results-cache-demo.py` (stdlib only; `API1` /
 `API2` env vars override the instance URLs). Creates fresh polls each run, so it is repeatable. Scenario A: warm the
 cache on backend-2, vote via backend-1, read from both. Scenario B: the author previews a draft on backend-2, publishes
-via backend-1, an anonymous client reads from both. With the in-process cache the summary says **YES** twice
-(backend-2 serves stale counts until the 10 s TTL, and 404 for the just-published poll); once the cache is in Redis
-both lines must say **no**. ~13 s per run (it waits out the TTL only when it sees stale data).
+via backend-1, an anonymous client reads from both. Since П2-3 (cache in Redis, ADR 0026) both summary lines
+must say **no**, and step 3 of scenario A shows the same `generatedAt` on both instances; a **YES** means the cache is
+per-process again (it was, by design, before П2-3: stale counts until the 10 s TTL and 404 for the just-published
+poll). ~1 s per run; it waits out the TTL only when it sees stale data. Redis side:
+`docker compose exec redis redis-cli TTL results:1` → ≤ 10 after a read, `EXISTS results:1` → 0 after a vote.
 
 Full demo scenario with error cases: `requests/polls.http` (VS Code REST Client / Rider / Visual Studio).
 No automated tests yet (`public partial class Program;` is kept for future `WebApplicationFactory` tests).
@@ -124,7 +126,7 @@ No automated tests yet (`public partial class Program;` is kept for future `WebA
 |---|---|
 | Cyrillic becomes `????` when sent with curl from Git Bash on Windows | Shell encoding, not the server. Use Swagger, `.http`, Postman, or `curl --data-binary @file.json` with a UTF-8 file |
 | Every request returns 400 when the token comes from a file written by Python on Windows | Python writes CRLF; the `\r` inside the `Authorization` header breaks the request. Pipe tokens through `tr -d '\r'` |
-| `GET /results` still shows an old total | The in-process cache has a 10 s TTL as a safety net; a vote, publish, close or delete invalidates it immediately — but only on the instance that handled the write. With two instances the caches diverge (ADR 0013, demo: `scripts/results-cache-demo.py`) until П2-3 moves the cache to Redis |
+| `GET /results` still shows an old total | The cache (Redis, shared by all instances, ADR 0026) is invalidated by a vote, publish, close or delete, with a 10 s TTL as a safety net. A stale value for up to 10 s right after a vote is the known invalidation race (aggregate read before the commit, written after the `DEL`) — a lab 4 topic. If instances disagree, run `scripts/results-cache-demo.py`: a **YES** means something went back to a per-process cache |
 | Can't reach the container DB on 5432 / connected to the wrong DB | Participant 1's machine runs a local Windows PostgreSQL service on 5432 — the container is on **5433** (ADR 0011) |
 | `fail: ... SELECT migration_id FROM "__EFMigrationsHistory"` on first start | Expected: the history table doesn't exist yet. Not an error |
 | `fail: ... CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory"` (Postgres: `pg_type_typname_nsp_index`) on a cold start | Both instances created the history table at the same instant; the provider ignores it and the migration still runs once (ADR 0022). Not an error |

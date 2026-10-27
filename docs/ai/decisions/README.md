@@ -17,7 +17,7 @@ if a decision changes, add a new ADR and set the old one's status to `Superseded
 | [0010](0010-seed-data.md) | Deterministic seed data with a user pool and a hot poll | Accepted |
 | [0011](0011-local-environment.md) | Host port 5433, GSS off, Swagger in Production | Accepted |
 | [0012](0012-instance-id-and-health.md) | `X-Instance-ID` header and `/health` from lab 1 | Accepted, amended by 0019 |
-| [0013](0013-lab1-in-process-results-cache.md) | Lab 1 results cache in process memory, on purpose | Accepted (to be superseded in lab 2/4) |
+| [0013](0013-lab1-in-process-results-cache.md) | Lab 1 results cache in process memory, on purpose | Superseded by 0026 |
 | [0014](0014-vote-transaction-and-counter.md) | Vote in one transaction; unique index as source of truth; SQL-level counter | Accepted, amended by 0017 |
 | [0015](0015-vote-and-results-api-shape.md) | Vote and results API shape | Accepted |
 | [0016](0016-transient-db-errors-503.md) | Transient database errors map to 503 | Accepted |
@@ -27,6 +27,7 @@ if a decision changes, add a new ADR and set the old one's status to `Superseded
 | [0020](0020-pgadmin-pinned.md) | pgAdmin 4 pinned to `9.17.0`, server pre-registered (starts with the stack since the amendment) | Accepted, amended |
 | [0021](0021-redis-and-two-backend-instances.md) | Lab 2: Redis + `backend-1`/`backend-2` from one image, ports 8080/8082, one shared `IConnectionMultiplexer` | Accepted |
 | [0022](0022-concurrent-startup-verified.md) | Concurrent startup of several instances on an empty DB verified safe; no separate migrator | Accepted |
+| [0026](0026-results-cache-in-redis.md) | Lab 2: results cache in Redis (`results:{pollId}`, JSON, TTL 10 s, `DEL` on invalidation), async `ResultsCache` | Accepted (supersedes 0013) |
 
 Template:
 

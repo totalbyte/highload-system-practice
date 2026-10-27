@@ -81,10 +81,14 @@ Defined by EF migrations in `src/PollingPlatform.Api/Data/Migrations` (current: 
 ## What Participant 2 provides to Participant 1
 
 - `VoteService` (`Votes/`) — voting; `ResultsService` (`Results/`) — aggregated results.
-- `ResultsCache` (`Results/ResultsCache.cs`, singleton) — `Get` / `Set` / `Invalidate(pollId)`. **Any code that
-  changes votes or a poll's status must call `Invalidate`.** `PollService` takes `ResultsCache` in its constructor
-  and invalidates in `PublishAsync`, `CloseAsync` and `DeleteAsync` (publish/delete were added on 2026-09-30 after the
-  review found stale draft entries: 404 on results for up to the 10 s TTL after publishing).
+- `ResultsCache` (`Results/ResultsCache.cs`, singleton, **in Redis since lab 2** — ADR 0026) —
+  `Task<CachedPollResults?> GetAsync(pollId)` / `Task SetAsync(pollId, entry)` / `Task InvalidateAsync(pollId)`.
+  **Any code that changes votes or a poll's status must `await InvalidateAsync`** — invalidation is now visible to
+  every instance. `PollService` takes `ResultsCache` in its constructor and invalidates in `PublishAsync`,
+  `CloseAsync` and `DeleteAsync` (publish/delete were added on 2026-09-30 after the review found stale draft entries).
+- Redis format, for debugging with `docker compose exec redis redis-cli`: key `results:{pollId}`, value
+  `CachedPollResults` as JSON (camelCase, enum as string), TTL 10 s (`TTL results:1`), removed with `DEL`.
+  A Redis outage currently surfaces as an exception — its HTTP mapping is П2-4.
 - New exceptions in `Common/Exceptions/VoteExceptions.cs`: `PollOptionNotFoundException` (404),
   `PollNotStartedException`, `PollVotingEndedException`, `DuplicateVoteException` (409).
 - `GlobalExceptionHandler` now maps transient DB failures to 503 (ADR 0016).
