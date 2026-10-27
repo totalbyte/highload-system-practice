@@ -16,14 +16,16 @@ docker compose up -d --build
 
 | Що | Адреса |
 |---|---|
-| API | http://localhost:8080 |
-| Swagger UI | http://localhost:8080/swagger |
-| Health check | http://localhost:8080/health |
+| API, інстанс `backend-1` | http://localhost:8080 |
+| API, інстанс `backend-2` | http://localhost:8082 |
+| Swagger UI | http://localhost:8080/swagger (або :8082) |
+| Health check | http://localhost:8080/health (або :8082) |
 | PostgreSQL (з хоста) | `localhost:5433`, БД/користувач/пароль `polling` |
+| Redis (з хоста) | `localhost:6379`; консоль — `docker compose exec redis redis-cli` |
 | Adminer (опційно) | `docker compose --profile tools up -d` → http://localhost:8081 |
 | pgAdmin 4 | http://localhost:5050 (піднімається разом зі стеком, ~40 с), сервер `polling (docker)` уже додано, пароль БД `polling` |
 
-При старті backend сам застосовує міграції та заповнює порожню БД тестовими даними. Жодних ручних кроків не потрібно. Значення за замовчуванням можна перевизначити через `.env` (див. [`.env.example`](.env.example)).
+Стек запускає два однакові інстанси backend з одного образу (лаба 2); заголовок `X-Instance-ID` у кожній відповіді показує, який із них її обробив (`backend-1` / `backend-2`). При старті backend сам застосовує міграції та заповнює порожню БД тестовими даними. Жодних ручних кроків не потрібно. Значення за замовчуванням можна перевизначити через `.env` (див. [`.env.example`](.env.example)).
 
 ```bash
 docker compose restart postgres   # дані переживають перезапуск БД (named volume pgdata)
@@ -43,7 +45,7 @@ docker compose down -v            # повне очищення, включно 
 ### Локальна розробка без Docker для backend
 
 ```bash
-docker compose up -d postgres
+docker compose up -d postgres redis
 dotnet run --project src/PollingPlatform.Api   # http://localhost:5094/swagger, середовище Development
 ```
 
@@ -169,6 +171,7 @@ src/PollingPlatform.Api/
 docker-compose.yml
 requests/        колекція запитів для демо
 docs/            методички та дизайн-документи
+docs/lab2/       розподіл задач лаби 2 між учасниками
 docs/ai/         контекст для AI-агентів: стан, ADR, контракти, runbook, журнал сесій
 CLAUDE.md        точка входу для Claude Code
 ```
@@ -224,3 +227,41 @@ R — Responsible, A — Accountable, C — Consulted, I — Informed.
 - **Root Cause:** наївний ORM-код вставляє кожен варіант окремим запитом — N round-trip до БД замість одного.
 - **Симптоматика:** латентність створення росте лінійно з кількістю варіантів; на тлі мережевої затримки до БД саме round-trip, а не сама вставка, домінує в часі відповіді.
 - **Стан:** усунено — опитування і всі його варіанти зберігаються одним `SaveChanges`, EF відправляє їх батчем (ADR 0007). Залишено в аналізі як приклад проблеми, яку легко внести назад необережною правкою.
+
+## Лабораторна 2: Stateless-архітектура
+
+Вимоги — [`docs/labs/Lab2 - Stateless Architecture.md`](docs/labs/Lab2%20-%20Stateless%20Architecture.md), розподіл задач — [`docs/lab2/`](docs/lab2/). Кожен підрозділ заповнює вказаний учасник у своїй гілці.
+
+### Аудит стану
+
+Класифікація за трьома категоріями методички: **Ephemeral / Local Safe**, **Shared / Externalized**, **Critical Stateful Dependencies** (підлягають вилученню).
+
+#### Платформа: інфраструктура, Auth, опитування, старт БД
+
+_Заповнює Учасник 1 (П1-4)._
+
+#### Голосування й результати
+
+_Заповнює Учасник 2 (П2-1)._
+
+### Усунені in-memory залежності
+
+_Кеш результатів — Учасник 2 (П2-2, П2-3)._
+
+_Ключі DataProtection — Учасник 1 (П1-3)._
+
+### Stateless Request Flow: `POST /api/polls/{id}/vote`
+
+_Заповнює Учасник 2 (П2-5)._
+
+### Мульти-інстансне розгортання
+
+_Заповнює Учасник 1 (П1-6)._
+
+### Перевірка cross-instance консистентності
+
+_Заповнює Учасник 1 (П1-5)._
+
+### Відмовостійкість: втрата інстансу
+
+_Заповнює Учасник 2 (П2-7)._

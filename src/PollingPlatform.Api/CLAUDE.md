@@ -5,7 +5,8 @@ Auto-loaded when working in this directory. Project-level context: root `CLAUDE.
 ## Structure
 
 ```
-Program.cs                  DI, JWT, EF (retry), ProblemDetails, Swagger, /health; runs migrations + seed on startup
+Program.cs                  DI, JWT, EF (retry), Redis (IConnectionMultiplexer), ProblemDetails, Swagger, /health;
+                            runs migrations + seed on startup
 Dockerfile                  multi-stage (sdk:10.0 → aspnet:10.0); build context = repo root; port 8080
 appsettings.json            defaults (Jwt:Secret empty → provided via env Jwt__Secret)
 appsettings.Development.json  dev JWT secret, Seed:Enabled=true (used by `dotnet run`)
