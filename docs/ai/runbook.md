@@ -121,7 +121,7 @@ No automated tests yet (`public partial class Program;` is kept for future `WebA
 | Can't reach the container DB on 5432 / connected to the wrong DB | Participant 1's machine runs a local Windows PostgreSQL service on 5432 — the container is on **5433** (ADR 0011) |
 | `fail: ... SELECT migration_id FROM "__EFMigrationsHistory"` on first start | Expected: the history table doesn't exist yet. Not an error |
 | `fail: ... CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory"` (Postgres: `pg_type_typname_nsp_index`) on a cold start | Both instances created the history table at the same instant; the provider ignores it and the migration still runs once (ADR 0022). Not an error |
-| Warning about DataProtection keys "not persisted outside of the container" | Harmless (we use JWT, not DataProtection); note it for the lab 2 state audit |
+| Warning "No XML encryptor configured. Key … may be persisted to storage in unencrypted form" | Expected: DataProtection keys live unencrypted in Redis, shared by all instances (ADR 0023). The old "not persisted outside of the container" warning must no longer appear |
 | `The Entity Framework tools version '10.0.5' is older than ...` | Harmless; `dotnet tool update -g dotnet-ef` |
 | `failed to connect to the docker API` | Docker Desktop isn't running |
 | First request after a DB restart fails | Should not happen (EF retry strategy, ADR 0008); if it does, check the retry config |

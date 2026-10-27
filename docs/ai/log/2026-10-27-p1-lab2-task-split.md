@@ -1,5 +1,5 @@
-# 2026-10-27 — Participant 1 — Lab 2 task split + П1-1, П1-2 (Redis, two instances, concurrent startup)
-**Lab:** 2 · **Commits:** `320ca8e` (task split, on `main`); П1-1 and П1-2 on branch `lab2/p1-infra`, not committed
+# 2026-10-27 — Participant 1 — Lab 2 task split + П1-1…П1-7 (Redis, two instances, concurrent startup, DataProtection, platform audit, cross-instance chain, C4)
+**Lab:** 2 · **Commits:** `320ca8e` (task split, on `main`); `c6f81ac` (П1-1, П1-2) merged via PR #2 as `78128e9`; П1-3 `17bbae3` on `lab2/p1-platform`; П1-4 `4d877a4`; П1-5 `9c2c8d2`; П1-6 `f1a4525`; П1-7 (docs only) not committed
 
 ## Goal
 Read the lab 2 assignment and the repository, split lab 2 between the two participants so both can work in parallel
@@ -58,8 +58,59 @@ No ADRs — the proposals below are not yet confirmed by Participant 2 (task С-
 - No `migrator` service needed. ADR 0009 status → "amended by 0022"; `DatabaseInitializer` comment updated.
 - After the comment change: rebuild + cold start, smoke test 11/11 on 8080 and 8082.
 
+## PR #2
+- Opened by Participant 1, merged 2026-10-27 (`78128e9`) together with Participant 2's `10fe4fd` (lab 1 guide, docs
+  only, no conflicts). The only failing check was GitGuardian: it flagged the local-dev default DB password `polling`
+  on the compose line that moved into the YAML anchor — present in `main` since lab 1, a false positive; no history
+  rewrite.
+
+## П1-3: DataProtection keys in Redis (ADR 0023, branch `lab2/p1-platform`)
+- `Program.cs`: `AddDataProtection().SetApplicationName("polling-platform").PersistKeysToStackExchangeRedis(redis,
+  "DataProtection-Keys")` with the shared multiplexer; package `Microsoft.AspNetCore.DataProtection.StackExchangeRedis`
+  10.0.12. Placed next to the Redis registration, away from the cache lines Participant 2 edits.
+- Verified: cold start → one key in Redis created by `backend-2`, `backend-1` used it (no key-creation warning of its
+  own); the "not persisted outside of the container" warning is gone; after `docker compose rm -sf backend-1
+  backend-2 && up -d` still one key and no DataProtection warnings; smoke test 11/11 on 8080 and 8082.
+- README "Усунені in-memory залежності": before/after table for DataProtection; runbook quirk row replaced.
+
+## П1-4: platform state audit (README, subsection "Платформа")
+- Grepped `Program.cs`, `Auth/`, `Polls/`, `Data/`, `Common/` (without error handling) for `static`, singletons,
+  collections, locks, timers, hosted services, file/directory access, sessions: only immutable config/handlers,
+  `static readonly` seed topics, per-request objects — no background jobs, in-process locks or data in memory.
+- README table: 13 elements in the lab's three categories; DataProtection keys shown as Critical → Shared.
+- No-sessions proof on the running stack: register on `backend-2` → login on `backend-1` (no `Set-Cookie`) → `/me`
+  with that token 200 on both; tampered token → 401; `Jwt__Secret` hash identical in both containers.
+- Hidden-affinity demo for the defense: temporary `docker compose run` instance on :8083 with another `Jwt__Secret`
+  → `401 invalid_token ... signature key was not found` for a token from `backend-1`; container stopped afterwards.
+
+## П1-5: cross-instance consistency chain
+- First version had 14 steps / 21 automated checks (delete and duplicate-vote steps, assertions, exit code).
+  Participant 1 asked not to over-engineer beyond the lab, so it was cut to the lab's chain plus the results steps.
+- `scripts/cross-instance.sh`: 8 plain curl steps alternating instances, each prints `X-Instance-ID`, HTTP code and
+  one key field; `requests/cross-instance.http` — the same steps for REST Client.
+- Current output: steps 1–7 consistent, step 8 `totalVotes: 0` instead of 1 — `backend-2` serves the copy it cached
+  in step 6 (in-memory cache, up to the 10 s TTL). Expected until Participant 2's П2-3.
+- README section and `docs/lab2/participant-1.md` (П1-5) updated to the 8-step version.
+
+## П1-6: C4 component diagram and deployment docs (README)
+- "Архітектура (Lab 1)" replaced by "Архітектура (Lab 2)": mermaid flowchart at C4 component level — `backend-1`
+  with its components (JWT/X-Instance-ID middleware, controllers, services, `ResultsCache`, `AppDbContext`,
+  DataProtection, `/health`), `backend-2` as the same image, PostgreSQL and Redis with what each stores. Shows the
+  lab 2 target state; a note says the cache moves to Redis in П2-3. Rendered with mermaid 11.4.1 in a browser to
+  check the syntax (scratch page, not in the repo).
+- "Мульти-інстансне розгортання": one-command start, instance/port table, `X-Instance-ID` check, per-instance
+  stop/kill/start/logs, `redis-cli`. RACI: lab 2 rows; repo structure: `scripts/`. Runbook/contracts were already
+  updated in П1-1.
+
+## П1-6 review and П1-7
+- Review of П1-6 against lab 2.6 and §3: diagram matches the code; the documented stop/kill/start/`redis-cli`
+  commands were run on the stack. Finding: after `docker compose kill` the container stays `Exited (137)` — the
+  restart policy does not apply to a manual kill, so `start` is required (comment added; relevant to П2-7).
+- П1-7: cold start → smoke test 11/11 on 8080 and 8082, both 200 after `restart postgres`, per-option counters 0
+  mismatches, no "not persisted outside of the container" warning. All Participant 1 README placeholders are filled;
+  the remaining four belong to Participant 2.
+
 ## Not done / next steps
-- Commit `lab2/p1-infra`, push, open the PR; Participant 2 reviews (С-2).
-- Then `lab2/p1-platform`: П1-3 (DataProtection keys) … П1-7.
+- Push `lab2/p1-platform`, open the PR; after П2-3 rerun `scripts/cross-instance.sh` and update its README output.
 - Participant 2 to review the task split and confirm the proposals (С-1).
-- Participant 2 meanwhile: П2-1 + П2-5 (no dependency on `lab2/p1-infra`).
+- Participant 2 is no longer blocked: `main` has both instances and Redis.

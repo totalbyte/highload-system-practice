@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -43,7 +44,15 @@ var redisConnectionString = builder.Configuration.GetConnectionString("Redis")
 // Одне з'єднання на процес (multiplexer потокобезпечний) — його ділять кеш результатів і ключі DataProtection.
 // Підключаємось одразу при старті, а abortConnect=false у рядку підключення не дає застосунку впасти,
 // якщо Redis ще недоступний: клієнт перепідключиться сам.
-builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionString));
+var redis = ConnectionMultiplexer.Connect(redisConnectionString);
+builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
+
+// Ключі DataProtection за замовчуванням лежать у файловій системі контейнера — у кожного інстансу свої, і
+// захищене одним інстансом (cookie, antiforgery) не розшифрує інший. Спільне сховище і однакова назва застосунку
+// дають усім інстансам один набір ключів (аудит стану лаби 2, ADR 0023).
+builder.Services.AddDataProtection()
+    .SetApplicationName("polling-platform")
+    .PersistKeysToStackExchangeRedis(redis, "DataProtection-Keys");
 
 // --- Auth (stateless JWT) ---
 builder.Services.AddOptions<JwtOptions>()
