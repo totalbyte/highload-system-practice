@@ -28,11 +28,11 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 
 | Task | Status |
 |---|---|
-| П2-1 State audit: voting and results modules | ⏳ |
-| П2-2 "Before" demo: stale results across instances with the in-memory cache (must precede П2-3) | ⏳ |
-| П2-3 `ResultsCache` → Redis (supersedes ADR 0013) | ⏳ |
+| П2-1 State audit: voting and results modules | 🟡 draft in [`docs/lab2/p2-readme-drafts.md`](../lab2/p2-readme-drafts.md) (branch `lab2/p2-voting`, local); moves into README once `lab2/p1-infra` brings the README skeleton |
+| П2-2 "Before" demo: stale results across instances with the in-memory cache (must precede П2-3) | ⏳ blocked on `lab2/p1-infra` — also show the stale **404 after publish** (audit finding 1) |
+| П2-3 `ResultsCache` → Redis (supersedes ADR 0013) | ⏳ blocked on `lab2/p1-infra` |
 | П2-4 Redis unavailable → 503, committed vote not reported as failed | ⏳ |
-| П2-5 Stateless request flow for `POST /vote` | ⏳ |
+| П2-5 Stateless request flow for `POST /vote` | 🟡 draft (table + sequence diagram) in the same file; the invalidation step is final only after П2-3 |
 | П2-6 The three concurrency checks across two instances | ⏳ |
 | П2-7 Instance-loss test (`docker compose kill` during voting) | ⏳ |
 | П2-8 README sections, docs | ⏳ |
