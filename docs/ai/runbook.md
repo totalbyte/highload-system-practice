@@ -93,19 +93,21 @@ docker compose exec -T postgres psql -U polling -d polling -tAc \
 Local data already skewed by an old bug can be repaired (data only, not schema) with
 `UPDATE options o SET vote_count = (SELECT count(*) FROM votes v WHERE v.option_id = o.id)` — or `docker compose down -v`.
 
-**Concurrency checks** (the core claim of the project — run all three after touching the vote path, then the
-per-option consistency query above). Use a parallel HTTP client (e.g. Python `ThreadPoolExecutor`), not sequential
-curl:
-1. **Many users, first votes:** N different seed users vote into the hot poll at once → all 201 (200 if they had
-   already voted), no 5xx.
+**Concurrency checks** (the core claim of the project — run after touching the vote path):
+`python scripts/concurrency-checks.py` (from the repo root, stdlib only, ~16 s, fresh polls each run). Requests are
+split between backend-1 and backend-2 and released together by a barrier; after each check it verifies per-option
+counters for the whole DB and that results on both instances match the DB; at the end it scans the postgres logs for
+`deadlock detected` and the backend logs for `fail:` since the run started. Exit code 0 = all passed. The three checks:
+1. **Many users, first votes:** 200 different seed users vote into one fresh poll at once → all 201, no 5xx.
 2. **One user, parallel changes** on an `allowVoteChange` poll: 40 requests alternating options → all 200, exactly one
    vote row for the user. Run it on a **fresh** poll too (small counters used to fail with 500 on
    `ck_options_vote_count`).
 3. **Opposite changes:** half of 100 users change A→B while the other half change B→A at the same moment → all 200,
    no `deadlock detected` in `docker compose logs postgres`.
 
-Last verified 2026-09-30 (48/48 checks on the running stack and on a cold-started one): 200 parallel first votes in
-~0.6 s, scenarios 2–3 exact, the backend held 30 connections afterwards and `psql` still connected.
+Last verified 2026-10-27 on two instances: all checks green in 4 consecutive runs. The script is known to catch the
+vote-change race: with `FOR UPDATE` temporarily removed it failed with 21×500 of 40 (fresh poll) and 6×500 (poll #1).
+Earlier single-instance run: 2026-09-30, 48/48 incl. a cold start; the backend held 30 connections afterwards.
 Strip `\r` from tokens read out of a file (see quirks).
 
 **Results cache across instances (lab 2, П2-2/П2-3):** `python scripts/results-cache-demo.py` (stdlib only; `API1` /

@@ -1,6 +1,6 @@
-# 2026-10-27 — Participant 2 — lab 2: state audit (П2-1), stateless request flow (П2-5), "before" demo (П2-2), cache in Redis (П2-3), Redis outage (П2-4)
+# 2026-10-27 — Participant 2 — lab 2: state audit (П2-1), stateless request flow (П2-5), "before" demo (П2-2), cache in Redis (П2-3), Redis outage (П2-4), concurrency checks (П2-6)
 **Lab:** 2 · **Commits:** on branch `lab2/p2-voting` — `e92f372` (drafts), `e5c3431` (drafts → README), `f75eea5` (П2-2),
-`2a4e370` (П2-3), then П2-4; lab 1 guide separately on `main` as `10fe4fd`
+`2a4e370` (П2-3), `5ef6f1c` (П2-4), then П2-6; lab 1 guide separately on `main` as `10fe4fd`
 
 ## Goal
 Pull the lab 2 task split and Participant 1's review fixes, then start the Participant 2 tasks that do not depend on
@@ -49,6 +49,15 @@ the `lab2/p1-infra` branch (Redis + two instances): П2-1 and П2-5.
   `InvalidateAsync` are best-effort (one-line warning, no rethrow) — this fixes all four invalidation points without
   touching `PollService`. New `scripts/redis-outage-check.py`; README cache subsection, contracts, runbook, code guide.
 
+- **П2-6 (concurrency across two instances):** `scripts/concurrency-checks.py` — the three runbook checks as one
+  script: requests split between backend-1/backend-2 and released by a `threading.Barrier`; after each check the
+  whole-DB per-option query and results on both instances vs the DB; finally `deadlock detected` in postgres logs and
+  `fail:` in backend logs since the run start. Written up in README at the end of the Request Flow section (not in
+  the cross-instance subsection — that one is Participant 1's, П1-5, and would conflict with `lab2/p1-platform`).
+- **Mutation check of the test itself:** `FOR UPDATE` temporarily removed from `VoteService` and the backends rebuilt
+  → check 2 failed with 21×500 of 40 (fresh poll) and 6×500 (poll #1), 54 `fail:` entries — the ADR 0017 race, now
+  across two processes. Lock restored (`git diff` empty for the file), rebuilt, green again.
+
 ## Decisions (link ADRs)
 - [0026](../decisions/0026-results-cache-in-redis.md) — results cache in Redis as is (key, JSON, TTL 10 s, `DEL`),
   async API; supersedes 0013. Enum stored as a camelCase string so the value is readable in `redis-cli`.
@@ -73,6 +82,10 @@ the vote-change race that check missed (it compared SUMs). The guide was brought
 fast-forwarded onto it, so the lab 2 PR stays free of lab 1 changes.
 
 ## Verified (how)
+П2-6: `scripts/concurrency-checks.py` 4 times → ALL CHECKS PASSED (200×201; 40×200 on a fresh poll and on poll #1,
+one vote row each; 100×200 opposite changes, 50/50; per-option mismatches 0 and identical results on both instances
+after every check; no deadlocks, no `fail:`); ~16 s per run. Fails as expected without `FOR UPDATE` (see Done).
+
 П2-4: `scripts/redis-outage-check.py` twice → ALL CHECKS PASSED (results 503 in ~5.2 s with ProblemDetails, vote 201
 in ~5.9 s stored once, publish 200 in ~5.4 s, per-option counters consistent, results 200 again ~1.6 s after
 `docker compose start redis` and counting the outage vote, backend containers not restarted); the warning is one line,
@@ -91,7 +104,7 @@ checked against the current `VoteService.cs`, `ResultsService.cs`, `ResultsCache
 `GlobalExceptionHandler.cs` and `Program.cs` on `origin/main` `320ca8e`.
 
 ## Not done / next steps
-- П2-6 (the three concurrency checks across two instances as a script in `scripts/`), П2-7 (instance-loss test),
-  П2-8 (remaining README sections, runbook).
+- П2-7 (instance-loss test: `docker compose kill` during voting, client retries on the other instance), П2-8
+  (remaining README sections, final runbook/contracts pass).
 - С-1: confirm the proposals in `docs/lab2/participant-*.md` with Participant 1; С-2: Participant 1 reviews the three
   `InvalidateAsync` lines in `PollService` and ADR 0027's note about the backlog timeout in the Redis connection setup.

@@ -402,6 +402,33 @@ WHERE o.vote_count <> (SELECT count(*) FROM votes v WHERE v.option_id = o.id);  
 - після `COMMIT`, але до відповіді — голос збережено; повтор на іншому інстансі отримає 409 від унікального індексу, подвійного голосу немає;
 - після `COMMIT`, але до інвалідації кешу — результати застаріють максимум на TTL 10 с.
 
+**Перевірка під конкуренцією через обидва інстанси.** Гарантії цього потоку — транзакція, `UNIQUE(poll_id, user_id)`, `FOR UPDATE`, порядок блокувань — мають триматися, коли запити одного й того самого користувача приходять одночасно на **різні** процеси. [`scripts/concurrency-checks.py`](scripts/concurrency-checks.py) ділить запити навпіл між backend-1 і backend-2 і стартує їх одночасно (бар'єр); після кожної перевірки звіряє лічильники по кожному варіанту з `votes` і результати обох інстансів із БД. Прогін від 2026-10-27, стабільний у чотирьох прогонах поспіль (~16 с):
+
+```text
+Check 1: 200 different users vote into one poll at once
+  OK   all 201, no 5xx                                      201x200
+  OK   one vote row per user                                rows=200
+  OK   per-option counters = votes rows (whole DB)          mismatches=0
+  OK   results on backend-1 and backend-2 match the DB      db=100,100 b1=100,100 b2=100,100
+
+Check 2: one user changes the vote 40 times in parallel
+  OK   fresh poll: all 200                                  200x40
+  OK   fresh poll: exactly one vote row for the user        rows=1
+  OK   hot poll #1: all 200                                 200x40
+  OK   hot poll #1: exactly one vote row for the user       rows=1
+  (+ per-option counters and results on both instances after each poll — OK)
+
+Check 3: 100 users make opposite changes (A->B and B->A) at once
+  OK   opposite changes: all 200                            200x100
+  OK   still 50/50 after the swap                           50/50
+
+Logs since the start of this run
+  OK   no 'deadlock detected' in postgres logs              count=0
+  OK   no 'fail:' entries in backend logs                   count=0
+```
+
+**Чи тест взагалі здатен щось зловити.** Зелений тест нічого не доводить, якщо він не падає на справжній помилці. Тому `FOR UPDATE` тимчасово прибрали з `VoteService` і прогнали той самий скрипт: зміна голосу на свіжому опитуванні дала **21 × 500 із 40**, на опитуванні #1 — **6 × 500**, у логах backend — 54 записи `fail:`. Це та сама гонка, яку виправляє ADR 0017 (там було 23 з 40). Блокування повернули — знову все зелене. Отже, перевірка 2 справді ловить цю гонку, і тепер — через два процеси.
+
 ### Мульти-інстансне розгортання
 
 _Заповнює Учасник 1 (П1-6)._
