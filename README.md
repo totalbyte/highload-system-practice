@@ -240,7 +240,34 @@ R — Responsible, A — Accountable, C — Consulted, I — Informed.
 
 #### Платформа: інфраструктура, Auth, опитування, старт БД
 
-_Заповнює Учасник 1 (П1-4)._
+| Елемент | Категорія | Обґрунтування |
+|---|---|---|
+| Сесії користувачів | **Shared / Externalized** — серверних сесій немає | Ідентичність — у підписаному JWT на боці клієнта (claim `sub`), перевіряється підписом без звернення до сховища ([ADR 0006](docs/ai/decisions/0006-stateless-jwt-auth.md)). Cookie сервер не видає |
+| `Jwt:Secret`, issuer, audience | **Shared** (конфігурація) | Однакові на всіх інстансах — приходять зі спільного блоку змінних у `docker-compose.yml` |
+| Користувачі, опитування, варіанти, статуси | **Shared / Externalized** | PostgreSQL; переходи `draft → active → closed` — умовні `UPDATE`/`DELETE` з умовою в `WHERE` ([ADR 0004](docs/ai/decisions/0004-atomic-status-transitions.md)), унікальність email/username — індекси БД |
+| Міграції та сід при старті | **Shared** | Серіалізуються блокуваннями в PostgreSQL (`LOCK TABLE` історії міграцій, `pg_advisory_xact_lock`), а не в процесі ([ADR 0022](docs/ai/decisions/0022-concurrent-startup-verified.md)) |
+| Ключі DataProtection | ~~Critical~~ → **Shared** | Були у файловій системі кожного контейнера; винесено в Redis (див. нижче, [ADR 0023](docs/ai/decisions/0023-dataprotection-keys-in-redis.md)) |
+| `JwtTokenService`, `PasswordHasher` (singleton) | **Ephemeral / Local Safe** | Лише незмінні налаштування і потокобезпечні обробники, жодних даних між запитами |
+| `TimeProvider`, `IConnectionMultiplexer` (singleton) | **Ephemeral / Local Safe** | Системний годинник; з'єднання з Redis — інфраструктура, дані лежать у Redis |
+| Пул з'єднань Npgsql, метадані моделі EF | **Ephemeral / Local Safe** | Інфраструктура процесу, відтворюється при старті; бюджет 2 × 30 = 60 ≤ 97 з'єднань ([ADR 0018](docs/ai/decisions/0018-connection-pool-budget.md)) |
+| `AppDbContext`, `AuthService`, `PollService` (scoped) | **Ephemeral** | Живуть один запит і знищуються після відповіді |
+| `InstanceIdentity` (`X-Instance-ID`) | **Ephemeral / Local Safe** | Навмисно різний на кожному інстансі — діагностика, на бізнес-логіку не впливає |
+| Статичний масив тем сідера `DataSeeder.Topics` | **Ephemeral / Local Safe** | Незмінні константи (`static readonly`), однакові в кожному образі |
+| `/health` | **Ephemeral / Local Safe** | Кожна перевірка відкриває власне з'єднання, нічого не зберігає ([ADR 0019](docs/ai/decisions/0019-health-check-timeout.md)) |
+| Логи | **Ephemeral / Local Safe** | stdout контейнера (`docker compose logs`) |
+
+Фонових задач, таймерів, in-memory колекцій з даними, блокувань у процесі (`lock`, `SemaphoreSlim`) і файлових сесій у платформній частині немає (пошук по `src/`).
+
+**Доказ, що сесій немає** (стек з двома інстансами):
+
+| Крок | Інстанс | Результат |
+|---|---|---|
+| `POST /api/auth/register` | `backend-2` | 201 |
+| `POST /api/auth/login` тим самим користувачем | `backend-1` | 200, токен; заголовка `Set-Cookie` немає |
+| `GET /api/auth/me` з цим токеном | `backend-2`, потім `backend-1` | 200 на обох, той самий користувач |
+| той самий токен зі зміненим останнім символом | `backend-2` | 401 — довіра тримається на підписі, а не на пам'яті інстансу |
+
+**Приклад прихованої affinity.** Тимчасовий третій інстанс з іншим `Jwt__Secret` (`docker compose run`, порт 8083) на токен від `backend-1` відповідає `401 invalid_token: The signature key was not found`, а `backend-2` з тим самим секретом — 200. Якби кожен інстанс генерував секрет сам (наприклад, при старті), користувач був би «прив'язаний» до інстансу, що видав токен, — і ніякої помилки в коді б не було видно, доки не з'явиться другий інстанс.
 
 #### Голосування й результати
 

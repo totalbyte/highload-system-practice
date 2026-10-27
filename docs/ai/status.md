@@ -1,7 +1,7 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-10-27 by Participant 1 (lab 2 task split, П1-1…П1-3, see `log/2026-10-27-p1-lab2-task-split.md`).
+> Last updated: 2026-10-27 by Participant 1 (lab 2 task split, П1-1…П1-4, see `log/2026-10-27-p1-lab2-task-split.md`).
 
 ## Current lab: 2 — Stateless architecture
 
@@ -18,8 +18,8 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 |---|---|
 | П1-1 Redis + `backend-1` / `backend-2` in compose (branch `lab2/p1-infra`) | ✅ merged into `main` via PR #2 (`78128e9`), ADR 0021 |
 | П1-2 Concurrent cold start of two instances on an empty DB (ADR 0009 "Unverified") | ✅ merged via PR #2: 12 simultaneous cold starts all clean, no migrator needed (ADR 0022) |
-| П1-3 DataProtection keys → shared store | ✅ done on branch `lab2/p1-platform`, not committed (ADR 0023) |
-| П1-4 State audit: platform modules | ⏳ |
+| П1-3 DataProtection keys → shared store | ✅ committed on `lab2/p1-platform` (`17bbae3`, ADR 0023) |
+| П1-4 State audit: platform modules | ✅ on `lab2/p1-platform`, not committed — README table + no-sessions proof + JWT-secret affinity demo |
 | П1-5 Cross-instance consistency chain (`requests/cross-instance.http`, `scripts/cross-instance.sh`) | ⏳ |
 | П1-6 C4 component diagram + multi-instance deployment docs | ⏳ |
 | П1-7 Smoke test on both instances, docs | ⏳ |
@@ -68,7 +68,7 @@ state) · С-5 cold-start defense rehearsal · С-6 `labs/lab2-summary.md` — a
 ## Next steps
 
 - **Both:** С-1 — read both `docs/lab2/participant-*.md` files and confirm or adjust the proposals.
-- **Participant 1:** continue on `lab2/p1-platform`: П1-4 → П1-5 → П1-6 → П1-7. The final run of П1-5 (results
+- **Participant 1:** continue on `lab2/p1-platform`: П1-5 → П1-6 → П1-7. The final run of П1-5 (results
   across instances) and the C4 check of the cache component wait for Participant 2's П2-3.
 - **Participant 2:** no longer blocked — `main` has both instances and Redis. Pull `main`; П2-2 strictly before П2-3. Read ADR 0017
   (merged with PR #1: `VoteService` locks the vote row `FOR UPDATE`, option counters updated in ascending id order)

@@ -1,5 +1,5 @@
-# 2026-10-27 — Participant 1 — Lab 2 task split + П1-1…П1-3 (Redis, two instances, concurrent startup, DataProtection)
-**Lab:** 2 · **Commits:** `320ca8e` (task split, on `main`); `c6f81ac` (П1-1, П1-2) merged via PR #2 as `78128e9`; П1-3 on branch `lab2/p1-platform`, not committed
+# 2026-10-27 — Participant 1 — Lab 2 task split + П1-1…П1-4 (Redis, two instances, concurrent startup, DataProtection, platform audit)
+**Lab:** 2 · **Commits:** `320ca8e` (task split, on `main`); `c6f81ac` (П1-1, П1-2) merged via PR #2 as `78128e9`; П1-3 `17bbae3` on `lab2/p1-platform`; П1-4 not committed
 
 ## Goal
 Read the lab 2 assignment and the repository, split lab 2 between the two participants so both can work in parallel
@@ -73,7 +73,17 @@ No ADRs — the proposals below are not yet confirmed by Participant 2 (task С-
   backend-2 && up -d` still one key and no DataProtection warnings; smoke test 11/11 on 8080 and 8082.
 - README "Усунені in-memory залежності": before/after table for DataProtection; runbook quirk row replaced.
 
+## П1-4: platform state audit (README, subsection "Платформа")
+- Grepped `Program.cs`, `Auth/`, `Polls/`, `Data/`, `Common/` (without error handling) for `static`, singletons,
+  collections, locks, timers, hosted services, file/directory access, sessions: only immutable config/handlers,
+  `static readonly` seed topics, per-request objects — no background jobs, in-process locks or data in memory.
+- README table: 13 elements in the lab's three categories; DataProtection keys shown as Critical → Shared.
+- No-sessions proof on the running stack: register on `backend-2` → login on `backend-1` (no `Set-Cookie`) → `/me`
+  with that token 200 on both; tampered token → 401; `Jwt__Secret` hash identical in both containers.
+- Hidden-affinity demo for the defense: temporary `docker compose run` instance on :8083 with another `Jwt__Secret`
+  → `401 invalid_token ... signature key was not found` for a token from `backend-1`; container stopped afterwards.
+
 ## Not done / next steps
-- Continue `lab2/p1-platform`: П1-4 (platform state audit) → П1-5 → П1-6 → П1-7.
+- Continue `lab2/p1-platform`: П1-5 (cross-instance chain) → П1-6 → П1-7.
 - Participant 2 to review the task split and confirm the proposals (С-1).
 - Participant 2 is no longer blocked: `main` has both instances and Redis.
