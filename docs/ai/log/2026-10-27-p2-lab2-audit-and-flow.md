@@ -1,6 +1,6 @@
-# 2026-10-27 — Participant 2 — lab 2: state audit (П2-1), stateless request flow (П2-5), "before" demo (П2-2), cache in Redis (П2-3), Redis outage (П2-4), concurrency checks (П2-6)
+# 2026-10-27 — Participant 2 — lab 2: state audit (П2-1), stateless request flow (П2-5), "before" demo (П2-2), cache in Redis (П2-3), Redis outage (П2-4), concurrency checks (П2-6), instance loss (П2-7)
 **Lab:** 2 · **Commits:** on branch `lab2/p2-voting` — `e92f372` (drafts), `e5c3431` (drafts → README), `f75eea5` (П2-2),
-`2a4e370` (П2-3), `5ef6f1c` (П2-4), then П2-6; lab 1 guide separately on `main` as `10fe4fd`
+`2a4e370` (П2-3), `5ef6f1c` (П2-4), `bc8ad58` (П2-6), then П2-7; lab 1 guide separately on `main` as `10fe4fd`
 
 ## Goal
 Pull the lab 2 task split and Participant 1's review fixes, then start the Participant 2 tasks that do not depend on
@@ -58,6 +58,16 @@ the `lab2/p1-infra` branch (Redis + two instances): П2-1 and П2-5.
   → check 2 failed with 21×500 of 40 (fresh poll) and 6×500 (poll #1), 54 `fail:` entries — the ADR 0017 race, now
   across two processes. Lock restored (`git diff` empty for the file), rebuilt, green again.
 
+- **П2-7 (instance loss):** `scripts/kill-test.py` — 800 votes (400 users × 2 fresh polls, 32 threads) alternating
+  between the instances; `docker compose kill backend-1` after 10 % (`--stop` for a graceful stop); the client retries
+  a failed backend-1 request on backend-2 and then routes backend-1's share there (passive failover, as the lab 3 LB
+  will). Server-side evidence from the postgres log: broken backend-1 connections and `… with an open transaction`
+  (rolled back). First version classified "cut mid-request vs refused" by exception type — wrong on Windows + Docker
+  Desktop (the port proxy resets connections itself; a refused `localhost` connect takes ~4 s via IPv6 then IPv4), so
+  it reported 43 mid-request cuts that were not; also crashed on an uncaught `ConnectionAbortedError` (WinError 10053).
+  Reworked: postgres log as the proof, `127.0.0.1`, catch `ConnectionError` broadly, denser load. README
+  «Відмовостійкість» with the output and a table of all runs; runbook entry + troubleshooting row.
+
 ## Decisions (link ADRs)
 - [0026](../decisions/0026-results-cache-in-redis.md) — results cache in Redis as is (key, JSON, TTL 10 s, `DEL`),
   async API; supersedes 0013. Enum stored as a camelCase string so the value is readable in `redis-cli`.
@@ -82,6 +92,12 @@ the vote-change race that check missed (it compared SUMs). The guide was brought
 fast-forwarded onto it, so the lab 2 PR stays free of lab 1 changes.
 
 ## Verified (how)
+П2-7: `scripts/kill-test.py` 3× kill + 1× stop → ALL CHECKS PASSED each time (~4.5 s of voting per run): retries on
+backend-2 5/7/14 (stop: 2); PostgreSQL rolled back 1/3/10 open transactions (stop: 0 broken connections); kill run 2
+had one retry answered 409 — committed on backend-1, response lost — and still exactly one row; 800/800 votes stored
+once, per-option mismatches 0, backend-2 results = DB; Docker did not restart backend-1 by itself in 10 s after a
+manual kill/stop; after `docker compose start` `/health` 200 in ~3.3 s and identical results on backend-1 at once.
+
 П2-6: `scripts/concurrency-checks.py` 4 times → ALL CHECKS PASSED (200×201; 40×200 on a fresh poll and on poll #1,
 one vote row each; 100×200 opposite changes, 50/50; per-option mismatches 0 and identical results on both instances
 after every check; no deadlocks, no `fail:`); ~16 s per run. Fails as expected without `FOR UPDATE` (see Done).
@@ -104,7 +120,6 @@ checked against the current `VoteService.cs`, `ResultsService.cs`, `ResultsCache
 `GlobalExceptionHandler.cs` and `Program.cs` on `origin/main` `320ca8e`.
 
 ## Not done / next steps
-- П2-7 (instance-loss test: `docker compose kill` during voting, client retries on the other instance), П2-8
-  (remaining README sections, final runbook/contracts pass).
+- П2-8: final pass over README sections and runbook/contracts; then the Participant 2 part is complete.
 - С-1: confirm the proposals in `docs/lab2/participant-*.md` with Participant 1; С-2: Participant 1 reviews the three
   `InvalidateAsync` lines in `PollService` and ADR 0027's note about the backlog timeout in the Redis connection setup.

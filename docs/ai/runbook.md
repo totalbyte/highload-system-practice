@@ -119,6 +119,16 @@ per-process again (it was, by design, before П2-3: stale counts until the 10 s 
 poll). ~1 s per run; it waits out the TTL only when it sees stale data. Redis side:
 `docker compose exec redis redis-cli TTL results:1` → ≤ 10 after a read, `EXISTS results:1` → 0 after a vote.
 
+**Instance loss (lab 2, П2-7):** `python scripts/kill-test.py` (from the repo root; `--stop` for a graceful stop
+instead of SIGKILL). 800 votes (400 users × 2 fresh polls, 32 threads) alternate between the instances; after 10 %
+it runs `docker compose kill backend-1`; the client retries a failed backend-1 request on backend-2 and then sends
+backend-1's share straight there. Expected: every vote 201 (or 409 on a retry whose first attempt had committed),
+vote rows = users per poll, per-option counters consistent, backend-2 results = DB; then `docker compose start
+backend-1`, `/health` 200 within ~3 s and the same results immediately. It also prints how many backend-1 connections
+PostgreSQL saw break and how many had an open transaction (rolled back). ~20 s per run (incl. a 10 s wait to see
+whether Docker restarts the container — it does not after a manual kill/stop). Always starts backend-1 again in
+`finally`. Uses `127.0.0.1`: on Windows a refused connection to `localhost` takes ~4 s (IPv6, then IPv4).
+
 **Redis outage (lab 2, П2-4, ADR 0027):** `python scripts/redis-outage-check.py` (from the repo root; it runs
 `docker compose stop/start redis` itself and always starts Redis again in `finally`). Expected: results 503 while
 Redis is down, vote 201 stored once, publish 200, counters consistent; after start — results 200 within ~2 s, fresh,
@@ -140,6 +150,7 @@ No automated tests yet (`public partial class Program;` is kept for future `WebA
 | Warning about DataProtection keys "not persisted outside of the container" | Harmless (we use JWT, not DataProtection); note it for the lab 2 state audit |
 | `The Entity Framework tools version '10.0.5' is older than ...` | Harmless; `dotnet tool update -g dotnet-ef` |
 | `failed to connect to the docker API` | Docker Desktop isn't running |
+| A killed/stopped backend stays down despite `restart: unless-stopped` | Expected: a manual `docker kill` / `docker stop` disables the restart policy until the next manual start; the policy only covers a process that exits on its own. `docker compose start backend-1` |
 | Requests take ~5 s; `GET /results` returns 503 "The cache is temporarily unavailable"; `warn: …ResultsCache` "not invalidated" in the logs | Redis is down. Expected (ADR 0027): the client waits its 5 s backlog timeout; reads 503, writes still succeed. `docker compose start redis` — recovers by itself, no backend restart |
 | `Bind for 127.0.0.1:5433 failed: port is already allocated` on `up` | Another container or service holds the host port (on Participant 2's machine: `kafka-sandbox-db-1` from an unrelated project, auto-started by Docker Desktop). Put `POSTGRES_PORT=5434` in `.env` (gitignored) and `docker compose up -d` again — only host tools (psql, pgAdmin from the host) see the change; the backends talk to `postgres:5432` inside the network |
 | First request after a DB restart fails | Should not happen (EF retry strategy, ADR 0008); if it does, check the retry config |

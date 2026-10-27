@@ -439,4 +439,43 @@ _Заповнює Учасник 1 (П1-5)._
 
 ### Відмовостійкість: втрата інстансу
 
-_Заповнює Учасник 2 (П2-7)._
+Аварійна зупинка одного інстансу **під час голосування** не повинна ні загубити, ні задвоїти жодного голосу, а другий інстанс має підхопити обробку. [`scripts/kill-test.py`](scripts/kill-test.py): 400 сід-користувачів голосують у двох свіжих опитуваннях (800 голосів, 32 потоки, по черзі на backend-1 і backend-2); після ~10 % голосів — `docker compose kill backend-1` (SIGKILL). Клієнт, не отримавши відповіді від backend-1, повторює той самий запит на backend-2 і далі шле запити backend-1 одразу туди — так у лабі 3 робитиме балансувальник. Прогін від 2026-10-27:
+
+```text
+Voting: 400 users x 2 polls = 800 votes over 32 threads; `docker compose kill backend-1` after 80 votes
+  run took 4.5s; the kill command took 1.1s
+  answered by backend-1: 100, by backend-2: 400, failed on backend-1 and retried on backend-2: 5 ['RemoteDisconnected'], rerouted to backend-2 after that: 295
+  PostgreSQL saw 2 client connection(s) break; of them with an open transaction (rolled back): 1
+
+Checks
+  OK   backend-1 died mid-run and the client failed over            retried=5, rerouted=295
+  OK   every vote ended with 201, or 409 on a retry                 201x800, 409x0, other=[]
+  OK   poll 90: vote rows = users (stored exactly once)             rows=400
+  OK   poll 91: vote rows = users (stored exactly once)             rows=400
+  OK   per-option counters = votes rows (whole DB)                  mismatches=0
+  OK   results on backend-2 match the DB                            db=['134,133,133', '134,133,133'] backend-2=['134,133,133', '134,133,133']
+
+Instance comes back
+  Docker restarted backend-1 by itself within 10 s: no (restart: unless-stopped)
+  -> docker compose start backend-1
+  OK   backend-1 /health = 200                                      after 3.3s
+  OK   backend-1 serves the same results right away (no warm-up)    backend-1=['134,133,133', '134,133,133']
+```
+
+Три прогони з `kill` поспіль і один зі штатною зупинкою — усі зелені; кожен зачепив запити на льоту по-різному:
+
+| Прогін | Обірвано на льоту → повтор на backend-2 | Транзакцій, відкочених PostgreSQL | Повтор отримав 409 | Голосів записано |
+|---|---|---|---|---|
+| `kill` № 1 | 5 | 1 | 0 | 800 з 800, кожен один раз |
+| `kill` № 2 | 7 | 3 | **1** | 800 з 800, кожен один раз |
+| `kill` № 3 | 14 | 10 | 0 | 800 з 800, кожен один раз |
+| `stop` (`--stop`) | 2 | 0 — з'єднання закрито штатно | 0 | 800 з 800, кожен один раз |
+
+Чому бізнес-стан цілий — два можливі моменти смерті інстансу посеред голосу:
+
+- **До `COMMIT`.** Транзакція обривається разом зі з'єднанням, PostgreSQL її відкочує — у логах postgres `unexpected EOF on client connection with an open transaction`, саме ці рядки рахує скрипт. Голосу без лічильника не буває, бо обидві зміни в одній транзакції (ADR 0014). Повтор на backend-2 записує голос з нуля → **201**.
+- **Після `COMMIT`, але до відповіді.** Голос уже збережено, клієнт про це не знає і повторює запит. Повтор упирається в `UNIQUE(poll_id, user_id)` → **409**, подвійного голосу немає (прогін № 2). Клієнт бачить 409 замість 201, але для `allowVoteChange = false` це правдива відповідь: голос цього користувача в опитуванні вже є.
+
+**`kill` проти `stop`.** При `stop` ASP.NET завершує прийняті запити і сам закриває з'єднання з БД — PostgreSQL не бачить жодного обриву; відмову отримують лише запити, що прийшли вже під час зупинки. При `kill` процес зникає миттєво, з усіма відкритими транзакціями.
+
+**Повернення інстансу.** Docker **не** підняв контейнер сам, попри `restart: unless-stopped`: ручні `docker kill` / `docker stop` вимикають політику перезапуску до наступного ручного старту — вона спрацьовує, коли процес падає сам. Після `docker compose start backend-1` інстанс здоровий за ~3 с і **одразу** віддає ті самі результати: стану, який треба було б відновлювати чи «прогрівати», у нього немає — голоси в PostgreSQL, кеш у Redis, ідентичність у JWT.

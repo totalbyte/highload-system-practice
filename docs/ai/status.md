@@ -34,7 +34,7 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 | П2-4 Redis unavailable → 503, committed vote not reported as failed | ✅ ADR 0027; `scripts/redis-outage-check.py` (2 runs): results 503, vote 201 stored once, publish 200, recovery without restart. Known cost: ~5 s per Redis-touching request during an outage (lab 4) |
 | П2-5 Stateless request flow for `POST /vote` | ✅ in README (table + sequence diagram); matches the code after П2-3 |
 | П2-6 The three concurrency checks across two instances | ✅ `scripts/concurrency-checks.py`: green in 4 runs; proven to catch the vote-change race (fails without `FOR UPDATE`) |
-| П2-7 Instance-loss test (`docker compose kill` during voting) | ⏳ |
+| П2-7 Instance-loss test (`docker compose kill` during voting) | ✅ `scripts/kill-test.py`: 3 kill runs + 1 stop run green; PostgreSQL rolled back 1/3/10 open transactions; one retry got 409 (committed, response lost); Docker does not auto-restart after a manual kill |
 | П2-8 README sections, docs | ⏳ |
 
 ### Joint (after all lab 2 branches are merged)
