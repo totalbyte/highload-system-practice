@@ -38,15 +38,21 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 
 ### Joint (after all lab 2 branches are merged)
 
-С-1 agree on the proposals · С-2 PR reviews · С-3 consolidated README audit · С-4 code audit (grep for in-process
-state) · С-5 cold-start defense rehearsal · С-6 `labs/lab2-summary.md` — all ⏳.
+| Task | Status |
+|---|---|
+| С-1 Agree on the proposals | ✅ followed by both |
+| С-2 PR reviews | ✅ PR #2, #4, #3 merged |
+| С-3 Consolidated README audit | ✅ one table in the lab's three categories + summary of the two eliminated dependencies (not committed) |
+| С-4 Code audit (grep `src/` for in-process state, explain every hit) | ⏳ Participant 1 leads |
+| С-5 Cold-start defense rehearsal | ⏳ both |
+| С-6 `docs/ai/labs/lab2-summary.md` | ⏳ both |
 
 ## All labs
 
 | Lab | Status |
 |---|---|
 | 1 System Design + MVP | 🟡 stages 1–9 done; stage 10 (cold-start defense rehearsal) and `labs/lab1-summary.md` not recorded |
-| 2 Stateless | 🟡 all П1/П2 tasks merged into `main` (PR #2, #4, #3) and verified on a cold start; joint tasks С-3…С-6 left |
+| 2 Stateless | 🟡 all П1/П2 tasks merged into `main` (PR #2, #4, #3) and verified on a cold start; joint tasks С-4…С-6 left |
 | 3 Horizontal Scaling | ⏳ (groundwork: `/health`) |
 | 4 Distributed Caching | ⏳ |
 | 5 Load Testing | ⏳ (groundwork: 500 seed users, hot poll #1) |
@@ -68,5 +74,6 @@ state) · С-5 cold-start defense rehearsal · С-6 `labs/lab2-summary.md` — a
 
 ## Next steps
 
-- **Lab 2:** both branches merged (PR #4, PR #3); joint tasks next — С-3 audit table, С-4 code audit (Participant 1 leads), С-5 rehearsal, С-6 `labs/lab2-summary.md`.
+- **Lab 2:** both branches merged (PR #4, PR #3), С-3 done; next — С-4 code audit (Participant 1 leads), С-5 rehearsal,
+  С-6 `labs/lab2-summary.md`.
 - **Lab 1 leftovers (if lab 1 is not defended yet):** cold-start defense rehearsal and `labs/lab1-summary.md`.

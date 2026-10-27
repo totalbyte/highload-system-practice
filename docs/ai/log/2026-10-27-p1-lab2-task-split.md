@@ -120,6 +120,15 @@ No ADRs — the proposals below are not yet confirmed by Participant 2 (task С-
 - README: removed the "target state, cache moves in П2-3" note under the C4 diagram; replaced the stale chain output
   with the current one (step 8 `totalVotes: 1`).
 
+## С-3: consolidated audit (README)
+- The two per-module audit tables (platform by Participant 1, voting/results by Participant 2) merged into one table
+  of 18 rows grouped by the lab's categories: 3 Critical (all eliminated), 8 Shared, 7 Ephemeral / Local Safe;
+  duplicates folded (JWT identity, scoped services, singletons, logs). The no-sessions proof, the affinity demo and
+  Participant 2's four findings kept as subsections.
+- "Усунені in-memory залежності" got a summary table (results cache, DataProtection keys: before / after / proof);
+  DataProtection got its own heading next to the results cache.
+- §3 checklist: audit table, eliminated dependencies, updated diagram, multi-instance instructions and example
+  requests — all present in README.
+
 ## Not done / next steps
-- Joint tasks: С-3 consolidated audit table, С-4 code audit (Participant 1 leads), С-5 cold-start rehearsal,
-  С-6 `docs/ai/labs/lab2-summary.md`.
+- Joint tasks: С-4 code audit (Participant 1 leads), С-5 cold-start rehearsal, С-6 `docs/ai/labs/lab2-summary.md`.

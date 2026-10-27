@@ -267,29 +267,34 @@ R — Responsible, A — Accountable, C — Consulted, I — Informed.
 
 ### Аудит стану
 
-Класифікація за трьома категоріями методички: **Ephemeral / Local Safe**, **Shared / Externalized**, **Critical Stateful Dependencies** (підлягають вилученню).
+Класифікація за трьома категоріями методички: **Ephemeral / Local Safe**, **Shared / Externalized**, **Critical Stateful Dependencies** (підлягають вилученню). Пройдено весь `src/` і `Program.cs` — по коду, з пошуком `static`, singleton-реєстрацій, `Concurrent*`, `IMemoryCache`, блокувань, таймерів, фонових задач, роботи з файлами й сесій. Платформну частину (Auth, опитування, старт БД, інфраструктура) аудитував Учасник 1, голосування й результати — Учасник 2.
 
-#### Платформа: інфраструктура, Auth, опитування, старт БД
+| Елемент | Модуль | Категорія | Обґрунтування |
+|---|---|---|---|
+| Кеш результатів: `ResultsCache` поверх `IMemoryCache` | Results | **Critical** → усунено | Агрегат жив у пам'яті процесу, інвалідація доходила лише до інстансу, що обробив запис; інший до 10 с віддавав старе. Тепер Redis ([ADR 0026](docs/ai/decisions/0026-results-cache-in-redis.md)) |
+| Рішення про доступ у кешованому записі (`Status`, `CreatorId`) | Results | **Critical** → усунено разом з кешем | Після publish на одному інстансі інший до 10 с повертав стороннім 404 замість результатів |
+| Ключі DataProtection у файловій системі контейнера | Платформа | **Critical** → усунено | У кожного інстансу свій набір ключів, зникає з контейнером. Тепер Redis ([ADR 0023](docs/ai/decisions/0023-dataprotection-keys-in-redis.md)) |
+| Сесії та ідентичність користувача | Auth | **Shared / Externalized** | Серверних сесій немає: ідентичність — у підписаному JWT на боці клієнта (claim `sub`), cookie сервер не видає ([ADR 0006](docs/ai/decisions/0006-stateless-jwt-auth.md)) |
+| `Jwt:Secret`, issuer, audience | Auth | **Shared** (конфігурація) | Однакові на всіх інстансах — спільний блок змінних у `docker-compose.yml` |
+| Користувачі, опитування, варіанти, статуси | Auth, Polls | **Shared / Externalized** | PostgreSQL; переходи статусу — умовні `UPDATE`/`DELETE` ([ADR 0004](docs/ai/decisions/0004-atomic-status-transitions.md)), унікальність email/username — індекси БД |
+| Лічильник `options.vote_count` | Votes | **Shared** | Рядок у PostgreSQL, змінюється SQL `vote_count ± 1` у транзакції голосу, а не лічильник у пам'яті ([ADR 0014](docs/ai/decisions/0014-vote-transaction-and-counter.md)) |
+| «Один голос на користувача» | Votes | **Shared** | `UNIQUE(poll_id, user_id)` у БД: повтор, що прийшов на інший інстанс, усе одно отримає 409 |
+| Серіалізація змін голосу | Votes | **Shared** | `SELECT … FOR UPDATE` — рядкове блокування PostgreSQL працює між інстансами, на відміну від `lock` у процесі ([ADR 0017](docs/ai/decisions/0017-serialize-vote-changes.md)) |
+| Стан опитування для голосу (статус, вікно, `allowVoteChange`), належність варіанта | Votes | **Shared** | Читається з PostgreSQL на кожен голос; у шляху голосування нічого не кешується |
+| Міграції та сід при старті | Data | **Shared** | Серіалізуються блокуваннями в PostgreSQL (`LOCK TABLE` історії міграцій, `pg_advisory_xact_lock`) ([ADR 0022](docs/ai/decisions/0022-concurrent-startup-verified.md)) |
+| `AppDbContext` (з change tracker), `AuthService`, `PollService`, `VoteService`, `ResultsService` | усі | **Ephemeral** | Scoped: живуть один запит і знищуються після відповіді |
+| Singleton без змінних даних: `JwtTokenService`, `PasswordHasher`, `TimeProvider`, `IConnectionMultiplexer`, `ResultsCache`, `GlobalExceptionHandler` | усі | **Ephemeral / Local Safe** | Лише незмінні налаштування, потокобезпечні обробники й з'єднання; дані лежать у PostgreSQL / Redis |
+| Статичні константи й чисті функції: `DataSeeder.Topics`, `ResultsCache.Ttl` / `Key()`, `IsTransient` | Data, Results, Common | **Ephemeral / Local Safe** | `static readonly` або без стану, однакові в кожному образі |
+| Пул з'єднань Npgsql, метадані моделі EF | Data | **Ephemeral / Local Safe** | Інфраструктура процесу; бюджет 2 × 30 = 60 ≤ 97 з'єднань ([ADR 0018](docs/ai/decisions/0018-connection-pool-budget.md)) |
+| `InstanceIdentity` (`X-Instance-ID`) | Common | **Ephemeral / Local Safe** | Навмисно різний на кожному інстансі — діагностика |
+| `/health` | Common | **Ephemeral / Local Safe** | Кожна перевірка відкриває власне з'єднання ([ADR 0019](docs/ai/decisions/0019-health-check-timeout.md)) |
+| Логи, об'єкти винятків | усі | **Ephemeral / Local Safe** | stdout контейнера; винятки живуть у межах запиту |
 
-| Елемент | Категорія | Обґрунтування |
-|---|---|---|
-| Сесії користувачів | **Shared / Externalized** — серверних сесій немає | Ідентичність — у підписаному JWT на боці клієнта (claim `sub`), перевіряється підписом без звернення до сховища ([ADR 0006](docs/ai/decisions/0006-stateless-jwt-auth.md)). Cookie сервер не видає |
-| `Jwt:Secret`, issuer, audience | **Shared** (конфігурація) | Однакові на всіх інстансах — приходять зі спільного блоку змінних у `docker-compose.yml` |
-| Користувачі, опитування, варіанти, статуси | **Shared / Externalized** | PostgreSQL; переходи `draft → active → closed` — умовні `UPDATE`/`DELETE` з умовою в `WHERE` ([ADR 0004](docs/ai/decisions/0004-atomic-status-transitions.md)), унікальність email/username — індекси БД |
-| Міграції та сід при старті | **Shared** | Серіалізуються блокуваннями в PostgreSQL (`LOCK TABLE` історії міграцій, `pg_advisory_xact_lock`), а не в процесі ([ADR 0022](docs/ai/decisions/0022-concurrent-startup-verified.md)) |
-| Ключі DataProtection | ~~Critical~~ → **Shared** | Були у файловій системі кожного контейнера; винесено в Redis (див. нижче, [ADR 0023](docs/ai/decisions/0023-dataprotection-keys-in-redis.md)) |
-| `JwtTokenService`, `PasswordHasher` (singleton) | **Ephemeral / Local Safe** | Лише незмінні налаштування і потокобезпечні обробники, жодних даних між запитами |
-| `TimeProvider`, `IConnectionMultiplexer` (singleton) | **Ephemeral / Local Safe** | Системний годинник; з'єднання з Redis — інфраструктура, дані лежать у Redis |
-| Пул з'єднань Npgsql, метадані моделі EF | **Ephemeral / Local Safe** | Інфраструктура процесу, відтворюється при старті; бюджет 2 × 30 = 60 ≤ 97 з'єднань ([ADR 0018](docs/ai/decisions/0018-connection-pool-budget.md)) |
-| `AppDbContext`, `AuthService`, `PollService` (scoped) | **Ephemeral** | Живуть один запит і знищуються після відповіді |
-| `InstanceIdentity` (`X-Instance-ID`) | **Ephemeral / Local Safe** | Навмисно різний на кожному інстансі — діагностика, на бізнес-логіку не впливає |
-| Статичний масив тем сідера `DataSeeder.Topics` | **Ephemeral / Local Safe** | Незмінні константи (`static readonly`), однакові в кожному образі |
-| `/health` | **Ephemeral / Local Safe** | Кожна перевірка відкриває власне з'єднання, нічого не зберігає ([ADR 0019](docs/ai/decisions/0019-health-check-timeout.md)) |
-| Логи | **Ephemeral / Local Safe** | stdout контейнера (`docker compose logs`) |
+Фонових задач, таймерів, in-memory колекцій з даними, блокувань у процесі (`lock`, `SemaphoreSlim`) і файлових сесій у коді немає.
 
-Фонових задач, таймерів, in-memory колекцій з даними, блокувань у процесі (`lock`, `SemaphoreSlim`) і файлових сесій у платформній частині немає (пошук по `src/`).
+#### Доказ, що сесій немає
 
-**Доказ, що сесій немає** (стек з двома інстансами):
+Стек з двома інстансами:
 
 | Крок | Інстанс | Результат |
 |---|---|---|
@@ -298,29 +303,11 @@ R — Responsible, A — Accountable, C — Consulted, I — Informed.
 | `GET /api/auth/me` з цим токеном | `backend-2`, потім `backend-1` | 200 на обох, той самий користувач |
 | той самий токен зі зміненим останнім символом | `backend-2` | 401 — довіра тримається на підписі, а не на пам'яті інстансу |
 
-**Приклад прихованої affinity.** Тимчасовий третій інстанс з іншим `Jwt__Secret` (`docker compose run`, порт 8083) на токен від `backend-1` відповідає `401 invalid_token: The signature key was not found`, а `backend-2` з тим самим секретом — 200. Якби кожен інстанс генерував секрет сам (наприклад, при старті), користувач був би «прив'язаний» до інстансу, що видав токен, — і ніякої помилки в коді б не було видно, доки не з'явиться другий інстанс.
+#### Приклад прихованої affinity
 
-#### Голосування й результати
+Тимчасовий третій інстанс з іншим `Jwt__Secret` (`docker compose run`, порт 8083) на токен від `backend-1` відповідає `401 invalid_token: The signature key was not found`, а `backend-2` з тим самим секретом — 200. Якби кожен інстанс генерував секрет сам (наприклад, при старті), користувач був би «прив'язаний» до інстансу, що видав токен, — і ніякої помилки в коді б не було видно, доки не з'явиться другий інстанс.
 
-Пройдено `Votes/`, `Results/`, `Common/ErrorHandling/`, `Common/Exceptions/VoteExceptions.cs` і реєстрації цих модулів у `Program.cs` — по коду, з пошуком `static`, блокувань, `Concurrent*`, `IMemoryCache`, таймерів, файлів і сесій.
-
-| Елемент | Де | Категорія | Чому |
-|---|---|---|---|
-| Кеш результатів: `ResultsCache` поверх `IMemoryCache` | `Results/ResultsCache.cs`; `Program.cs` — `AddMemoryCache()`, `AddSingleton<ResultsCache>()` | **Critical** | Агрегат лежить у пам'яті процесу. Інвалідація спрацьовує лише на інстансі, що обробив запис; інший до 10 с (TTL) віддає старе. Усунено в П2-3 |
-| Рішення про видимість у кеші: `CreatorId` і `Status` всередині кешованого запису | `Results/ResultsService.cs` — перевірка чернетки на попаданні в кеш | **Critical** (наслідок рядка вище) | На попаданні в кеш доступ вирішується за кешованим статусом. Після publish на одному інстансі інший до 10 с віддає стороннім **404** замість результатів — застаріває не лише число, а й рішення про доступ |
-| Лічильник `options.vote_count` | PostgreSQL; SQL `vote_count ± 1` у транзакції голосу | Shared | Не лічильник у пам'яті: усі інстанси пишуть в один рядок БД (ADR 0014) |
-| Серіалізація змін голосу | `SELECT … FOR UPDATE` у `VoteService` | Shared | Рядкове блокування PostgreSQL працює між інстансами, на відміну від `lock`/`SemaphoreSlim` у процесі (ADR 0017) |
-| «Один голос на користувача» | `UNIQUE(poll_id, user_id)` | Shared | Гарантія в БД: повтор, що прийшов на інший інстанс, усе одно отримає 409 |
-| Стан опитування для голосу (статус, `startsAt`/`endsAt`, `allowVoteChange`) і належність варіанта | `VoteService.LoadVotablePollAsync`, перевірка `optionId` | Shared | Читається з PostgreSQL на **кожен** голос (`AsNoTracking`); у шляху голосування нічого не кешується |
-| Ідентичність того, хто голосує | claim `sub` у JWT | Shared / Externalized | Зберігається на боці клієнта; інстанс лише перевіряє підпис спільним секретом з env (`JWT_SECRET`), сховища сесій немає |
-| `VoteService`, `ResultsService`, `AppDbContext` | `Program.cs` — `AddScoped` | Ephemeral | Живуть один запит і знищуються після відповіді |
-| Change tracker EF | `AppDbContext` | Ephemeral | Scoped разом із контекстом; на початку кожної спроби retry-стратегії очищується (`ChangeTracker.Clear()`) |
-| `GlobalExceptionHandler` | `AddExceptionHandler<…>()` — реєструється як **singleton** | Ephemeral / Local Safe | Попри singleton, змінних даних немає: лише `IProblemDetailsService` і `ILogger`; `IsTransient` — чиста статична функція |
-| `static readonly Ttl`, `static Key()` у `ResultsCache` | `Results/ResultsCache.cs` | Local Safe | Незмінна константа і чиста функція, не дані |
-| Винятки з `VoteExceptions.cs` | `Common/Exceptions/` | Ephemeral | Незмінні об'єкти в межах одного запиту |
-| Логи помилок | stdout контейнера | Local Safe | Діагностика, не бізнес-стан |
-
-**Що ще показав аудит:**
+#### Що ще показав аудит
 
 1. **Застаріває не лише число, а й доступ.** Кешований запис тримає статус опитування, тому після publish інший інстанс до 10 с повертає стороннім 404 — сильніший приклад прихованої affinity, ніж застарілий `totalVotes`.
 2. **`GlobalExceptionHandler` — singleton, а не scoped.** Безпечно, бо змінного стану немає; пояснення для аудиту коду, який шукає `AddSingleton`.
@@ -328,6 +315,11 @@ R — Responsible, A — Accountable, C — Consulted, I — Informed.
 4. **Невідомий результат коміту.** Якщо з'єднання обірвалось після `COMMIT`, але до відповіді, повтор (retry-стратегія EF або клієнт на іншому інстансі) знайде вже записаний голос і поверне 409 (або 200 при `allowVoteChange` і тому самому варіанті). Голос записано рівно один раз, але клієнт бачить 409 замість 201.
 
 ### Усунені in-memory залежності
+
+| Залежність | Було | Стало | Доказ |
+|---|---|---|---|
+| Кеш результатів | `IMemoryCache` у кожному процесі | Redis, `results:{pollId}`, TTL 10 с, `DEL` при змінах | `scripts/results-cache-demo.py`, крок 8 `scripts/cross-instance.sh` |
+| Ключі DataProtection | файли в кожному контейнері | Redis, список `DataProtection-Keys`, одна назва застосунку | `redis-cli LRANGE DataProtection-Keys 0 -1`, зникло попередження в логах |
 
 #### Кеш результатів
 
@@ -406,7 +398,9 @@ Redis started again (docker compose start redis)
   OK   no backend restart
 ```
 
-**Ключі DataProtection (Учасник 1).** ASP.NET Core завжди реєструє DataProtection і за замовчуванням зберігає ключі у файловій системі контейнера — у кожного інстансу свій набір, і він зникає разом з контейнером. Ми DataProtection зараз не використовуємо (автентифікація — JWT), але це прихована прив'язка до інстансу: cookie чи antiforgery-токен, виданий одним інстансом, інший не розшифрував би.
+#### Ключі DataProtection
+
+ASP.NET Core завжди реєструє DataProtection і за замовчуванням зберігає ключі у файловій системі контейнера — у кожного інстансу свій набір, і він зникає разом з контейнером. Ми DataProtection зараз не використовуємо (автентифікація — JWT), але це прихована прив'язка до інстансу: cookie чи antiforgery-токен, виданий одним інстансом, інший не розшифрував би.
 
 | | До | Після |
 |---|---|---|
