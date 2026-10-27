@@ -1,7 +1,7 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-10-27 by Participant 1 (lab 2 task split, see `log/2026-10-27-p1-lab2-task-split.md`).
+> Last updated: 2026-10-27 by Participant 1 (lab 2 task split + П1-1 + П1-2, see `log/2026-10-27-p1-lab2-task-split.md`).
 
 ## Current lab: 2 — Stateless architecture
 
@@ -16,8 +16,8 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 
 | Task | Status |
 |---|---|
-| П1-1 Redis + `backend-1` / `backend-2` in compose (branch `lab2/p1-infra`) | ⏳ |
-| П1-2 Concurrent cold start of two instances on an empty DB (ADR 0009 "Unverified") | ⏳ |
+| П1-1 Redis + `backend-1` / `backend-2` in compose (branch `lab2/p1-infra`) | ✅ done on the branch, not committed/merged yet (ADR 0021); smoke test 11/11 on both instances |
+| П1-2 Concurrent cold start of two instances on an empty DB (ADR 0009 "Unverified") | ✅ done on the branch, not committed: 12 simultaneous cold starts all clean, no migrator needed (ADR 0022) |
 | П1-3 DataProtection keys → shared store | ⏳ |
 | П1-4 State audit: platform modules | ⏳ |
 | П1-5 Cross-instance consistency chain (`requests/cross-instance.http`, `scripts/cross-instance.sh`) | ⏳ |
@@ -66,7 +66,8 @@ state) · С-5 cold-start defense rehearsal · С-6 `labs/lab2-summary.md` — a
 ## Next steps
 
 - **Both:** С-1 — read both `docs/lab2/participant-*.md` files and confirm or adjust the proposals.
-- **Participant 1:** П1-1 + П1-2 first and merge `lab2/p1-infra` early — it unblocks Participant 2.
+- **Participant 1:** commit `lab2/p1-infra` (П1-1 + П1-2), push, open the PR into `main` and merge early — it
+  unblocks Participant 2. Then branch `lab2/p1-platform` from the updated `main` for П1-3…П1-7.
 - **Participant 2:** П2-1 and П2-5 while waiting (no infra dependency); П2-2 strictly before П2-3. Read ADR 0017
   (merged with PR #1: `VoteService` locks the vote row `FOR UPDATE`, option counters updated in ascending id order)
   before touching the vote path.

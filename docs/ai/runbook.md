@@ -5,8 +5,8 @@
 Docker Desktop must be running (on Participant 1's machine it does not start automatically).
 
 ```bash
-docker compose up -d --build          # backend + postgres; migrations + seed run on backend startup
-docker compose logs -f backend
+docker compose up -d --build          # backend-1 + backend-2 + postgres + redis; migrations + seed run on backend startup
+docker compose logs -f backend-1 backend-2
 docker compose restart postgres       # data survives (named volume pgdata)
 docker compose down -v                # wipe everything, including data → next `up` is a cold start
 docker compose --profile tools up -d  # + Adminer on :8081 (pgAdmin 4 on :5050 starts with the normal `up`)
@@ -14,21 +14,24 @@ docker compose --profile tools up -d  # + Adminer on :8081 (pgAdmin 4 on :5050 s
 
 | What | Address |
 |---|---|
-| API | http://localhost:8080 |
-| Swagger UI | http://localhost:8080/swagger (spec: `/swagger/v1/swagger.json`) |
-| Health | http://localhost:8080/health |
+| API, instance `backend-1` | http://localhost:8080 (`API_PORT`) |
+| API, instance `backend-2` | http://localhost:8082 (`API2_PORT`) |
+| Swagger UI | http://localhost:8080/swagger (spec: `/swagger/v1/swagger.json`), same on :8082 |
+| Health | http://localhost:8080/health, http://localhost:8082/health |
 | Postgres from the host | `localhost:5433`, db/user/password `polling` (container-internal port is 5432) |
+| Redis | `localhost:6379` (`REDIS_PORT`); `docker compose exec redis redis-cli` |
 | Adminer | http://localhost:8081 (server `postgres`) |
 | pgAdmin 4 | http://localhost:5050 — no login (desktop mode); server "polling (docker)" is pre-registered from the inline `configs.pgadmin_servers` in `docker-compose.yml`; enter DB password `polling` once and tick "Save password". Starts in ~40 s (ADR 0020) |
 
 All settings have defaults in `docker-compose.yml`; override them via `.env` (see `.env.example`). `DB_MAX_POOL_SIZE`
-(default 30) caps the Npgsql pool of one backend instance — keep *instances × pool ≤ 97* (ADR 0018).
+(default 30) caps the Npgsql pool of one backend instance — keep *instances × pool ≤ 97* (ADR 0018); two instances
+use at most 60. Both instances are built from one image and differ only in `INSTANCE_ID` and host port (ADR 0021).
 Cold start from `down -v` to healthy takes ≈11–13 s (measured 2026-09-22 and 2026-09-30).
 
 ## Run the backend locally (without Docker for the backend)
 
 ```bash
-docker compose up -d postgres
+docker compose up -d postgres redis
 dotnet run --project src/PollingPlatform.Api   # http://localhost:5094/swagger, Development environment
 ```
 
@@ -117,6 +120,7 @@ No automated tests yet (`public partial class Program;` is kept for future `WebA
 | `GET /results` still shows an old total | The in-process cache has a 10 s TTL as a safety net; a vote or a close invalidates it immediately. With two instances the caches diverge on purpose (ADR 0013) |
 | Can't reach the container DB on 5432 / connected to the wrong DB | Participant 1's machine runs a local Windows PostgreSQL service on 5432 — the container is on **5433** (ADR 0011) |
 | `fail: ... SELECT migration_id FROM "__EFMigrationsHistory"` on first start | Expected: the history table doesn't exist yet. Not an error |
+| `fail: ... CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory"` (Postgres: `pg_type_typname_nsp_index`) on a cold start | Both instances created the history table at the same instant; the provider ignores it and the migration still runs once (ADR 0022). Not an error |
 | Warning about DataProtection keys "not persisted outside of the container" | Harmless (we use JWT, not DataProtection); note it for the lab 2 state audit |
 | `The Entity Framework tools version '10.0.5' is older than ...` | Harmless; `dotnet tool update -g dotnet-ef` |
 | `failed to connect to the docker API` | Docker Desktop isn't running |

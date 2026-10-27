@@ -8,7 +8,8 @@ public static class DatabaseInitializer
 {
     /// <summary>
     /// Застосовує EF-міграції і (опційно) сід при старті — стек піднімається без ручних кроків.
-    /// Паралельний старт кількох інстансів на чистій БД (лаба 2) ще треба перевірити — див. docs/ai/decisions/0009.
+    /// Кілька інстансів можуть стартувати одночасно на чистій БД: міграції серіалізує провайдер
+    /// (LOCK TABLE історії міграцій), сід — advisory lock (docs/ai/decisions/0009, 0022).
     /// </summary>
     public static async Task InitializeDatabaseAsync(this WebApplication app)
     {

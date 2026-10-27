@@ -1,5 +1,5 @@
-# 2026-10-27 — Participant 1 — Lab 2 task split
-**Lab:** 2 · **Commits:** not committed
+# 2026-10-27 — Participant 1 — Lab 2 task split + П1-1, П1-2 (Redis, two instances, concurrent startup)
+**Lab:** 2 · **Commits:** `320ca8e` (task split, on `main`); П1-1 and П1-2 on branch `lab2/p1-infra`, not committed
 
 ## Goal
 Read the lab 2 assignment and the repository, split lab 2 between the two participants so both can work in parallel
@@ -34,6 +34,32 @@ No ADRs — the proposals below are not yet confirmed by Participant 2 (task С-
   §3, §4) maps to at least one task in the coverage matrix.
 - No code changed, so the smoke test was not run.
 
+## П1-1: Redis and two backend instances (branch `lab2/p1-infra`)
+- `docker-compose.yml`: `backend-1` / `backend-2` from one `x-backend` anchor (one image, `INSTANCE_ID`, ports
+  8080 / 8082), Redis `redis:8.10.2-alpine` with healthcheck and host port 6379; backends wait for postgres and redis.
+- `Program.cs`: one `IConnectionMultiplexer` singleton (`StackExchange.Redis` 3.4.20), `ConnectionStrings:Redis` with
+  `abortConnect=false`; nothing uses Redis yet — the results cache stays in memory for Participant 2's "before" demo.
+- `.env.example` (`API2_PORT`, `REDIS_PORT`), README quick start + lab 2 section skeleton with an owner per
+  subsection, runbook, contracts, `src/.../CLAUDE.md`, ADR 0021 (also: `/health` does not check Redis in lab 2).
+- No comment added to `docker-compose.yml` — comments were deliberately removed from it in `dd8d19e`.
+- Verified: `docker compose down -v && up -d --build` → both healthy within ~2 s of `up` returning, `X-Instance-ID`
+  `backend-1` / `backend-2`, both containers run the same image id, Redis `PONG` and two client connections per
+  instance; runbook smoke test (scripted, 11 checks) passed on 8080 and 8082; after `restart postgres` both return
+  200; per-option counter query → 0. The simultaneous cold start applied the migration once (1 history row) and
+  seeded once (500 / 50); the `__EFMigrationsHistory` "Failed executing DbCommand" on first start is the known quirk.
+
+## П1-2: concurrent startup on an empty DB (ADR 0022, amends 0009)
+- 12 cold starts of both instances at once (7 with PostgreSQL `log_statement=all` via a temporary override file in the
+  scratchpad, not in the repo): every run healthy, no restarts, one `__EFMigrationsHistory` row, seed applied once.
+- The statement log shows why: the Npgsql provider wraps migrations in `LOCK TABLE "__EFMigrationsHistory" IN ACCESS
+  EXCLUSIVE MODE`, the seed takes our `pg_advisory_xact_lock`.
+- Captured a rare harmless race (2/12): concurrent `CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory"` →
+  `23505 pg_type_typname_nsp_index`; the provider rolls back and continues to `LOCK TABLE`. Added to runbook quirks.
+- No `migrator` service needed. ADR 0009 status → "amended by 0022"; `DatabaseInitializer` comment updated.
+- After the comment change: rebuild + cold start, smoke test 11/11 on 8080 and 8082.
+
 ## Not done / next steps
+- Commit `lab2/p1-infra`, push, open the PR; Participant 2 reviews (С-2).
+- Then `lab2/p1-platform`: П1-3 (DataProtection keys) … П1-7.
 - Participant 2 to review the task split and confirm the proposals (С-1).
-- Then П1-1 + П1-2 (Participant 1) and П2-1 + П2-5 (Participant 2) in parallel.
+- Participant 2 meanwhile: П2-1 + П2-5 (no dependency on `lab2/p1-infra`).
