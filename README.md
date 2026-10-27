@@ -292,6 +292,25 @@ R — Responsible, A — Accountable, C — Consulted, I — Informed.
 
 Фонових задач, таймерів, in-memory колекцій з даними, блокувань у процесі (`lock`, `SemaphoreSlim`) і файлових сесій у коді немає.
 
+#### Аудит коду
+
+Команда для захисту — шукає в коді конструкції, що можуть тримати стан у процесі (міграції EF виключено):
+
+```bash
+grep -rnE "\bstatic\b|AddSingleton|AddHostedService|IMemoryCache|AddMemoryCache|Concurrent[A-Z]|lock *\(|SemaphoreSlim|Interlocked|Timer|BackgroundService|\bFile\.|Directory\.|Session|ThreadStatic|AsyncLocal|AddExceptionHandler" src/PollingPlatform.Api --include=*.cs | grep -v /Migrations/
+```
+
+Кожен збіг (стан на `main` після лаби 2):
+
+| Збіг | Де | Чому це не стан |
+|---|---|---|
+| `AddSingleton` ×6, `AddExceptionHandler` | `Program.cs` | `IConnectionMultiplexer` — з'єднання, дані в Redis; `TimeProvider` — годинник; `PasswordHasher` — без полів; `JwtTokenService` — лише налаштування і потокобезпечний `JsonWebTokenHandler` (єдині інстансні поля в коді); `ResultsCache` — лише з'єднання і логер; `InstanceIdentity` — навмисно різний на інстансах; `GlobalExceptionHandler` — лише сервіси |
+| `static readonly` ×3 | `DataSeeder.Topics`, `ResultsCache.Ttl`, `ResultsCache.Json` | Незмінні константи й налаштування серіалізатора |
+| статичні методи й класи-розширення | `AuthService`, `ClaimsPrincipalExtensions`, `JwtTokenService.CreateSigningKey`, `GlobalExceptionHandler`, `InstanceIdentityExtensions`, `ValidatorExtensions`, `DatabaseInitializer`, `DataSeeder`, `ResultsCache` | Чисті функції без полів |
+| `lock` | `DataSeeder` — `pg_advisory_xact_lock`; коментар у `DatabaseInitializer` | Блокування в PostgreSQL, а не в процесі |
+
+Не знайдено жодного: `IMemoryCache` / `AddMemoryCache`, `Concurrent*`, `lock (…)`, `SemaphoreSlim`, `Interlocked`, таймерів, фонових сервісів, роботи з файлами, сесій, `ThreadStatic` / `AsyncLocal`. До лаби 2 (`06692fe`) той самий пошук знаходив `AddMemoryCache()` у `Program.cs` і `ResultsCache(IMemoryCache cache)` — це і є усунений кеш у пам'яті процесу.
+
 #### Доказ, що сесій немає
 
 Стек з двома інстансами:

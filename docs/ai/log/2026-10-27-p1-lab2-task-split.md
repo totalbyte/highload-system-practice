@@ -130,5 +130,16 @@ No ADRs — the proposals below are not yet confirmed by Participant 2 (task С-
 - §3 checklist: audit table, eliminated dependencies, updated diagram, multi-instance instructions and example
   requests — all present in README.
 
+## С-4: code audit (README «Аудит коду», under the audit table)
+- One grep for the defense over `src/` (EF migrations excluded): `static`, singleton registrations, hosted
+  services, `IMemoryCache`, `Concurrent*`, `lock (`, `SemaphoreSlim`, `Interlocked`, timers, file access, sessions,
+  `ThreadStatic` / `AsyncLocal`. 30 hits on `main`, grouped in a table and each explained: 6 `AddSingleton` +
+  `AddExceptionHandler` (no mutable data; the only instance fields in the code are `JwtTokenService`'s options and
+  token handler), 3 `static readonly` constants, pure static helpers, and `lock` only as PostgreSQL's
+  `pg_advisory_xact_lock`. Before lab 2 (`06692fe`) the same search found `AddMemoryCache()` and
+  `ResultsCache(IMemoryCache)`; now 0.
+- Pitfall: writing the command through a Python string turned `` into a backspace and the grep silently matched
+  less; fixed with a raw string and verified by extracting the command from README and running it.
+
 ## Not done / next steps
-- Joint tasks: С-4 code audit (Participant 1 leads), С-5 cold-start rehearsal, С-6 `docs/ai/labs/lab2-summary.md`.
+- Joint tasks: С-5 cold-start rehearsal (both), С-6 `docs/ai/labs/lab2-summary.md`.
