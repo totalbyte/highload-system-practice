@@ -27,6 +27,7 @@ if a decision changes, add a new ADR and set the old one's status to `Superseded
 | [0020](0020-pgadmin-pinned.md) | pgAdmin 4 pinned to `9.17.0`, server pre-registered (starts with the stack since the amendment) | Accepted, amended |
 | [0021](0021-redis-and-two-backend-instances.md) | Lab 2: Redis + `backend-1`/`backend-2` from one image, ports 8080/8082, one shared `IConnectionMultiplexer` | Accepted |
 | [0022](0022-concurrent-startup-verified.md) | Concurrent startup of several instances on an empty DB verified safe; no separate migrator | Accepted |
+| [0023](0023-dataprotection-keys-in-redis.md) | DataProtection keys in Redis with one application name — one key ring for all instances | Accepted |
 
 Template:
 

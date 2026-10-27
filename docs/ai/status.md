@@ -1,7 +1,7 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-10-27 by Participant 1 (lab 2 task split + П1-1 + П1-2, see `log/2026-10-27-p1-lab2-task-split.md`).
+> Last updated: 2026-10-27 by Participant 1 (lab 2 task split, П1-1…П1-3, see `log/2026-10-27-p1-lab2-task-split.md`).
 
 ## Current lab: 2 — Stateless architecture
 
@@ -16,9 +16,9 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 
 | Task | Status |
 |---|---|
-| П1-1 Redis + `backend-1` / `backend-2` in compose (branch `lab2/p1-infra`) | ✅ done on the branch, not committed/merged yet (ADR 0021); smoke test 11/11 on both instances |
-| П1-2 Concurrent cold start of two instances on an empty DB (ADR 0009 "Unverified") | ✅ done on the branch, not committed: 12 simultaneous cold starts all clean, no migrator needed (ADR 0022) |
-| П1-3 DataProtection keys → shared store | ⏳ |
+| П1-1 Redis + `backend-1` / `backend-2` in compose (branch `lab2/p1-infra`) | ✅ merged into `main` via PR #2 (`78128e9`), ADR 0021 |
+| П1-2 Concurrent cold start of two instances on an empty DB (ADR 0009 "Unverified") | ✅ merged via PR #2: 12 simultaneous cold starts all clean, no migrator needed (ADR 0022) |
+| П1-3 DataProtection keys → shared store | ✅ done on branch `lab2/p1-platform`, not committed (ADR 0023) |
 | П1-4 State audit: platform modules | ⏳ |
 | П1-5 Cross-instance consistency chain (`requests/cross-instance.http`, `scripts/cross-instance.sh`) | ⏳ |
 | П1-6 C4 component diagram + multi-instance deployment docs | ⏳ |
@@ -57,6 +57,8 @@ state) · С-5 cold-start defense rehearsal · С-6 `labs/lab2-summary.md` — a
 - Branch `main`, remote `origin` = https://github.com/totalbyte/highload-system-practice.
 - `fix/lab1-review-findings` (review fixes, ADRs 0017–0019, pgAdmin ADR 0020) is merged into `main` via PR #1
   (`06692fe`, 2026-10-21).
+- `lab2/p1-infra` merged via PR #2 (`78128e9`, 2026-10-27; GitGuardian flagged the long-standing local-dev
+  default DB password `polling` in compose — a false positive). Participant 1 now works on `lab2/p1-platform`.
 - No branching convention agreed yet; the lab 2 files propose `lab2/p1-infra`, `lab2/p1-platform`, `lab2/p2-voting`.
 - No automated tests — verification is the runbook smoke test, the three concurrency checks and the per-option
   counter query (last full run 2026-09-30: 48/48, also on a cold start).
@@ -66,9 +68,9 @@ state) · С-5 cold-start defense rehearsal · С-6 `labs/lab2-summary.md` — a
 ## Next steps
 
 - **Both:** С-1 — read both `docs/lab2/participant-*.md` files and confirm or adjust the proposals.
-- **Participant 1:** commit `lab2/p1-infra` (П1-1 + П1-2), push, open the PR into `main` and merge early — it
-  unblocks Participant 2. Then branch `lab2/p1-platform` from the updated `main` for П1-3…П1-7.
-- **Participant 2:** П2-1 and П2-5 while waiting (no infra dependency); П2-2 strictly before П2-3. Read ADR 0017
+- **Participant 1:** continue on `lab2/p1-platform`: П1-4 → П1-5 → П1-6 → П1-7. The final run of П1-5 (results
+  across instances) and the C4 check of the cache component wait for Participant 2's П2-3.
+- **Participant 2:** no longer blocked — `main` has both instances and Redis. Pull `main`; П2-2 strictly before П2-3. Read ADR 0017
   (merged with PR #1: `VoteService` locks the vote row `FOR UPDATE`, option counters updated in ascending id order)
   before touching the vote path.
 - **Lab 1 leftovers (if lab 1 is not defended yet):** cold-start defense rehearsal and `labs/lab1-summary.md`.

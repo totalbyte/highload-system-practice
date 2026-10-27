@@ -1,5 +1,5 @@
-# 2026-10-27 — Participant 1 — Lab 2 task split + П1-1, П1-2 (Redis, two instances, concurrent startup)
-**Lab:** 2 · **Commits:** `320ca8e` (task split, on `main`); П1-1 and П1-2 on branch `lab2/p1-infra`, not committed
+# 2026-10-27 — Participant 1 — Lab 2 task split + П1-1…П1-3 (Redis, two instances, concurrent startup, DataProtection)
+**Lab:** 2 · **Commits:** `320ca8e` (task split, on `main`); `c6f81ac` (П1-1, П1-2) merged via PR #2 as `78128e9`; П1-3 on branch `lab2/p1-platform`, not committed
 
 ## Goal
 Read the lab 2 assignment and the repository, split lab 2 between the two participants so both can work in parallel
@@ -58,8 +58,22 @@ No ADRs — the proposals below are not yet confirmed by Participant 2 (task С-
 - No `migrator` service needed. ADR 0009 status → "amended by 0022"; `DatabaseInitializer` comment updated.
 - After the comment change: rebuild + cold start, smoke test 11/11 on 8080 and 8082.
 
+## PR #2
+- Opened by Participant 1, merged 2026-10-27 (`78128e9`) together with Participant 2's `10fe4fd` (lab 1 guide, docs
+  only, no conflicts). The only failing check was GitGuardian: it flagged the local-dev default DB password `polling`
+  on the compose line that moved into the YAML anchor — present in `main` since lab 1, a false positive; no history
+  rewrite.
+
+## П1-3: DataProtection keys in Redis (ADR 0023, branch `lab2/p1-platform`)
+- `Program.cs`: `AddDataProtection().SetApplicationName("polling-platform").PersistKeysToStackExchangeRedis(redis,
+  "DataProtection-Keys")` with the shared multiplexer; package `Microsoft.AspNetCore.DataProtection.StackExchangeRedis`
+  10.0.12. Placed next to the Redis registration, away from the cache lines Participant 2 edits.
+- Verified: cold start → one key in Redis created by `backend-2`, `backend-1` used it (no key-creation warning of its
+  own); the "not persisted outside of the container" warning is gone; after `docker compose rm -sf backend-1
+  backend-2 && up -d` still one key and no DataProtection warnings; smoke test 11/11 on 8080 and 8082.
+- README "Усунені in-memory залежності": before/after table for DataProtection; runbook quirk row replaced.
+
 ## Not done / next steps
-- Commit `lab2/p1-infra`, push, open the PR; Participant 2 reviews (С-2).
-- Then `lab2/p1-platform`: П1-3 (DataProtection keys) … П1-7.
+- Continue `lab2/p1-platform`: П1-4 (platform state audit) → П1-5 → П1-6 → П1-7.
 - Participant 2 to review the task split and confirm the proposals (С-1).
-- Participant 2 meanwhile: П2-1 + П2-5 (no dependency on `lab2/p1-infra`).
+- Participant 2 is no longer blocked: `main` has both instances and Redis.

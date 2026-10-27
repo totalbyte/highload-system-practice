@@ -250,7 +250,16 @@ _Заповнює Учасник 2 (П2-1)._
 
 _Кеш результатів — Учасник 2 (П2-2, П2-3)._
 
-_Ключі DataProtection — Учасник 1 (П1-3)._
+**Ключі DataProtection (Учасник 1).** ASP.NET Core завжди реєструє DataProtection і за замовчуванням зберігає ключі у файловій системі контейнера — у кожного інстансу свій набір, і він зникає разом з контейнером. Ми DataProtection зараз не використовуємо (автентифікація — JWT), але це прихована прив'язка до інстансу: cookie чи antiforgery-токен, виданий одним інстансом, інший не розшифрував би.
+
+| | До | Після |
+|---|---|---|
+| Де ключі | `/home/app/.aspnet/DataProtection-Keys` у кожному контейнері | Redis, список `DataProtection-Keys`, назва застосунку `polling-platform` на всіх інстансах |
+| Скільки наборів ключів | по одному на інстанс | один спільний |
+| У логах | `Storing keys in a directory ... that may not be persisted outside of the container` | попередження немає |
+| Після перестворення контейнерів | нові ключі | той самий ключ із Redis |
+
+Перевірка: `docker compose exec redis redis-cli LRANGE DataProtection-Keys 0 -1` — один ключ і після холодного старту, і після `docker compose rm -sf backend-1 backend-2 && docker compose up -d`. Рішення — [ADR 0023](docs/ai/decisions/0023-dataprotection-keys-in-redis.md).
 
 ### Stateless Request Flow: `POST /api/polls/{id}/vote`
 
