@@ -86,7 +86,7 @@ dotnet run --project src/PollingPlatform.Api   # http://localhost:5094/swagger, 
 | 404 | Опитування не існує або це чужа чернетка |
 | 409 | Недопустимий перехід статусу; дублікат email чи username; повторний голос; голос поза часовим вікном |
 | 422 | Валідація полів |
-| 503 | БД тимчасово недоступна (транзієнтний збій після вичерпання повторів EF) |
+| 503 | БД тимчасово недоступна (транзієнтний збій після вичерпання повторів EF) або недоступний Redis при читанні результатів |
 
 **Голосування:** один голос на користувача на опитування — гарантує унікальний індекс `(poll_id, user_id)`, а не перевірка в коді. Якщо `allowVoteChange = true`, повторний запит змінює голос (200), а повтор того самого варіанта ідемпотентний і не змінює лічильники. Голос поза вікном `startsAt … endsAt` повертає 409 навіть для опитування зі статусом `active` — фонового закривача немає.
 
@@ -190,13 +190,13 @@ src/PollingPlatform.Api/
   Auth/          JWT, реєстрація/логін, ClaimsPrincipal.GetUserId()
   Polls/         CRUD і життєвий цикл опитувань
   Votes/         голосування: транзакція + атомарний лічильник
-  Results/       агреговані результати і кеш у пам'яті процесу
+  Results/       агреговані результати і їхній кеш (з лаби 2 — у Redis)
   Domain/        сутності User, Poll, PollOption, Vote
   Data/          DbContext, конфігурації EF, міграції, сід
   Common/        бізнес-винятки → HTTP-коди, обробник помилок, X-Instance-ID
 docker-compose.yml
 requests/        колекції запитів для демо (polls.http, cross-instance.http)
-scripts/         скрипти перевірок лаб (cross-instance.sh)
+scripts/         перевірки лаби 2 на двох інстансах (cross-instance.sh; Python-скрипти — лише стандартна бібліотека, запуск — у runbook)
 docs/            методички та дизайн-документи
 docs/lab2/       розподіл задач лаби 2 між учасниками
 docs/ai/         контекст для AI-агентів: стан, ADR, контракти, runbook, журнал сесій
@@ -246,7 +246,7 @@ R — Responsible, A — Accountable, C — Consulted, I — Informed.
 - **Компонент:** ендпоінт агрегованих результатів — найчастіше читання (дашборд оновлюється в усіх глядачів одночасно).
 - **Root Cause:** без кешу кожен запит іде в БД по агрегат. Читань на порядок більше, ніж записів, тож саме вони з'їдають CPU та I/O основної БД.
 - **Симптоматика:** падіння Throughput/RPS, зростання CPU і I/O Wait на контейнері БД, деградація *усіх* ендпоінтів, бо вони ділять один connection pool.
-- **Стан:** пом'якшено на двох рівнях — агрегат читається з денормалізованого `vote_count` (без `COUNT`/`JOIN` по `votes`), а відповідь кешується в пам'яті процесу з явною інвалідацією на голос, publish, close і delete. Кеш **навмисно локальний** (ADR 0013): у лабі 2 він розійдеться між інстансами, у лабі 4 переїде в Redis із Cache-Aside, TTL і fallback.
+- **Стан:** пом'якшено на двох рівнях — агрегат читається з денормалізованого `vote_count` (без `COUNT`/`JOIN` по `votes`), а відповідь кешується з явною інвалідацією на голос, publish, close і delete. У лабі 1 кеш був **навмисно локальним** (ADR 0013); у лабі 2 він розійшовся між інстансами і переїхав у Redis (ADR 0026), а в лабі 4 оформиться як Cache-Aside зі схемою ключів, обґрунтуванням TTL і fallback на БД.
 
 ### 3. Вичерпання пулу з'єднань до БД
 
@@ -303,11 +303,109 @@ R — Responsible, A — Accountable, C — Consulted, I — Informed.
 
 #### Голосування й результати
 
-_Заповнює Учасник 2 (П2-1)._
+Пройдено `Votes/`, `Results/`, `Common/ErrorHandling/`, `Common/Exceptions/VoteExceptions.cs` і реєстрації цих модулів у `Program.cs` — по коду, з пошуком `static`, блокувань, `Concurrent*`, `IMemoryCache`, таймерів, файлів і сесій.
+
+| Елемент | Де | Категорія | Чому |
+|---|---|---|---|
+| Кеш результатів: `ResultsCache` поверх `IMemoryCache` | `Results/ResultsCache.cs`; `Program.cs` — `AddMemoryCache()`, `AddSingleton<ResultsCache>()` | **Critical** | Агрегат лежить у пам'яті процесу. Інвалідація спрацьовує лише на інстансі, що обробив запис; інший до 10 с (TTL) віддає старе. Усунено в П2-3 |
+| Рішення про видимість у кеші: `CreatorId` і `Status` всередині кешованого запису | `Results/ResultsService.cs` — перевірка чернетки на попаданні в кеш | **Critical** (наслідок рядка вище) | На попаданні в кеш доступ вирішується за кешованим статусом. Після publish на одному інстансі інший до 10 с віддає стороннім **404** замість результатів — застаріває не лише число, а й рішення про доступ |
+| Лічильник `options.vote_count` | PostgreSQL; SQL `vote_count ± 1` у транзакції голосу | Shared | Не лічильник у пам'яті: усі інстанси пишуть в один рядок БД (ADR 0014) |
+| Серіалізація змін голосу | `SELECT … FOR UPDATE` у `VoteService` | Shared | Рядкове блокування PostgreSQL працює між інстансами, на відміну від `lock`/`SemaphoreSlim` у процесі (ADR 0017) |
+| «Один голос на користувача» | `UNIQUE(poll_id, user_id)` | Shared | Гарантія в БД: повтор, що прийшов на інший інстанс, усе одно отримає 409 |
+| Стан опитування для голосу (статус, `startsAt`/`endsAt`, `allowVoteChange`) і належність варіанта | `VoteService.LoadVotablePollAsync`, перевірка `optionId` | Shared | Читається з PostgreSQL на **кожен** голос (`AsNoTracking`); у шляху голосування нічого не кешується |
+| Ідентичність того, хто голосує | claim `sub` у JWT | Shared / Externalized | Зберігається на боці клієнта; інстанс лише перевіряє підпис спільним секретом з env (`JWT_SECRET`), сховища сесій немає |
+| `VoteService`, `ResultsService`, `AppDbContext` | `Program.cs` — `AddScoped` | Ephemeral | Живуть один запит і знищуються після відповіді |
+| Change tracker EF | `AppDbContext` | Ephemeral | Scoped разом із контекстом; на початку кожної спроби retry-стратегії очищується (`ChangeTracker.Clear()`) |
+| `GlobalExceptionHandler` | `AddExceptionHandler<…>()` — реєструється як **singleton** | Ephemeral / Local Safe | Попри singleton, змінних даних немає: лише `IProblemDetailsService` і `ILogger`; `IsTransient` — чиста статична функція |
+| `static readonly Ttl`, `static Key()` у `ResultsCache` | `Results/ResultsCache.cs` | Local Safe | Незмінна константа і чиста функція, не дані |
+| Винятки з `VoteExceptions.cs` | `Common/Exceptions/` | Ephemeral | Незмінні об'єкти в межах одного запиту |
+| Логи помилок | stdout контейнера | Local Safe | Діагностика, не бізнес-стан |
+
+**Що ще показав аудит:**
+
+1. **Застаріває не лише число, а й доступ.** Кешований запис тримає статус опитування, тому після publish інший інстанс до 10 с повертає стороннім 404 — сильніший приклад прихованої affinity, ніж застарілий `totalVotes`.
+2. **`GlobalExceptionHandler` — singleton, а не scoped.** Безпечно, бо змінного стану немає; пояснення для аудиту коду, який шукає `AddSingleton`.
+3. **Гонка «прочитали до коміту — поклали в кеш після інвалідації».** Якщо `GET /results` порахував агрегат до коміту голосу, а поклав у кеш уже після інвалідації, застаріле значення живе до 10 с — навіть на одному інстансі. Перенос у Redis її **не** усуває; це тема лаби 4.
+4. **Невідомий результат коміту.** Якщо з'єднання обірвалось після `COMMIT`, але до відповіді, повтор (retry-стратегія EF або клієнт на іншому інстансі) знайде вже записаний голос і поверне 409 (або 200 при `allowVoteChange` і тому самому варіанті). Голос записано рівно один раз, але клієнт бачить 409 замість 201.
 
 ### Усунені in-memory залежності
 
-_Кеш результатів — Учасник 2 (П2-2, П2-3)._
+#### Кеш результатів
+
+**До: кеш у пам'яті кожного процесу.** Демо — [`scripts/results-cache-demo.py`](scripts/results-cache-demo.py) (лише стандартна бібліотека Python, стек має бути піднятий): `python scripts/results-cache-demo.py`. Вивід від 2026-10-27, стабільний у трьох прогонах поспіль:
+
+```text
+Scenario A: vote through backend-1, read through backend-2
+  1. warm cache:     GET results               backend-2  HTTP 200  totalVotes=0  status=active  generatedAt=2026-10-27T10:19:41.7607238+00:00
+  2. vote:           POST vote                 backend-1  HTTP 201
+  3. right after:    GET results               backend-2  HTTP 200  totalVotes=0  status=active  generatedAt=2026-10-27T10:19:41.7607238+00:00
+     right after:    GET results               backend-1  HTTP 200  totalVotes=1  status=active  generatedAt=2026-10-27T10:19:42.088658+00:00
+  ... waiting 11s for the TTL ...
+  4. after TTL:      GET results               backend-2  HTTP 200  totalVotes=1  status=active  generatedAt=2026-10-27T10:19:53.2569791+00:00
+
+Scenario B: publish through backend-1, read through backend-2
+  1. author previews draft: GET results        backend-2  HTTP 200  totalVotes=0  status=draft  generatedAt=2026-10-27T10:19:53.3833789+00:00
+  2. publish:        PATCH publish             backend-1  HTTP 200
+  3. anonymous:      GET results               backend-2  HTTP 404
+     anonymous:      GET results               backend-1  HTTP 200  totalVotes=0  status=active  generatedAt=2026-10-27T10:19:53.4810787+00:00
+```
+
+Що тут видно:
+
+- **A.** Голос пройшов через backend-1, і backend-1 інвалідував **свій** кеш — він одразу бачить `totalVotes=1`. До backend-2 інвалідація не дійшла: він віддає `0` і той самий `generatedAt`, тобто стару копію з власної пам'яті. Розбіжність тримається, поки не спливе TTL (крок 4) — тож TTL тут єдине, що обмежує неузгодженість.
+- **B.** Автор переглянув чернетку через backend-2, і той закешував її зі статусом `draft`. Після publish через backend-1 сторонній отримує від backend-2 **404**, хоча опитування вже публічне, а backend-1 на той самий запит відповідає 200. Застаріло не число, а рішення про доступ.
+
+Обидва випадки — прихована affinity: правильність відповіді залежить від того, на який інстанс потрапив запит. Sticky sessions лише сховали б це — клієнт «прилипав» би до одного інстансу, але різні клієнти так само бачили б різне. Тому кеш — **critical stateful dependency**, і його виносимо в спільне сховище.
+
+**Після: кеш у Redis (ADR 0026).** `ResultsCache` працює через спільний для процесу `IConnectionMultiplexer`: ключ `results:{pollId}`, значення — JSON, TTL 10 с, інвалідація — `DEL`. `AddMemoryCache()` прибрано; `ResultsCache` лишився singleton, бо даних у ньому більше немає — лише посилання на з'єднання. Той самий скрипт, без жодних змін:
+
+```text
+Scenario A: vote through backend-1, read through backend-2
+  1. warm cache:     GET results               backend-2  HTTP 200  totalVotes=0  status=active  generatedAt=2026-10-27T10:25:50.5231928+00:00
+  2. vote:           POST vote                 backend-1  HTTP 201
+  3. right after:    GET results               backend-2  HTTP 200  totalVotes=1  status=active  generatedAt=2026-10-27T10:25:51.063114+00:00
+     right after:    GET results               backend-1  HTTP 200  totalVotes=1  status=active  generatedAt=2026-10-27T10:25:51.063114+00:00
+
+Scenario B: publish through backend-1, read through backend-2
+  1. author previews draft: GET results        backend-2  HTTP 200  totalVotes=0  status=draft  generatedAt=2026-10-27T10:25:51.2707272+00:00
+  2. publish:        PATCH publish             backend-1  HTTP 200
+  3. anonymous:      GET results               backend-2  HTTP 200  totalVotes=0  status=active  generatedAt=2026-10-27T10:25:51.3377633+00:00
+     anonymous:      GET results               backend-1  HTTP 200  totalVotes=0  status=active  generatedAt=2026-10-27T10:25:51.3377633+00:00
+
+Summary
+  backend-2 served stale vote counts after a vote on backend-1:  no
+  backend-2 answered 404 for a poll published on backend-1:      no
+```
+
+Найпереконливіше тут — **однаковий `generatedAt` на обох інстансах** на кроці 3: агрегат порахував один інстанс, а другий віддав саме цю копію з Redis. Інвалідація, зроблена backend-1, тепер одразу видна backend-2, а TTL знову лише страховка. Перевірка в Redis: `docker compose exec redis redis-cli TTL results:1` після читання — не більше 10; після голосу `EXISTS results:1` → 0.
+
+Що перенос у Redis **не** усуває: гонку «агрегат порахували до коміту голосу, а в кеш поклали вже після інвалідації» — застаріле значення може прожити до TTL. Це тема лаби 4, разом зі схемою ключів, обґрунтуванням TTL і fallback на БД.
+
+**Якщо Redis недоступний (ADR 0027).** Redis — нова зовнішня залежність, і її відмова не повинна давати 500 чи вводити клієнта в оману. Без обробки так і було: `GET /results` → 500, а `POST /vote` → 500, **хоча голос уже був записаний** — клієнт повторив би запит і отримав 409 на голос, який насправді пройшов. Тепер:
+
+| Операція при зупиненому Redis | Відповідь | Чому |
+|---|---|---|
+| `GET /results` | **503**, `detail: "The cache is temporarily unavailable"` | Інфраструктурний збій, повтор має сенс; fallback на БД — лаба 4 |
+| `POST /vote`, `PATCH publish/close`, `DELETE` | звичайний успіх (201 / 200 / 204) | Інвалідація йде вже після коміту в БД; її збій лише логується одним рядком `warn` |
+| Redis знову піднято | усе працює, результати свіжі | Клієнт Redis перепідключається сам, рестарт backend не потрібен |
+
+Застаріле значення після невдалої інвалідації можливе лише при короткому збої, коли Redis зберіг дані, — і живе не довше TTL 10 с. Після рестарту Redis порожній (без volume), тож застарілого немає взагалі. Відома ціна: поки Redis лежить, кожен запит, що його торкається, чекає ~5 с — клієнт тримає команду в черзі до свого таймауту. Короткі збої це переживає без помилок, але тривалий робить повільним; швидка відмова разом із fallback на БД — лаба 4.
+
+Перевірка — [`scripts/redis-outage-check.py`](scripts/redis-outage-check.py): зупиняє Redis, голосує, читає, публікує, запускає Redis і перевіряє відновлення. Прогін від 2026-10-27:
+
+```text
+Redis stopped (docker compose stop redis)
+  OK   GET results -> 503 with ProblemDetails                     HTTP 503 in 5.2s, detail: The cache is temporarily unavailable. Please retry.
+  OK   POST vote -> 201 (committed vote not reported as failed)   HTTP 201 in 5.9s
+  OK   vote stored in PostgreSQL exactly once                     rows=1
+  OK   PATCH publish -> 200 (failed invalidation tolerated)       HTTP 200 in 5.4s
+  OK   per-option counters consistent                             mismatches=0
+
+Redis started again (docker compose start redis)
+  OK   GET results -> 200 again                                   after 1.6s
+  OK   results are fresh (the outage vote is counted)             totalVotes=1
+  OK   no backend restart
+```
 
 **Ключі DataProtection (Учасник 1).** ASP.NET Core завжди реєструє DataProtection і за замовчуванням зберігає ключі у файловій системі контейнера — у кожного інстансу свій набір, і він зникає разом з контейнером. Ми DataProtection зараз не використовуємо (автентифікація — JWT), але це прихована прив'язка до інстансу: cookie чи antiforgery-токен, виданий одним інстансом, інший не розшифрував би.
 
@@ -322,7 +420,82 @@ _Кеш результатів — Учасник 2 (П2-2, П2-3)._
 
 ### Stateless Request Flow: `POST /api/polls/{id}/vote`
 
-_Заповнює Учасник 2 (П2-5)._
+Сценарій — голосування, high-load сценарій проєкту. Запит може прийти на будь-який інстанс; нижче — що він бере з запиту, що читає зі спільних сховищ, що змінює атомарно і чому після відповіді в процесі нічого не лишається.
+
+| Вимога 2.3 | Як це зроблено | Код |
+|---|---|---|
+| Вхідні параметри / context token | `Authorization: Bearer <JWT>` → middleware JwtBearer перевіряє підпис ключем із `Jwt:Secret` (env `JWT_SECRET`, однаковий на всіх інстансах) → `userId` з claim `sub`. `pollId` — з маршруту, `{optionId}` — з тіла, валідатор (`optionId > 0`, інакше 422) | `Votes/VotesController.cs`, `Auth/ClaimsPrincipalExtensions.cs` |
+| Вичитування контексту зі shared storage | PostgreSQL: опитування (видимість, статус, часове вікно, `allowVoteChange`) і належність варіанта цьому опитуванню | `VoteService.LoadVotablePollAsync`, перевірка `optionId` у `CastAsync` |
+| Атомарні зміни у зовнішньому сховищі | Одна транзакція в execution strategy: наявний голос `SELECT … FOR UPDATE` → `INSERT` (новий голос; дубль ловить унікальний індекс) **або** `UPDATE votes` + `vote_count ± 1` у порядку зростання id варіантів (зміна) **або** нічого (той самий варіант) → `COMMIT`. Після коміту — інвалідація `results:{pollId}` | `VoteService.CastOnceAsync`, `InsertVoteAsync`, `ChangeVoteCountAsync` |
+| Відсутність залишкових мутацій у пам'яті | `VoteService` і `AppDbContext` scoped — знищуються після відповіді; `static`-полів із даними немає; наступний запит того ж користувача може піти на інший інстанс | `Program.cs` — `AddScoped` |
+
+> Останній рядок виконується лише з лаби 2 (ADR 0026). У лабі 1 інвалідація була `IMemoryCache.Remove` на поточному інстансі — запит голосування змінював пам'ять процесу, і ця зміна переживала запит. Тепер це `DEL results:{pollId}` у Redis, і в пам'яті процесу нічого не лишається.
+
+```mermaid
+sequenceDiagram
+    participant C as Клієнт
+    participant B as backend-N (будь-який)
+    participant P as PostgreSQL
+    participant R as Redis
+
+    C->>B: POST /api/polls/{id}/vote<br/>Bearer JWT, {optionId}
+    Note over B: перевірка підпису JWT спільним секретом<br/>userId = sub — без сховища сесій
+    B->>P: SELECT опитування (статус, вікно, allowVoteChange)
+    B->>P: SELECT чи належить optionId опитуванню
+    B->>P: BEGIN
+    B->>P: SELECT голос користувача FOR UPDATE
+    alt голосу немає
+        B->>P: INSERT votes (UNIQUE(poll_id, user_id) ловить дубль → 409)
+        B->>P: UPDATE options SET vote_count = vote_count + 1
+    else інший варіант і зміна дозволена
+        B->>P: UPDATE votes SET option_id
+        B->>P: UPDATE options ±1 у порядку зростання id
+    end
+    B->>P: COMMIT
+    B->>R: DEL results:{pollId}
+    B-->>C: 201 новий голос / 200 зміна або повтор
+    Note over B: VoteService і DbContext знищено,<br/>у пам'яті процесу нічого не лишилось
+```
+
+**Інваріант після будь-якого запиту** — перевіряти по кожному варіанту, не сумою (ADR 0017):
+
+```sql
+SELECT count(*) FROM options o
+WHERE o.vote_count <> (SELECT count(*) FROM votes v WHERE v.option_id = o.id);   -- 0
+```
+
+**Якщо інстанс упаде на півдорозі:**
+
+- до `COMMIT` — транзакція обривається разом зі з'єднанням, PostgreSQL її відкочує; голосу без лічильника не буває, бо обидві зміни в одній транзакції;
+- після `COMMIT`, але до відповіді — голос збережено; повтор на іншому інстансі отримає 409 від унікального індексу, подвійного голосу немає;
+- після `COMMIT`, але до інвалідації кешу — результати застаріють максимум на TTL 10 с.
+
+**Перевірка під конкуренцією через обидва інстанси.** Гарантії цього потоку — транзакція, `UNIQUE(poll_id, user_id)`, `FOR UPDATE`, порядок блокувань — мають триматися, коли запити одного й того самого користувача приходять одночасно на **різні** процеси. [`scripts/concurrency-checks.py`](scripts/concurrency-checks.py) ділить запити навпіл між backend-1 і backend-2 і стартує їх одночасно (бар'єр); після кожної перевірки звіряє лічильники по кожному варіанту з `votes` і результати обох інстансів із БД. Прогін від 2026-10-27, стабільний у чотирьох прогонах поспіль (~16 с):
+
+```text
+Check 1: 200 different users vote into one poll at once
+  OK   all 201, no 5xx                                      201x200
+  OK   one vote row per user                                rows=200
+  OK   per-option counters = votes rows (whole DB)          mismatches=0
+  OK   results on backend-1 and backend-2 match the DB      db=100,100 b1=100,100 b2=100,100
+
+Check 2: one user changes the vote 40 times in parallel
+  OK   fresh poll: all 200                                  200x40
+  OK   fresh poll: exactly one vote row for the user        rows=1
+  OK   hot poll #1: all 200                                 200x40
+  OK   hot poll #1: exactly one vote row for the user       rows=1
+  (+ per-option counters and results on both instances after each poll — OK)
+
+Check 3: 100 users make opposite changes (A->B and B->A) at once
+  OK   opposite changes: all 200                            200x100
+  OK   still 50/50 after the swap                           50/50
+
+Logs since the start of this run
+  OK   no 'deadlock detected' in postgres logs              count=0
+  OK   no 'fail:' entries in backend logs                   count=0
+```
+
+**Чи тест взагалі здатен щось зловити.** Зелений тест нічого не доводить, якщо він не падає на справжній помилці. Тому `FOR UPDATE` тимчасово прибрали з `VoteService` і прогнали той самий скрипт: зміна голосу на свіжому опитуванні дала **21 × 500 із 40**, на опитуванні #1 — **6 × 500**, у логах backend — 54 записи `fail:`. Це та сама гонка, яку виправляє ADR 0017 (там було 23 з 40). Блокування повернули — знову все зелене. Отже, перевірка 2 справді ловить цю гонку, і тепер — через два процеси.
 
 ### Мульти-інстансне розгортання
 
@@ -383,4 +556,43 @@ bash scripts/cross-instance.sh     # curl; кожен крок друкує X-In
 
 ### Відмовостійкість: втрата інстансу
 
-_Заповнює Учасник 2 (П2-7)._
+Аварійна зупинка одного інстансу **під час голосування** не повинна ні загубити, ні задвоїти жодного голосу, а другий інстанс має підхопити обробку. [`scripts/kill-test.py`](scripts/kill-test.py): 400 сід-користувачів голосують у двох свіжих опитуваннях (800 голосів, 32 потоки, по черзі на backend-1 і backend-2); після ~10 % голосів — `docker compose kill backend-1` (SIGKILL). Клієнт, не отримавши відповіді від backend-1, повторює той самий запит на backend-2 і далі шле запити backend-1 одразу туди — так у лабі 3 робитиме балансувальник. Прогін від 2026-10-27:
+
+```text
+Voting: 400 users x 2 polls = 800 votes over 32 threads; `docker compose kill backend-1` after 80 votes
+  run took 4.5s; the kill command took 1.1s
+  answered by backend-1: 100, by backend-2: 400, failed on backend-1 and retried on backend-2: 5 ['RemoteDisconnected'], rerouted to backend-2 after that: 295
+  PostgreSQL saw 2 client connection(s) break; of them with an open transaction (rolled back): 1
+
+Checks
+  OK   backend-1 died mid-run and the client failed over            retried=5, rerouted=295
+  OK   every vote ended with 201, or 409 on a retry                 201x800, 409x0, other=[]
+  OK   poll 90: vote rows = users (stored exactly once)             rows=400
+  OK   poll 91: vote rows = users (stored exactly once)             rows=400
+  OK   per-option counters = votes rows (whole DB)                  mismatches=0
+  OK   results on backend-2 match the DB                            db=['134,133,133', '134,133,133'] backend-2=['134,133,133', '134,133,133']
+
+Instance comes back
+  Docker restarted backend-1 by itself within 10 s: no (restart: unless-stopped)
+  -> docker compose start backend-1
+  OK   backend-1 /health = 200                                      after 3.3s
+  OK   backend-1 serves the same results right away (no warm-up)    backend-1=['134,133,133', '134,133,133']
+```
+
+Три прогони з `kill` поспіль і один зі штатною зупинкою — усі зелені; кожен зачепив запити на льоту по-різному:
+
+| Прогін | Обірвано на льоту → повтор на backend-2 | Транзакцій, відкочених PostgreSQL | Повтор отримав 409 | Голосів записано |
+|---|---|---|---|---|
+| `kill` № 1 | 5 | 1 | 0 | 800 з 800, кожен один раз |
+| `kill` № 2 | 7 | 3 | **1** | 800 з 800, кожен один раз |
+| `kill` № 3 | 14 | 10 | 0 | 800 з 800, кожен один раз |
+| `stop` (`--stop`) | 2 | 0 — з'єднання закрито штатно | 0 | 800 з 800, кожен один раз |
+
+Чому бізнес-стан цілий — два можливі моменти смерті інстансу посеред голосу:
+
+- **До `COMMIT`.** Транзакція обривається разом зі з'єднанням, PostgreSQL її відкочує — у логах postgres `unexpected EOF on client connection with an open transaction`, саме ці рядки рахує скрипт. Голосу без лічильника не буває, бо обидві зміни в одній транзакції (ADR 0014). Повтор на backend-2 записує голос з нуля → **201**.
+- **Після `COMMIT`, але до відповіді.** Голос уже збережено, клієнт про це не знає і повторює запит. Повтор упирається в `UNIQUE(poll_id, user_id)` → **409**, подвійного голосу немає (прогін № 2). Клієнт бачить 409 замість 201, але для `allowVoteChange = false` це правдива відповідь: голос цього користувача в опитуванні вже є.
+
+**`kill` проти `stop`.** При `stop` ASP.NET завершує прийняті запити і сам закриває з'єднання з БД — PostgreSQL не бачить жодного обриву; відмову отримують лише запити, що прийшли вже під час зупинки. При `kill` процес зникає миттєво, з усіма відкритими транзакціями.
+
+**Повернення інстансу.** Docker **не** підняв контейнер сам, попри `restart: unless-stopped`: ручні `docker kill` / `docker stop` вимикають політику перезапуску до наступного ручного старту — вона спрацьовує, коли процес падає сам. Після `docker compose start backend-1` інстанс здоровий за ~3 с і **одразу** віддає ті самі результати: стану, який треба було б відновлювати чи «прогрівати», у нього немає — голоси в PostgreSQL, кеш у Redis, ідентичність у JWT.

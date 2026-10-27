@@ -93,20 +93,46 @@ docker compose exec -T postgres psql -U polling -d polling -tAc \
 Local data already skewed by an old bug can be repaired (data only, not schema) with
 `UPDATE options o SET vote_count = (SELECT count(*) FROM votes v WHERE v.option_id = o.id)` — or `docker compose down -v`.
 
-**Concurrency checks** (the core claim of the project — run all three after touching the vote path, then the
-per-option consistency query above). Use a parallel HTTP client (e.g. Python `ThreadPoolExecutor`), not sequential
-curl:
-1. **Many users, first votes:** N different seed users vote into the hot poll at once → all 201 (200 if they had
-   already voted), no 5xx.
+**Concurrency checks** (the core claim of the project — run after touching the vote path):
+`python scripts/concurrency-checks.py` (from the repo root, stdlib only, ~16 s, fresh polls each run). Requests are
+split between backend-1 and backend-2 and released together by a barrier; after each check it verifies per-option
+counters for the whole DB and that results on both instances match the DB; at the end it scans the postgres logs for
+`deadlock detected` and the backend logs for `fail:` since the run started. Exit code 0 = all passed. The three checks:
+1. **Many users, first votes:** 200 different seed users vote into one fresh poll at once → all 201, no 5xx.
 2. **One user, parallel changes** on an `allowVoteChange` poll: 40 requests alternating options → all 200, exactly one
    vote row for the user. Run it on a **fresh** poll too (small counters used to fail with 500 on
    `ck_options_vote_count`).
 3. **Opposite changes:** half of 100 users change A→B while the other half change B→A at the same moment → all 200,
    no `deadlock detected` in `docker compose logs postgres`.
 
-Last verified 2026-09-30 (48/48 checks on the running stack and on a cold-started one): 200 parallel first votes in
-~0.6 s, scenarios 2–3 exact, the backend held 30 connections afterwards and `psql` still connected.
+Last verified 2026-10-27 on two instances: all checks green in 4 consecutive runs. The script is known to catch the
+vote-change race: with `FOR UPDATE` temporarily removed it failed with 21×500 of 40 (fresh poll) and 6×500 (poll #1).
+Earlier single-instance run: 2026-09-30, 48/48 incl. a cold start; the backend held 30 connections afterwards.
 Strip `\r` from tokens read out of a file (see quirks).
+
+**Results cache across instances (lab 2, П2-2/П2-3):** `python scripts/results-cache-demo.py` (stdlib only; `API1` /
+`API2` env vars override the instance URLs). Creates fresh polls each run, so it is repeatable. Scenario A: warm the
+cache on backend-2, vote via backend-1, read from both. Scenario B: the author previews a draft on backend-2, publishes
+via backend-1, an anonymous client reads from both. Since П2-3 (cache in Redis, ADR 0026) both summary lines
+must say **no**, and step 3 of scenario A shows the same `generatedAt` on both instances; a **YES** means the cache is
+per-process again (it was, by design, before П2-3: stale counts until the 10 s TTL and 404 for the just-published
+poll). ~1 s per run; it waits out the TTL only when it sees stale data. Redis side:
+`docker compose exec redis redis-cli TTL results:1` → ≤ 10 after a read, `EXISTS results:1` → 0 after a vote.
+
+**Instance loss (lab 2, П2-7):** `python scripts/kill-test.py` (from the repo root; `--stop` for a graceful stop
+instead of SIGKILL). 800 votes (400 users × 2 fresh polls, 32 threads) alternate between the instances; after 10 %
+it runs `docker compose kill backend-1`; the client retries a failed backend-1 request on backend-2 and then sends
+backend-1's share straight there. Expected: every vote 201 (or 409 on a retry whose first attempt had committed),
+vote rows = users per poll, per-option counters consistent, backend-2 results = DB; then `docker compose start
+backend-1`, `/health` 200 within ~3 s and the same results immediately. It also prints how many backend-1 connections
+PostgreSQL saw break and how many had an open transaction (rolled back). ~20 s per run (incl. a 10 s wait to see
+whether Docker restarts the container — it does not after a manual kill/stop). Always starts backend-1 again in
+`finally`. Uses `127.0.0.1`: on Windows a refused connection to `localhost` takes ~4 s (IPv6, then IPv4).
+
+**Redis outage (lab 2, П2-4, ADR 0027):** `python scripts/redis-outage-check.py` (from the repo root; it runs
+`docker compose stop/start redis` itself and always starts Redis again in `finally`). Expected: results 503 while
+Redis is down, vote 201 stored once, publish 200, counters consistent; after start — results 200 within ~2 s, fresh,
+no backend restart. ~25 s per run.
 
 Full demo scenario with error cases: `requests/polls.http` (VS Code REST Client / Rider / Visual Studio).
 No automated tests yet (`public partial class Program;` is kept for future `WebApplicationFactory` tests).
@@ -117,13 +143,16 @@ No automated tests yet (`public partial class Program;` is kept for future `WebA
 |---|---|
 | Cyrillic becomes `????` when sent with curl from Git Bash on Windows | Shell encoding, not the server. Use Swagger, `.http`, Postman, or `curl --data-binary @file.json` with a UTF-8 file |
 | Every request returns 400 when the token comes from a file written by Python on Windows | Python writes CRLF; the `\r` inside the `Authorization` header breaks the request. Pipe tokens through `tr -d '\r'` |
-| `GET /results` still shows an old total | The in-process cache has a 10 s TTL as a safety net; a vote or a close invalidates it immediately. With two instances the caches diverge on purpose (ADR 0013) |
+| `GET /results` still shows an old total | The cache (Redis, shared by all instances, ADR 0026) is invalidated by a vote, publish, close or delete, with a 10 s TTL as a safety net. A stale value for up to 10 s right after a vote is the known invalidation race (aggregate read before the commit, written after the `DEL`) — a lab 4 topic. If instances disagree, run `scripts/results-cache-demo.py`: a **YES** means something went back to a per-process cache |
 | Can't reach the container DB on 5432 / connected to the wrong DB | Participant 1's machine runs a local Windows PostgreSQL service on 5432 — the container is on **5433** (ADR 0011) |
 | `fail: ... SELECT migration_id FROM "__EFMigrationsHistory"` on first start | Expected: the history table doesn't exist yet. Not an error |
 | `fail: ... CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory"` (Postgres: `pg_type_typname_nsp_index`) on a cold start | Both instances created the history table at the same instant; the provider ignores it and the migration still runs once (ADR 0022). Not an error |
 | Warning "No XML encryptor configured. Key … may be persisted to storage in unencrypted form" | Expected: DataProtection keys live unencrypted in Redis, shared by all instances (ADR 0023). The old "not persisted outside of the container" warning must no longer appear |
 | `The Entity Framework tools version '10.0.5' is older than ...` | Harmless; `dotnet tool update -g dotnet-ef` |
 | `failed to connect to the docker API` | Docker Desktop isn't running |
+| A killed/stopped backend stays down despite `restart: unless-stopped` | Expected: a manual `docker kill` / `docker stop` disables the restart policy until the next manual start; the policy only covers a process that exits on its own. `docker compose start backend-1` |
+| Requests take ~5 s; `GET /results` returns 503 "The cache is temporarily unavailable"; `warn: …ResultsCache` "not invalidated" in the logs | Redis is down. Expected (ADR 0027): the client waits its 5 s backlog timeout; reads 503, writes still succeed. `docker compose start redis` — recovers by itself, no backend restart |
+| `Bind for 127.0.0.1:5433 failed: port is already allocated` on `up` | Another container or service holds the host port (on Participant 2's machine: `kafka-sandbox-db-1` from an unrelated project, auto-started by Docker Desktop). Put `POSTGRES_PORT=5434` in `.env` (gitignored) and `docker compose up -d` again — only host tools (psql, pgAdmin from the host) see the change; the backends talk to `postgres:5432` inside the network |
 | First request after a DB restart fails | Should not happen (EF retry strategy, ADR 0008); if it does, check the retry config |
 | `FATAL: sorry, too many clients already` (psql, Adminer, pgAdmin or the API) | The backend pools together exceed PostgreSQL `max_connections` (100). Check `DB_MAX_POOL_SIZE` × number of instances ≤ 97 (ADR 0018) |
 | API requests take ~13–16 s and then return 503 while the DB is down | Expected: EF retries (ADR 0008) plus ~3.3 s Docker DNS lookups for the stopped `postgres` container. `/health` answers 503 within 2 s (ADR 0019) |
@@ -134,8 +163,9 @@ No automated tests yet (`public partial class Program;` is kept for future `WebA
 
 Windows 11, .NET SDK 10.0.202, Docker 28.5.1 (Docker Desktop does not start automatically here either — launch it
 before `docker compose`), Git Bash, Python 3 **with `python-docx`** (so `.docx` files can be generated/read
-directly, unlike on Participant 1's machine); no `pandoc`. Local Postgres on 5432 is not an issue here, but the
-container stays on 5433 for both of us (ADR 0011).
+directly, unlike on Participant 1's machine); no `pandoc`. Host port 5433 is taken here by a container of an
+unrelated project, so a local `.env` sets `POSTGRES_PORT=5434` (from 2026-10-27); the default 5433 stays for the team
+(ADR 0011).
 
 ## Environment on Participant 1's machine
 

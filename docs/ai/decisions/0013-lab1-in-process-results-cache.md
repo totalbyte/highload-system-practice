@@ -1,5 +1,5 @@
 # 0013. Lab 1 results cache in process memory, on purpose
-**Status:** Accepted (expected to be superseded in lab 2/4) · **Date:** 2026-09-22 · **Author:** team plan
+**Status:** Superseded by [0026](0026-results-cache-in-redis.md) (lab 2, 2026-10-27) · **Date:** 2026-09-22 · **Author:** team plan
 (recorded by Participant 1; implementation by Participant 2)
 
 ## Context

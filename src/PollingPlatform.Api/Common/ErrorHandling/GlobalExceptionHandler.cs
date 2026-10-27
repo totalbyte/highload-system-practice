@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using PollingPlatform.Api.Common.Exceptions;
+using StackExchange.Redis;
 
 namespace PollingPlatform.Api.Common.ErrorHandling;
 
@@ -28,11 +29,11 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
                 Title = ae.Title,
                 Detail = ae.Message
             },
-            _ when IsTransient(exception) => new ProblemDetails
+            _ when UnavailableDependency(exception) is { } dependency => new ProblemDetails
             {
                 Status = StatusCodes.Status503ServiceUnavailable,
                 Title = "Service Unavailable",
-                Detail = "The database is temporarily unavailable. Please retry."
+                Detail = $"The {dependency} is temporarily unavailable. Please retry."
             },
             _ => new ProblemDetails
             {
@@ -55,15 +56,18 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
     }
 
     /// <summary>
-    /// Недоступна або перевантажена БД — це 503, а не 500: інфраструктурний збій, після якого
+    /// Недоступна або перевантажена залежність — це 503, а не 500: інфраструктурний збій, після якого
     /// запит має сенс повторити. У лабі 3 за цим кодом балансувальник вимикає вузол з пулу,
     /// у лабі 5 — k6 відрізняє інфраструктурну відмову від помилки застосунку.
-    /// EF уже вичерпав власні повтори (EnableRetryOnFailure), тож сюди доходять стійкі збої.
+    /// БД (ADR 0016): EF уже вичерпав власні повтори, тож сюди доходять стійкі збої.
+    /// Redis (ADR 0027): клієнт чекав на з'єднання до свого таймауту. Redis-перевірки йдуть першими,
+    /// бо RedisTimeoutException — теж TimeoutException.
     /// </summary>
-    private static bool IsTransient(Exception exception) => exception switch
+    private static string? UnavailableDependency(Exception exception) => exception switch
     {
-        NpgsqlException { IsTransient: true } => true,
-        TimeoutException => true,
-        _ => exception.InnerException is { } inner && IsTransient(inner)
+        RedisConnectionException or RedisTimeoutException => "cache",
+        NpgsqlException { IsTransient: true } => "database",
+        TimeoutException => "database",
+        _ => exception.InnerException is { } inner ? UnavailableDependency(inner) : null
     };
 }

@@ -28,7 +28,7 @@ public class VoteService(AppDbContext db, ResultsCache resultsCache, TimeProvide
         var result = await strategy.ExecuteAsync(
             token => CastOnceAsync(pollId, userId, optionId, allowVoteChange, now, token), ct);
 
-        resultsCache.Invalidate(pollId);
+        await resultsCache.InvalidateAsync(pollId);
         return result;
     }
 

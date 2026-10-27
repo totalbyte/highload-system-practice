@@ -85,8 +85,7 @@ builder.Services.AddScoped<VoteService>();
 builder.Services.AddScoped<ResultsService>();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
-// Кеш результатів у пам'яті процесу — навмисне рішення лаби 1 (ADR 0013), ціль аудиту стану в лабі 2.
-builder.Services.AddMemoryCache();
+// Кеш результатів — у Redis через спільний IConnectionMultiplexer (ADR 0026); сам ResultsCache стану не має.
 builder.Services.AddSingleton<ResultsCache>();
 
 // --- API ---

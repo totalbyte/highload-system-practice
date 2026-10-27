@@ -28,14 +28,14 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 
 | Task | Status |
 |---|---|
-| П2-1 State audit: voting and results modules | ⏳ |
-| П2-2 "Before" demo: stale results across instances with the in-memory cache (must precede П2-3) | ⏳ |
-| П2-3 `ResultsCache` → Redis (supersedes ADR 0013) | ⏳ |
-| П2-4 Redis unavailable → 503, committed vote not reported as failed | ⏳ |
-| П2-5 Stateless request flow for `POST /vote` | ⏳ |
-| П2-6 The three concurrency checks across two instances | ⏳ |
-| П2-7 Instance-loss test (`docker compose kill` during voting) | ⏳ |
-| П2-8 README sections, docs | ⏳ |
+| П2-1 State audit: voting and results modules | ✅ in README «Аудит стану → Голосування й результати» (branch `lab2/p2-voting`) |
+| П2-2 "Before" demo: stale results across instances with the in-memory cache (must precede П2-3) | ✅ `scripts/results-cache-demo.py`; stale counts **and** stale 404 after publish, stable in 3 runs; output in README «Усунені in-memory залежності → Кеш результатів» |
+| П2-3 `ResultsCache` → Redis (supersedes ADR 0013) | ✅ ADR 0026; demo prints «no» twice (3 runs), same `generatedAt` on both instances; TTL ≤ 10, key gone after a vote; no `IMemoryCache` in `src/` |
+| П2-4 Redis unavailable → 503, committed vote not reported as failed | ✅ ADR 0027; `scripts/redis-outage-check.py` (2 runs): results 503, vote 201 stored once, publish 200, recovery without restart. Known cost: ~5 s per Redis-touching request during an outage (lab 4) |
+| П2-5 Stateless request flow for `POST /vote` | ✅ in README (table + sequence diagram); matches the code after П2-3 |
+| П2-6 The three concurrency checks across two instances | ✅ `scripts/concurrency-checks.py`: green in 4 runs; proven to catch the vote-change race (fails without `FOR UPDATE`) |
+| П2-7 Instance-loss test (`docker compose kill` during voting) | ✅ `scripts/kill-test.py`: 3 kill runs + 1 stop run green; PostgreSQL rolled back 1/3/10 open transactions; one retry got 409 (committed, response lost); Docker does not auto-restart after a manual kill |
+| П2-8 README sections, docs | ✅ README (audit, before/after, Request Flow, Redis outage, instance loss), runbook, contracts, ADRs 0026–0027; full re-run on a cold start |
 
 ### Joint (after all lab 2 branches are merged)
 
@@ -68,10 +68,5 @@ state) · С-5 cold-start defense rehearsal · С-6 `labs/lab2-summary.md` — a
 ## Next steps
 
 - **Both:** С-1 — read both `docs/lab2/participant-*.md` files and confirm or adjust the proposals.
-- **Participant 1:** push `lab2/p1-platform` and open the PR (Participant 2 reviews); after П2-3 is merged rerun
-  `scripts/cross-instance.sh` (step 8 must show 1) and update its README output; then the joint tasks С-3…С-6. The final run of П1-5 (results
-  across instances) and the C4 check of the cache component wait for Participant 2's П2-3.
-- **Participant 2:** no longer blocked — `main` has both instances and Redis. Pull `main`; П2-2 strictly before П2-3. Read ADR 0017
-  (merged with PR #1: `VoteService` locks the vote row `FOR UPDATE`, option counters updated in ascending id order)
-  before touching the vote path.
+- **Lab 2:** both branches merged (PR #4, PR #3); joint tasks next — С-3 audit table, С-4 code audit (Participant 1 leads), С-5 rehearsal, С-6 `labs/lab2-summary.md`.
 - **Lab 1 leftovers (if lab 1 is not defended yet):** cold-start defense rehearsal and `labs/lab1-summary.md`.

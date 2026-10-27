@@ -17,7 +17,7 @@ Update this file whenever the API, the schema, or code another participant depen
 | DELETE | `/api/polls/{id}` | author | 204 | 403, 404, 409 | P1 |
 | GET | `/health` | — | 200 / 503 `{status, instance, checks, durationMs}`, answers within 2 s (ADR 0019) | | P1 |
 | POST | `/api/polls/{id}/vote` | JWT | 201 new vote / 200 changed or repeated; `{pollId, optionId, votedAt}` | 401, 404, 409, 422 | P2 |
-| GET | `/api/polls/{id}/results` | optional | 200 `{pollId, title, status, totalVotes, generatedAt, options[]}` | 404 | P2 |
+| GET | `/api/polls/{id}/results` | optional | 200 `{pollId, title, status, totalVotes, generatedAt, options[]}` | 404, 503 (Redis down, ADR 0027) | P2 |
 
 - Every response carries `X-Instance-ID` (container hostname or env `INSTANCE_ID`). In compose: `backend-1` on
   http://localhost:8080 and `backend-2` on http://localhost:8082 (ADR 0021).
@@ -36,7 +36,7 @@ Update this file whenever the API, the schema, or code another participant depen
 | 404 | Poll doesn't exist, or it's someone else's draft |
 | 409 | Invalid status transition; duplicate email/username; duplicate vote; voting outside `startsAt`…`endsAt` |
 | 422 | Field validation failed |
-| 503 | Transient DB failure that outlived EF's retries (ADR 0016) |
+| 503 | Transient DB failure that outlived EF's retries (ADR 0016); Redis unavailable on a results read (ADR 0027) — `detail` names the dependency |
 
 **Voting rules (ADR 0014, 0015):** `{optionId}` body; the unique index `(poll_id, user_id)` — not the pre-check — is
 what guarantees one vote per user; an option from another poll → 404 `PollOptionNotFoundException`; before
@@ -81,13 +81,19 @@ Defined by EF migrations in `src/PollingPlatform.Api/Data/Migrations` (current: 
 ## What Participant 2 provides to Participant 1
 
 - `VoteService` (`Votes/`) — voting; `ResultsService` (`Results/`) — aggregated results.
-- `ResultsCache` (`Results/ResultsCache.cs`, singleton) — `Get` / `Set` / `Invalidate(pollId)`. **Any code that
-  changes votes or a poll's status must call `Invalidate`.** `PollService` takes `ResultsCache` in its constructor
-  and invalidates in `PublishAsync`, `CloseAsync` and `DeleteAsync` (publish/delete were added on 2026-09-30 after the
-  review found stale draft entries: 404 on results for up to the 10 s TTL after publishing).
+- `ResultsCache` (`Results/ResultsCache.cs`, singleton, **in Redis since lab 2** — ADR 0026) —
+  `Task<CachedPollResults?> GetAsync(pollId)` / `Task SetAsync(pollId, entry)` / `Task InvalidateAsync(pollId)`.
+  **Any code that changes votes or a poll's status must `await InvalidateAsync`** — invalidation is now visible to
+  every instance. `PollService` takes `ResultsCache` in its constructor and invalidates in `PublishAsync`,
+  `CloseAsync` and `DeleteAsync` (publish/delete were added on 2026-09-30 after the review found stale draft entries).
+- Redis format, for debugging with `docker compose exec redis redis-cli`: key `results:{pollId}`, value
+  `CachedPollResults` as JSON (camelCase, enum as string), TTL 10 s (`TTL results:1`), removed with `DEL`.
+  Redis down (ADR 0027): `GetAsync` throws → 503; `SetAsync` and `InvalidateAsync` log a warning and return, so a
+  committed vote/publish/close/delete still answers with its success code. Callers need no try/catch.
 - New exceptions in `Common/Exceptions/VoteExceptions.cs`: `PollOptionNotFoundException` (404),
   `PollNotStartedException`, `PollVotingEndedException`, `DuplicateVoteException` (409).
-- `GlobalExceptionHandler` now maps transient DB failures to 503 (ADR 0016).
+- `GlobalExceptionHandler` maps transient DB failures (ADR 0016) and Redis connection failures/timeouts (ADR 0027)
+  to 503.
 
 ## Open questions
 
