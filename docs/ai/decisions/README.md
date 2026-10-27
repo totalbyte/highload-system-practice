@@ -20,7 +20,7 @@ if a decision changes, add a new ADR and set the old one's status to `Superseded
 | [0013](0013-lab1-in-process-results-cache.md) | Lab 1 results cache in process memory, on purpose | Superseded by 0026 |
 | [0014](0014-vote-transaction-and-counter.md) | Vote in one transaction; unique index as source of truth; SQL-level counter | Accepted, amended by 0017 |
 | [0015](0015-vote-and-results-api-shape.md) | Vote and results API shape | Accepted |
-| [0016](0016-transient-db-errors-503.md) | Transient database errors map to 503 | Accepted |
+| [0016](0016-transient-db-errors-503.md) | Transient database errors map to 503 | Accepted, extended by 0027 |
 | [0017](0017-serialize-vote-changes.md) | Vote changes serialized with `FOR UPDATE`; option rows locked in id order | Accepted |
 | [0018](0018-connection-pool-budget.md) | `Maximum Pool Size` 30 per instance; instances × pool ≤ `max_connections` | Accepted |
 | [0019](0019-health-check-timeout.md) | `/health` uses its own PostgreSQL probe with a 2 s timeout | Accepted |
@@ -28,6 +28,7 @@ if a decision changes, add a new ADR and set the old one's status to `Superseded
 | [0021](0021-redis-and-two-backend-instances.md) | Lab 2: Redis + `backend-1`/`backend-2` from one image, ports 8080/8082, one shared `IConnectionMultiplexer` | Accepted |
 | [0022](0022-concurrent-startup-verified.md) | Concurrent startup of several instances on an empty DB verified safe; no separate migrator | Accepted |
 | [0026](0026-results-cache-in-redis.md) | Lab 2: results cache in Redis (`results:{pollId}`, JSON, TTL 10 s, `DEL` on invalidation), async `ResultsCache` | Accepted (supersedes 0013) |
+| [0027](0027-redis-unavailable.md) | Lab 2: Redis down → reads 503; invalidation and cache writes best-effort, committed changes still succeed | Accepted |
 
 Template:
 

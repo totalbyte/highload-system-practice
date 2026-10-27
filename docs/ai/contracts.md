@@ -36,7 +36,7 @@ Update this file whenever the API, the schema, or code another participant depen
 | 404 | Poll doesn't exist, or it's someone else's draft |
 | 409 | Invalid status transition; duplicate email/username; duplicate vote; voting outside `startsAt`…`endsAt` |
 | 422 | Field validation failed |
-| 503 | Transient DB failure that outlived EF's retries (ADR 0016) |
+| 503 | Transient DB failure that outlived EF's retries (ADR 0016); Redis unavailable on a results read (ADR 0027) — `detail` names the dependency |
 
 **Voting rules (ADR 0014, 0015):** `{optionId}` body; the unique index `(poll_id, user_id)` — not the pre-check — is
 what guarantees one vote per user; an option from another poll → 404 `PollOptionNotFoundException`; before
@@ -88,10 +88,12 @@ Defined by EF migrations in `src/PollingPlatform.Api/Data/Migrations` (current: 
   `CloseAsync` and `DeleteAsync` (publish/delete were added on 2026-09-30 after the review found stale draft entries).
 - Redis format, for debugging with `docker compose exec redis redis-cli`: key `results:{pollId}`, value
   `CachedPollResults` as JSON (camelCase, enum as string), TTL 10 s (`TTL results:1`), removed with `DEL`.
-  A Redis outage currently surfaces as an exception — its HTTP mapping is П2-4.
+  Redis down (ADR 0027): `GetAsync` throws → 503; `SetAsync` and `InvalidateAsync` log a warning and return, so a
+  committed vote/publish/close/delete still answers with its success code. Callers need no try/catch.
 - New exceptions in `Common/Exceptions/VoteExceptions.cs`: `PollOptionNotFoundException` (404),
   `PollNotStartedException`, `PollVotingEndedException`, `DuplicateVoteException` (409).
-- `GlobalExceptionHandler` now maps transient DB failures to 503 (ADR 0016).
+- `GlobalExceptionHandler` maps transient DB failures (ADR 0016) and Redis connection failures/timeouts (ADR 0027)
+  to 503.
 
 ## Open questions
 

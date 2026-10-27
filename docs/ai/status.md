@@ -31,7 +31,7 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 | П2-1 State audit: voting and results modules | ✅ in README «Аудит стану → Голосування й результати» (branch `lab2/p2-voting`) |
 | П2-2 "Before" demo: stale results across instances with the in-memory cache (must precede П2-3) | ✅ `scripts/results-cache-demo.py`; stale counts **and** stale 404 after publish, stable in 3 runs; output in README «Усунені in-memory залежності → Кеш результатів» |
 | П2-3 `ResultsCache` → Redis (supersedes ADR 0013) | ✅ ADR 0026; demo prints «no» twice (3 runs), same `generatedAt` on both instances; TTL ≤ 10, key gone after a vote; no `IMemoryCache` in `src/` |
-| П2-4 Redis unavailable → 503, committed vote not reported as failed | ⏳ |
+| П2-4 Redis unavailable → 503, committed vote not reported as failed | ✅ ADR 0027; `scripts/redis-outage-check.py` (2 runs): results 503, vote 201 stored once, publish 200, recovery without restart. Known cost: ~5 s per Redis-touching request during an outage (lab 4) |
 | П2-5 Stateless request flow for `POST /vote` | ✅ in README (table + sequence diagram); matches the code after П2-3 |
 | П2-6 The three concurrency checks across two instances | ⏳ |
 | П2-7 Instance-loss test (`docker compose kill` during voting) | ⏳ |

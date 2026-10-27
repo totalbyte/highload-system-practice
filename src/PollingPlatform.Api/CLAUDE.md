@@ -65,4 +65,7 @@ Common/
   Check counters **per option**, not by `SUM(vote_count) = COUNT(votes)` — the SUM hides the race.
 - Anything that changes votes or a poll's status (vote, publish, close, delete) must
   `await resultsCache.InvalidateAsync(pollId)` — the cache is shared by all instances (ADR 0026).
+- Redis down (ADR 0027): `InvalidateAsync` / `SetAsync` swallow connection failures and timeouts (they run after the DB
+  commit — a committed vote must not look failed); `GetAsync` lets them through → 503. Don't add try/catch around the
+  calls, and don't make invalidation throw.
 - `/health` must not go through the DbContext / EF retry strategy and must answer within 2 s (ADR 0019).
