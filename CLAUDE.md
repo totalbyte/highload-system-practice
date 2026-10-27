@@ -20,6 +20,7 @@ Course materials and team documents are in Ukrainian ("Учасник 1/2" = Par
 | File | Read when |
 |---|---|
 | [`docs/ai/status.md`](docs/ai/status.md) | Always, at session start |
+| [`docs/lab2/participant-1.md`](docs/lab2/participant-1.md), [`participant-2.md`](docs/lab2/participant-2.md) | Lab 2 task list of the participant you are working with (Ukrainian) |
 | [`docs/ai/project-context.md`](docs/ai/project-context.md) | You need lab requirements, the design-doc summary, the high-load scenario, bottlenecks, defense questions |
 | [`docs/ai/contracts.md`](docs/ai/contracts.md) | You touch the API, DB schema, or code another participant depends on; open questions for Participant 2 |
 | [`docs/ai/runbook.md`](docs/ai/runbook.md) | Running, testing, migrations, seed data, troubleshooting |
