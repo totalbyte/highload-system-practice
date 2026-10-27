@@ -1,7 +1,7 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-10-27 by Participant 1 (lab 2 task split, П1-1…П1-6, see `log/2026-10-27-p1-lab2-task-split.md`).
+> Last updated: 2026-10-27 by Participant 1 (lab 2 task split, П1-1…П1-7, see `log/2026-10-27-p1-lab2-task-split.md`).
 
 ## Current lab: 2 — Stateless architecture
 
@@ -21,8 +21,8 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 | П1-3 DataProtection keys → shared store | ✅ committed on `lab2/p1-platform` (`17bbae3`, ADR 0023) |
 | П1-4 State audit: platform modules | ✅ committed on `lab2/p1-platform` (`4d877a4`) |
 | П1-5 Cross-instance consistency chain (`requests/cross-instance.http`, `scripts/cross-instance.sh`) | 🟡 committed on `lab2/p1-platform` (`9c2c8d2`): 8-step curl chain; step 8 shows stale results by design until П2-3; rerun after П2-3 is merged |
-| П1-6 C4 component diagram + multi-instance deployment docs | ✅ on `lab2/p1-platform`, not committed — diagram shows the lab 2 target state (cache in Redis after П2-3); Participant 2 to check their components |
-| П1-7 Smoke test on both instances, docs | ⏳ |
+| П1-6 C4 component diagram + multi-instance deployment docs | ✅ committed on `lab2/p1-platform` (`f1a4525`) — diagram shows the lab 2 target state (cache in Redis after П2-3); Participant 2 to check their components |
+| П1-7 Smoke test on both instances, docs | ✅ cold start: smoke test 11/11 on 8080 and 8082, survives `restart postgres`, counters consistent; next — PR for `lab2/p1-platform` |
 
 ### Participant 2
 
@@ -68,7 +68,8 @@ state) · С-5 cold-start defense rehearsal · С-6 `labs/lab2-summary.md` — a
 ## Next steps
 
 - **Both:** С-1 — read both `docs/lab2/participant-*.md` files and confirm or adjust the proposals.
-- **Participant 1:** continue on `lab2/p1-platform`: П1-7; rerun `scripts/cross-instance.sh` after П2-3. The final run of П1-5 (results
+- **Participant 1:** push `lab2/p1-platform` and open the PR (Participant 2 reviews); after П2-3 is merged rerun
+  `scripts/cross-instance.sh` (step 8 must show 1) and update its README output; then the joint tasks С-3…С-6. The final run of П1-5 (results
   across instances) and the C4 check of the cache component wait for Participant 2's П2-3.
 - **Participant 2:** no longer blocked — `main` has both instances and Redis. Pull `main`; П2-2 strictly before П2-3. Read ADR 0017
   (merged with PR #1: `VoteService` locks the vote row `FOR UPDATE`, option counters updated in ascending id order)

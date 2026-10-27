@@ -1,5 +1,5 @@
-# 2026-10-27 — Participant 1 — Lab 2 task split + П1-1…П1-6 (Redis, two instances, concurrent startup, DataProtection, platform audit, cross-instance chain, C4)
-**Lab:** 2 · **Commits:** `320ca8e` (task split, on `main`); `c6f81ac` (П1-1, П1-2) merged via PR #2 as `78128e9`; П1-3 `17bbae3` on `lab2/p1-platform`; П1-4 `4d877a4`; П1-5 `9c2c8d2`; П1-6 not committed
+# 2026-10-27 — Participant 1 — Lab 2 task split + П1-1…П1-7 (Redis, two instances, concurrent startup, DataProtection, platform audit, cross-instance chain, C4)
+**Lab:** 2 · **Commits:** `320ca8e` (task split, on `main`); `c6f81ac` (П1-1, П1-2) merged via PR #2 as `78128e9`; П1-3 `17bbae3` on `lab2/p1-platform`; П1-4 `4d877a4`; П1-5 `9c2c8d2`; П1-6 `f1a4525`; П1-7 (docs only) not committed
 
 ## Goal
 Read the lab 2 assignment and the repository, split lab 2 between the two participants so both can work in parallel
@@ -102,7 +102,15 @@ No ADRs — the proposals below are not yet confirmed by Participant 2 (task С-
   stop/kill/start/logs, `redis-cli`. RACI: lab 2 rows; repo structure: `scripts/`. Runbook/contracts were already
   updated in П1-1.
 
+## П1-6 review and П1-7
+- Review of П1-6 against lab 2.6 and §3: diagram matches the code; the documented stop/kill/start/`redis-cli`
+  commands were run on the stack. Finding: after `docker compose kill` the container stays `Exited (137)` — the
+  restart policy does not apply to a manual kill, so `start` is required (comment added; relevant to П2-7).
+- П1-7: cold start → smoke test 11/11 on 8080 and 8082, both 200 after `restart postgres`, per-option counters 0
+  mismatches, no "not persisted outside of the container" warning. All Participant 1 README placeholders are filled;
+  the remaining four belong to Participant 2.
+
 ## Not done / next steps
-- П1-7: smoke test on both instances, open the PR for `lab2/p1-platform`; rerun the chain after П2-3.
+- Push `lab2/p1-platform`, open the PR; after П2-3 rerun `scripts/cross-instance.sh` and update its README output.
 - Participant 2 to review the task split and confirm the proposals (С-1).
 - Participant 2 is no longer blocked: `main` has both instances and Redis.
