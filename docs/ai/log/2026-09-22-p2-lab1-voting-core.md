@@ -28,6 +28,9 @@ cache, the error-handling review, and the bottleneck analysis in the README.
 - **`.gitattributes`** added: the repo had none, so line endings depended on each machine's `core.autocrlf` —
   a standing source of whole-file diffs once two people commit. No renormalization was needed (all tracked text
   files were already LF in the index). Flagged for Participant 1 in `status.md`.
+- **`docs/lab1-guide.md`** — long-form guide for the participants: what was built, why each decision was made,
+  architecture and data model, the voting logic step by step, why the cache is deliberately in-process, bottlenecks,
+  and a defense Q&A. Linked from `README.md` and the knowledge map in the root `CLAUDE.md`.
 
 ## Decisions (link ADRs)
 - [0014](../decisions/0014-vote-transaction-and-counter.md) — transaction, unique index as source of truth,

@@ -28,6 +28,7 @@ Course materials and team documents are in Ukrainian ("Учасник 1/2" = Par
 | [`docs/ai/log/`](docs/ai/log/) | You need the history of a specific session (normally not needed) |
 | [`docs/ai/labs/`](docs/ai/labs/) | Summaries of finished labs |
 | `src/PollingPlatform.Api/CLAUDE.md` | Auto-loaded when working in the code: structure and coding conventions |
+| [`docs/lab1-guide.md`](docs/lab1-guide.md) | Long-form guide to lab 1 for the participants (Ukrainian): architecture, data model, voting logic, why each decision was made, defense Q&A |
 | `docs/labs/*.md`, `docs/*.docx` | Original assignments / design docs (Ukrainian); summarized in `project-context.md` |
 
 ## Stack
