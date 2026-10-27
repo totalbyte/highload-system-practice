@@ -17,6 +17,7 @@ using PollingPlatform.Api.Domain;
 using PollingPlatform.Api.Polls;
 using PollingPlatform.Api.Results;
 using PollingPlatform.Api.Votes;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +35,15 @@ builder.Services.AddDbContext<AppDbContext>(options => options
 
 builder.Services.Configure<SeedOptions>(builder.Configuration.GetSection(SeedOptions.SectionName));
 builder.Services.AddScoped<DataSeeder>();
+
+// --- Redis: спільне сховище для всіх інстансів (лаба 2) ---
+var redisConnectionString = builder.Configuration.GetConnectionString("Redis")
+    ?? throw new InvalidOperationException("Connection string 'Redis' is not configured.");
+
+// Одне з'єднання на процес (multiplexer потокобезпечний) — його ділять кеш результатів і ключі DataProtection.
+// Підключаємось одразу при старті, а abortConnect=false у рядку підключення не дає застосунку впасти,
+// якщо Redis ще недоступний: клієнт перепідключиться сам.
+builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionString));
 
 // --- Auth (stateless JWT) ---
 builder.Services.AddOptions<JwtOptions>()

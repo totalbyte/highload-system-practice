@@ -1,5 +1,5 @@
 # 0009. Migrations + seed on startup, seed under an advisory lock
-**Status:** Accepted · **Date:** 2026-09-22 · **Author:** Participant 1
+**Status:** Accepted, amended by 0022 (concurrent startup verified) · **Date:** 2026-09-22 · **Author:** Participant 1
 
 ## Context
 Lab 1 requires the stack to start with one command and no manual steps. From lab 2 on, several backend instances

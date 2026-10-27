@@ -13,7 +13,7 @@ if a decision changes, add a new ADR and set the old one's status to `Superseded
 | [0006](0006-stateless-jwt-auth.md) | Stateless JWT auth, PBKDF2 passwords | Accepted |
 | [0007](0007-database-conventions.md) | bigint ids, snake_case, status as string, batched inserts | Accepted |
 | [0008](0008-ef-retry-strategy.md) | EF retry strategy; transactions inside the execution strategy | Accepted |
-| [0009](0009-startup-migrations-and-seed-locking.md) | Migrations + seed on startup, seed under an advisory lock | Accepted |
+| [0009](0009-startup-migrations-and-seed-locking.md) | Migrations + seed on startup, seed under an advisory lock | Accepted, amended by 0022 |
 | [0010](0010-seed-data.md) | Deterministic seed data with a user pool and a hot poll | Accepted |
 | [0011](0011-local-environment.md) | Host port 5433, GSS off, Swagger in Production | Accepted |
 | [0012](0012-instance-id-and-health.md) | `X-Instance-ID` header and `/health` from lab 1 | Accepted, amended by 0019 |
@@ -25,6 +25,8 @@ if a decision changes, add a new ADR and set the old one's status to `Superseded
 | [0018](0018-connection-pool-budget.md) | `Maximum Pool Size` 30 per instance; instances × pool ≤ `max_connections` | Accepted |
 | [0019](0019-health-check-timeout.md) | `/health` uses its own PostgreSQL probe with a 2 s timeout | Accepted |
 | [0020](0020-pgadmin-pinned.md) | pgAdmin 4 pinned to `9.17.0`, server pre-registered (starts with the stack since the amendment) | Accepted, amended |
+| [0021](0021-redis-and-two-backend-instances.md) | Lab 2: Redis + `backend-1`/`backend-2` from one image, ports 8080/8082, one shared `IConnectionMultiplexer` | Accepted |
+| [0022](0022-concurrent-startup-verified.md) | Concurrent startup of several instances on an empty DB verified safe; no separate migrator | Accepted |
 
 Template:
 
