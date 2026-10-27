@@ -1,4 +1,4 @@
-# 2026-10-27 — Participant 2 — lab 2: state audit (П2-1) and stateless request flow (П2-5)
+# 2026-10-27 — Participant 2 — lab 2: state audit (П2-1), stateless request flow (П2-5), "before" demo (П2-2)
 **Lab:** 2 · **Commits:** not committed (branch `lab2/p2-voting`, local only)
 
 ## Goal
@@ -21,6 +21,17 @@ the `lab2/p1-infra` branch (Redis + two instances): П2-1 and П2-5.
   результати», «Stateless Request Flow») and the drafts file was deleted.
 - README bottleneck #2 no longer says the cache moves to Redis "in lab 4" — it moves in lab 2 (П2-3); lab 4 is
   Cache-Aside, key schema, TTL rationale and DB fallback (as Participant 1 pointed out).
+
+- **П2-2 (the "before" demo):** `scripts/results-cache-demo.py` — Python stdlib only, fresh polls per run, so it is
+  repeatable and will be re-run unchanged after П2-3 as the "after". Scenario A: warm the cache on backend-2, vote via
+  backend-1 → backend-2 keeps `totalVotes=0` with the same `generatedAt` until the TTL. Scenario B: the author previews
+  a draft on backend-2, publishes via backend-1 → backend-2 answers **404** to others while backend-1 answers 200.
+  Stable in 3 consecutive runs; output and explanation in README «Усунені in-memory залежності → Кеш результатів».
+  Runbook: how to run it, expected before/after summary.
+- Cold start for the demo: `docker compose down -v` + `up -d --build`. Host port 5433 was held by `kafka-sandbox-db-1`
+  (an unrelated project, auto-started by Docker Desktop) → local gitignored `.env` with `POSTGRES_PORT=5434`; the
+  team default is unchanged. Recorded in runbook troubleshooting and Participant 2's environment. Seed ran once on
+  the concurrent start: 500 users, 50 polls, 0 per-option counter mismatches.
 
 ## Decisions (link ADRs)
 None — no non-obvious technical decision yet. Drafts-file placement is a temporary workflow choice, noted above.

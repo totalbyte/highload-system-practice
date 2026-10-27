@@ -108,6 +108,13 @@ Last verified 2026-09-30 (48/48 checks on the running stack and on a cold-starte
 ~0.6 s, scenarios 2–3 exact, the backend held 30 connections afterwards and `psql` still connected.
 Strip `\r` from tokens read out of a file (see quirks).
 
+**Results cache across instances (lab 2, П2-2/П2-3):** `python scripts/results-cache-demo.py` (stdlib only; `API1` /
+`API2` env vars override the instance URLs). Creates fresh polls each run, so it is repeatable. Scenario A: warm the
+cache on backend-2, vote via backend-1, read from both. Scenario B: the author previews a draft on backend-2, publishes
+via backend-1, an anonymous client reads from both. With the in-process cache the summary says **YES** twice
+(backend-2 serves stale counts until the 10 s TTL, and 404 for the just-published poll); once the cache is in Redis
+both lines must say **no**. ~13 s per run (it waits out the TTL only when it sees stale data).
+
 Full demo scenario with error cases: `requests/polls.http` (VS Code REST Client / Rider / Visual Studio).
 No automated tests yet (`public partial class Program;` is kept for future `WebApplicationFactory` tests).
 
@@ -117,13 +124,14 @@ No automated tests yet (`public partial class Program;` is kept for future `WebA
 |---|---|
 | Cyrillic becomes `????` when sent with curl from Git Bash on Windows | Shell encoding, not the server. Use Swagger, `.http`, Postman, or `curl --data-binary @file.json` with a UTF-8 file |
 | Every request returns 400 when the token comes from a file written by Python on Windows | Python writes CRLF; the `\r` inside the `Authorization` header breaks the request. Pipe tokens through `tr -d '\r'` |
-| `GET /results` still shows an old total | The in-process cache has a 10 s TTL as a safety net; a vote or a close invalidates it immediately. With two instances the caches diverge on purpose (ADR 0013) |
+| `GET /results` still shows an old total | The in-process cache has a 10 s TTL as a safety net; a vote, publish, close or delete invalidates it immediately — but only on the instance that handled the write. With two instances the caches diverge (ADR 0013, demo: `scripts/results-cache-demo.py`) until П2-3 moves the cache to Redis |
 | Can't reach the container DB on 5432 / connected to the wrong DB | Participant 1's machine runs a local Windows PostgreSQL service on 5432 — the container is on **5433** (ADR 0011) |
 | `fail: ... SELECT migration_id FROM "__EFMigrationsHistory"` on first start | Expected: the history table doesn't exist yet. Not an error |
 | `fail: ... CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory"` (Postgres: `pg_type_typname_nsp_index`) on a cold start | Both instances created the history table at the same instant; the provider ignores it and the migration still runs once (ADR 0022). Not an error |
 | Warning about DataProtection keys "not persisted outside of the container" | Harmless (we use JWT, not DataProtection); note it for the lab 2 state audit |
 | `The Entity Framework tools version '10.0.5' is older than ...` | Harmless; `dotnet tool update -g dotnet-ef` |
 | `failed to connect to the docker API` | Docker Desktop isn't running |
+| `Bind for 127.0.0.1:5433 failed: port is already allocated` on `up` | Another container or service holds the host port (on Participant 2's machine: `kafka-sandbox-db-1` from an unrelated project, auto-started by Docker Desktop). Put `POSTGRES_PORT=5434` in `.env` (gitignored) and `docker compose up -d` again — only host tools (psql, pgAdmin from the host) see the change; the backends talk to `postgres:5432` inside the network |
 | First request after a DB restart fails | Should not happen (EF retry strategy, ADR 0008); if it does, check the retry config |
 | `FATAL: sorry, too many clients already` (psql, Adminer, pgAdmin or the API) | The backend pools together exceed PostgreSQL `max_connections` (100). Check `DB_MAX_POOL_SIZE` × number of instances ≤ 97 (ADR 0018) |
 | API requests take ~13–16 s and then return 503 while the DB is down | Expected: EF retries (ADR 0008) plus ~3.3 s Docker DNS lookups for the stopped `postgres` container. `/health` answers 503 within 2 s (ADR 0019) |
@@ -134,8 +142,9 @@ No automated tests yet (`public partial class Program;` is kept for future `WebA
 
 Windows 11, .NET SDK 10.0.202, Docker 28.5.1 (Docker Desktop does not start automatically here either — launch it
 before `docker compose`), Git Bash, Python 3 **with `python-docx`** (so `.docx` files can be generated/read
-directly, unlike on Participant 1's machine); no `pandoc`. Local Postgres on 5432 is not an issue here, but the
-container stays on 5433 for both of us (ADR 0011).
+directly, unlike on Participant 1's machine); no `pandoc`. Host port 5433 is taken here by a container of an
+unrelated project, so a local `.env` sets `POSTGRES_PORT=5434` (from 2026-10-27); the default 5433 stays for the team
+(ADR 0011).
 
 ## Environment on Participant 1's machine
 

@@ -29,8 +29,8 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 | Task | Status |
 |---|---|
 | П2-1 State audit: voting and results modules | ✅ in README «Аудит стану → Голосування й результати» (branch `lab2/p2-voting`) |
-| П2-2 "Before" demo: stale results across instances with the in-memory cache (must precede П2-3) | ⏳ next — unblocked (`lab2/p1-infra` merged); also show the stale **404 after publish** (audit finding 1) |
-| П2-3 `ResultsCache` → Redis (supersedes ADR 0013) | ⏳ after П2-2 |
+| П2-2 "Before" demo: stale results across instances with the in-memory cache (must precede П2-3) | ✅ `scripts/results-cache-demo.py`; stale counts **and** stale 404 after publish, stable in 3 runs; output in README «Усунені in-memory залежності → Кеш результатів» |
+| П2-3 `ResultsCache` → Redis (supersedes ADR 0013) | ⏳ next — the same script must then print «no» twice |
 | П2-4 Redis unavailable → 503, committed vote not reported as failed | ⏳ |
 | П2-5 Stateless request flow for `POST /vote` | 🟡 in README (table + sequence diagram); the invalidation step and the "before П2-3" note are updated after П2-3 |
 | П2-6 The three concurrency checks across two instances | ⏳ |
