@@ -1,5 +1,5 @@
-# 2026-10-27 — Participant 1 — Lab 2 task split + П1-1…П1-5 (Redis, two instances, concurrent startup, DataProtection, platform audit, cross-instance chain)
-**Lab:** 2 · **Commits:** `320ca8e` (task split, on `main`); `c6f81ac` (П1-1, П1-2) merged via PR #2 as `78128e9`; П1-3 `17bbae3` on `lab2/p1-platform`; П1-4 `4d877a4`; П1-5 not committed
+# 2026-10-27 — Participant 1 — Lab 2 task split + П1-1…П1-6 (Redis, two instances, concurrent startup, DataProtection, platform audit, cross-instance chain, C4)
+**Lab:** 2 · **Commits:** `320ca8e` (task split, on `main`); `c6f81ac` (П1-1, П1-2) merged via PR #2 as `78128e9`; П1-3 `17bbae3` on `lab2/p1-platform`; П1-4 `4d877a4`; П1-5 `9c2c8d2`; П1-6 not committed
 
 ## Goal
 Read the lab 2 assignment and the repository, split lab 2 between the two participants so both can work in parallel
@@ -92,7 +92,17 @@ No ADRs — the proposals below are not yet confirmed by Participant 2 (task С-
   in step 6 (in-memory cache, up to the 10 s TTL). Expected until Participant 2's П2-3.
 - README section and `docs/lab2/participant-1.md` (П1-5) updated to the 8-step version.
 
+## П1-6: C4 component diagram and deployment docs (README)
+- "Архітектура (Lab 1)" replaced by "Архітектура (Lab 2)": mermaid flowchart at C4 component level — `backend-1`
+  with its components (JWT/X-Instance-ID middleware, controllers, services, `ResultsCache`, `AppDbContext`,
+  DataProtection, `/health`), `backend-2` as the same image, PostgreSQL and Redis with what each stores. Shows the
+  lab 2 target state; a note says the cache moves to Redis in П2-3. Rendered with mermaid 11.4.1 in a browser to
+  check the syntax (scratch page, not in the repo).
+- "Мульти-інстансне розгортання": one-command start, instance/port table, `X-Instance-ID` check, per-instance
+  stop/kill/start/logs, `redis-cli`. RACI: lab 2 rows; repo structure: `scripts/`. Runbook/contracts were already
+  updated in П1-1.
+
 ## Not done / next steps
-- Continue `lab2/p1-platform`: П1-6 (C4 component diagram, deployment docs) → П1-7; rerun the chain after П2-3.
+- П1-7: smoke test on both instances, open the PR for `lab2/p1-platform`; rerun the chain after П2-3.
 - Participant 2 to review the task split and confirm the proposals (С-1).
 - Participant 2 is no longer blocked: `main` has both instances and Redis.

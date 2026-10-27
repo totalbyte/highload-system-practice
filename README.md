@@ -141,23 +141,47 @@ erDiagram
 
 Схема описана EF-міграціями в [`src/PollingPlatform.Api/Data/Migrations`](src/PollingPlatform.Api/Data/Migrations).
 
-## Архітектура (Lab 1)
+## Архітектура (Lab 2)
+
+C4 Component Diagram: сервісний шар — два однакові stateless-інстанси з одного образу, весь стан — у централізованих сховищах. Компоненти показано для `backend-1`; `backend-2` — та сама збірка з тими самими компонентами.
 
 ```mermaid
 flowchart LR
-    Client[Клієнт: Swagger / Postman / curl] -->|HTTP/JSON, JWT| API
-    subgraph app-network [Docker network: app-network]
-        subgraph backend [Контейнер backend]
-            API[Backend API<br/>ASP.NET Core]
-            Cache[Кеш результатів<br/>у пам'яті процесу]
-            API --- Cache
+    Client["Клієнт<br/>curl / Swagger / REST Client"]
+
+    subgraph app-network [app-network]
+        subgraph B1 ["Контейнер backend-1 :8080 (stateless)"]
+            MW["Middleware<br/>валідація JWT, X-Instance-ID"]
+            CTRL["Контролери<br/>Auth / Polls / Votes / Results"]
+            SVC["Сервіси<br/>AuthService, PollService,<br/>VoteService, ResultsService"]
+            RC["ResultsCache<br/>клієнт Redis"]
+            DBC["AppDbContext<br/>EF Core + пул Npgsql"]
+            DP["DataProtection<br/>ключі в Redis"]
+            HC["/health<br/>перевірка PostgreSQL"]
+            MW --> CTRL --> SVC
+            SVC --> DBC
+            SVC --> RC
         end
-        DB[(PostgreSQL 17<br/>volume pgdata)]
+        B2["Контейнер backend-2 :8082 (stateless)<br/>той самий образ і компоненти"]
+        PG[("PostgreSQL 17<br/>користувачі, опитування,<br/>варіанти з vote_count, голоси<br/>volume pgdata")]
+        RD[("Redis 8<br/>кеш результатів<br/>results:{pollId}, TTL 10 с;<br/>ключі DataProtection")]
     end
-    API -->|SQL/TCP 5432, Npgsql pool| DB
+
+    Client -->|HTTP/JSON + JWT| MW
+    Client -->|HTTP/JSON + JWT| B2
+    DBC -->|SQL, транзакції, блокування рядків| PG
+    HC -->|SELECT 1| PG
+    RC -->|GET / SET / DEL| RD
+    DP -->|ключі| RD
+    B2 -->|SQL| PG
+    B2 -->|кеш, ключі| RD
 ```
 
-Кеш результатів живе **всередині процесу** backend — це свідоме рішення лаби 1 (ADR 0013). Саме його аудит стану лаби 2 виносить у зовнішнє сховище, після чого інстанси стають взаємозамінними.
+- **Між запитами в процесі нічого не лишається:** бізнес-дані — у PostgreSQL, кеш результатів і ключі DataProtection — у Redis, ідентичність користувача — у JWT на боці клієнта. Тому будь-який інстанс обробить будь-який запит, і будь-який можна вбити без втрати даних.
+- **Однакова конфігурація:** обидва інстанси — один YAML-якір у `docker-compose.yml` (той самий JWT-секрет і рядки підключення); відрізняються лише `INSTANCE_ID` і портом ([ADR 0021](docs/ai/decisions/0021-redis-and-two-backend-instances.md)).
+- **Узгодженість записів** тримає PostgreSQL: транзакція «голос + лічильник», `UNIQUE(poll_id, user_id)`, `FOR UPDATE`; міграції й сід при одночасному старті серіалізуються блокуваннями в БД ([ADR 0022](docs/ai/decisions/0022-concurrent-startup-verified.md)).
+- **Балансувальника ще немає** (лаба 3): клієнт сам обирає інстанс портом.
+- Схема показує цільовий стан лаби 2: кеш результатів переїжджає з пам'яті процесу в Redis у задачі П2-3 (Учасник 2).
 
 ## Структура репозиторію
 
@@ -171,7 +195,8 @@ src/PollingPlatform.Api/
   Data/          DbContext, конфігурації EF, міграції, сід
   Common/        бізнес-винятки → HTTP-коди, обробник помилок, X-Instance-ID
 docker-compose.yml
-requests/        колекція запитів для демо
+requests/        колекції запитів для демо (polls.http, cross-instance.http)
+scripts/         скрипти перевірок лаб (cross-instance.sh)
 docs/            методички та дизайн-документи
 docs/lab2/       розподіл задач лаби 2 між учасниками
 docs/ai/         контекст для AI-агентів: стан, ADR, контракти, runbook, журнал сесій
@@ -193,6 +218,13 @@ R — Responsible, A — Accountable, C — Consulted, I — Informed.
 | Обробка помилок | C | R/A |
 | Bottleneck Analysis | C | R/A |
 | README, OpenAPI, схема C4 | R | R |
+| Лаба 2: Redis, два інстанси, одночасний старт | R/A | C |
+| Лаба 2: ключі DataProtection у Redis | R/A | I |
+| Лаба 2: кеш результатів у Redis | C | R/A |
+| Лаба 2: аудит стану | R (платформа) | R/A (голосування, результати) |
+| Лаба 2: Stateless Request Flow | I | R/A |
+| Лаба 2: cross-instance перевірка | R/A | C |
+| Лаба 2: тест втрати інстансу | C | R/A |
 
 ## High-Load сценарій
 
@@ -294,7 +326,37 @@ _Заповнює Учасник 2 (П2-5)._
 
 ### Мульти-інстансне розгортання
 
-_Заповнює Учасник 1 (П1-6)._
+Потрібен лише Docker. Одна команда піднімає PostgreSQL, Redis і два інстанси backend з одного образу; міграції та сід виконуються автоматично, навіть коли обидва інстанси стартують одночасно.
+
+```bash
+docker compose up -d --build        # postgres, redis, backend-1, backend-2 (+ pgAdmin)
+docker compose ps                   # стан контейнерів
+```
+
+| Інстанс | Адреса | `X-Instance-ID` |
+|---|---|---|
+| `backend-1` | http://localhost:8080 | `backend-1` |
+| `backend-2` | http://localhost:8082 | `backend-2` |
+
+Порти змінюються через `.env` (`API_PORT`, `API2_PORT`). Який інстанс обробив запит — видно в заголовку відповіді:
+
+```bash
+curl -i http://localhost:8080/health   # X-Instance-ID: backend-1
+curl -i http://localhost:8082/health   # X-Instance-ID: backend-2
+```
+
+Керування окремим інстансом і спільними сховищами:
+
+```bash
+docker compose logs -f backend-2                   # логи одного інстансу
+docker compose stop backend-1                      # плавна зупинка
+docker compose kill backend-1                      # аварійна зупинка (SIGKILL)
+docker compose start backend-1                     # повернути інстанс (після stop/kill Docker сам не перезапускає)
+docker compose exec redis redis-cli KEYS '*'       # що лежить у Redis
+docker compose down -v                             # повне очищення, наступний up — холодний старт
+```
+
+Приклади запитів для перевірки узгодженості між інстансами — у наступному підрозділі.
 
 ### Перевірка cross-instance консистентності
 
