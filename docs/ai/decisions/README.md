@@ -30,6 +30,7 @@ if a decision changes, add a new ADR and set the old one's status to `Superseded
 | [0023](0023-dataprotection-keys-in-redis.md) | DataProtection keys in Redis with one application name — one key ring for all instances | Accepted |
 | [0026](0026-results-cache-in-redis.md) | Lab 2: results cache in Redis (`results:{pollId}`, JSON, TTL 10 s, `DEL` on invalidation), async `ResultsCache` | Accepted (supersedes 0013) |
 | [0027](0027-redis-unavailable.md) | Lab 2: Redis down → reads 503; invalidation and cache writes best-effort, committed changes still succeed | Accepted |
+| [0036](0036-artificial-delay-middleware.md) | Lab 3: artificial delay on one instance via middleware (`Diagnostics:ArtificialDelayMs`, `/health` not delayed) | Accepted |
 
 Template:
 

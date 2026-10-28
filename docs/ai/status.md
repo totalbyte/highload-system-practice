@@ -36,6 +36,14 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 | П2-7 Instance-loss test (`docker compose kill` during voting) | ✅ `scripts/kill-test.py`: 3 kill runs + 1 stop run green; PostgreSQL rolled back 1/3/10 open transactions; one retry got 409 (committed, response lost); Docker does not auto-restart after a manual kill |
 | П2-8 README sections, docs | ✅ README (audit, before/after, Request Flow, Redis outage, instance loss), runbook, contracts, ADRs 0026–0027; full re-run on a cold start |
 
+### Lab 3 — Participant 2 (branch `lab3/p2-experiments`; task split in PR #5)
+
+| Task | Status |
+|---|---|
+| П2-1 Artificial delay on one instance | ✅ `Common/Diagnostics/ArtificialDelay.cs`, ADR 0036; 200 ms on `backend-2` → ~215 ms there vs ~20 ms on `backend-1`, `/health` not delayed; off by default (smoke 9/9 on both) |
+| П2-2 Load generator | ✅ `scripts/load.py` (read / write / mixed, p50/p95/p99, split by `X-Instance-ID`, counter check); 3 runs each: read spread 4 %, write 20 %, counters 0 |
+| П2-3 … П2-7 | ⏳ need the load balancer (`lab3/p1-lb`, Participant 1) |
+
 ### Joint (after all lab 2 branches are merged)
 
 | Task | Status |

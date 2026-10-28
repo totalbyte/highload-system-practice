@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using PollingPlatform.Api.Auth;
 using PollingPlatform.Api.Common;
+using PollingPlatform.Api.Common.Diagnostics;
 using PollingPlatform.Api.Common.ErrorHandling;
 using PollingPlatform.Api.Data;
 using PollingPlatform.Api.Data.Seeding;
@@ -132,6 +133,7 @@ var app = builder.Build();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseInstanceIdHeader();
+app.UseArtificialDelay();
 
 if (app.Configuration.GetValue("Swagger:Enabled", true))
 {

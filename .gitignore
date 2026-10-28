@@ -17,3 +17,6 @@ TestResults/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local compose overrides (e.g. the artificial delay on one instance for lab 3 experiments)
+docker-compose.override.yml

@@ -33,6 +33,8 @@ Common/
   Validation/               validator.ValidateOrThrowAsync() → 422
   InstanceIdentity.cs       X-Instance-ID response header
   PostgresHealthCheck.cs    /health DB probe: own NpgsqlConnection, 2 s timeout, no EF retries (ADR 0019)
+  Diagnostics/              ArtificialDelay: UseArtificialDelay() — lab 3 slow-node experiment, off unless
+                            Diagnostics:ArtificialDelayMs > 0; /health is never delayed (ADR 0036)
 ```
 
 ## Conventions (follow them in new code)
