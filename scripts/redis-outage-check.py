@@ -8,6 +8,8 @@
   - після запуску redis усе працює без рестарту backend і результати свіжі.
 
 Запуск з кореня репозиторію (стек піднятий):  python scripts/redis-outage-check.py
+З лаби 3 обидві адреси за замовчуванням — балансувальник (backend-и не публікують портів, ADR 0031): запити
+розподіляє HAProxy. Тож перевіряється ще й те, що клієнт бачить 503 від API, а не сторінку помилки балансувальника.
 Вивід англійською — щоб не залежати від кодування консолі.
 """
 import json
@@ -19,7 +21,7 @@ import urllib.error
 import urllib.request
 
 API1 = os.environ.get("API1", "http://localhost:8080")
-API2 = os.environ.get("API2", "http://localhost:8082")
+API2 = os.environ.get("API2", "http://localhost:8080")
 PASSWORD = "Password123!"
 failures = 0
 

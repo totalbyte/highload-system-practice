@@ -32,6 +32,7 @@ if a decision changes, add a new ADR and set the old one's status to `Superseded
 | [0027](0027-redis-unavailable.md) | Lab 2: Redis down → reads 503; invalidation and cache writes best-effort, committed changes still succeed | Accepted |
 | [0033](0033-health-checks-and-retries.md) | Lab 3: active `/health` checks (`inter 2s fastinter 500ms fall 2 rise 2`), passive `observe layer4` mark-down, `retries 2` + `redispatch 1`, L7 retries only for GET; no layer-7 observation / 5xx retries (503 trap) | Accepted |
 | [0034](0034-balancing-algorithms-and-live-switch.md) | Lab 3: `roundrobin` by default; `scripts/lb-algorithm.sh` switches roundrobin / leastconn / weighted / source live (validate + SIGUSR2); `lb-distribution.py` | Accepted |
+| [0037](0037-vote-backend-retries.md) | Lab 3: `be_vote` backend for `POST …/vote` — in-flight retries on another node (safe: one transaction + `UNIQUE`), own `/health` checks + `observe layer4` instead of `track`; 5xx not retried | Accepted (extends 0033) |
 | [0036](0036-artificial-delay-middleware.md) | Lab 3: artificial delay on one instance via middleware (`Diagnostics:ArtificialDelayMs`, `/health` not delayed) | Accepted |
 
 Template:

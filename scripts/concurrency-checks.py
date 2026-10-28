@@ -1,7 +1,8 @@
 """Три перевірки паралельного голосування на двох інстансах (лаба 2, П2-6).
 
 Запити діляться навпіл між backend-1 і backend-2 і стартують одночасно (бар'єр), тож конкурують
-між собою і через різні процеси, і в одному процесі.
+між собою і через різні процеси, і в одному процесі. З лаби 3 обидві адреси за замовчуванням — балансувальник
+(ADR 0031): навпіл їх ділить уже HAProxy, а не скрипт.
 
   1. Багато різних користувачів голосують в одне опитування одночасно → усі 201, жодного 5xx.
   2. Один користувач паралельно змінює голос (allowVoteChange) → усі 200, рівно один рядок голосу.
@@ -26,7 +27,7 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
-INSTANCES = [os.environ.get("API1", "http://localhost:8080"), os.environ.get("API2", "http://localhost:8082")]
+INSTANCES = [os.environ.get("API1", "http://localhost:8080"), os.environ.get("API2", "http://localhost:8080")]
 PASSWORD = "Password123!"
 failures = 0
 
@@ -117,7 +118,7 @@ def invariants(poll_id):
     for base in INSTANCES:
         _, results = call(base, "GET", f"/api/polls/{poll_id}/results")
         seen.append(",".join(str(o["votes"]) for o in results["options"]))
-    check("results on backend-1 and backend-2 match the DB", seen == [db_votes, db_votes],
+    check("results from two reads (any instances) match the DB", seen == [db_votes, db_votes],
           f"db={db_votes} b1={seen[0]} b2={seen[1]}")
 
 
