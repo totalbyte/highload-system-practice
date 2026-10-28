@@ -145,6 +145,34 @@ whether Docker restarts the container — it does not after a manual kill/stop).
 Redis is down, vote 201 stored once, publish 200, counters consistent; after start — results 200 within ~2 s, fresh,
 no backend restart. ~25 s per run.
 
+**Load generator (lab 3, П2-2):** `python scripts/load.py --scenario read|write|mixed --threads 32 --duration 20
+--runs 3` (from the repo root, stdlib only). Closed loop: each thread keeps one keep-alive connection and sends the
+next request right after the previous answer. All scenarios use one fresh poll with `allowVoteChange` and 4 options;
+`write` = votes / vote changes by random users out of 300 (exercises `FOR UPDATE` and the hot `vote_count` rows),
+`mixed` = 80 % reads. Prints rps, p50/p95/p99/max, responses by code (5xx and connection errors separately), the
+split by `X-Instance-ID` with per-instance mean/p99, a summary with the rps spread for `--runs > 1`, and after any
+write scenario the per-option counter check (exit code 1 on a mismatch). Target: env `API` (default the balancer
+address `http://127.0.0.1:8080`); several comma-separated URLs are split between the threads on the client side —
+each thread sticks to one URL, so a slow instance simply gets fewer requests; this is **not** a balancing algorithm.
+Baseline 2026-10-28 (two instances, client-side split, 32 threads × 10 s, no delay): `read` ≈ 1.9k rps, p99 ≈ 43 ms,
+spread 4 %; `write` ≈ 250–320 rps, p50 ≈ 28 ms, p99 ≈ 1 s (row locks on 4 hot options), spread 20 %; counters 0.
+The generator shares the CPU with the stack and Python has the GIL — compare configurations, not absolute numbers.
+
+**Slow instance (lab 3, П2-1, ADR 0036):** a local `docker-compose.override.yml` (gitignored, picked up by
+`docker compose` automatically):
+
+```yaml
+services:
+  backend-2:
+    environment:
+      Diagnostics__ArtificialDelayMs: 200
+```
+
+`docker compose up -d backend-2` applies it; `backend-2` logs "Artificial delay of 200 ms is enabled" at startup and
+every request except `/health` gets +200 ms. Delete the file and `docker compose up -d backend-2` again to switch it
+off — **don't leave it lying around**, every later `docker compose up` would pick it up. The first request after a
+restart is slow anyway (JIT warm-up), measure from the second one.
+
 Full demo scenario with error cases: `requests/polls.http` (VS Code REST Client / Rider / Visual Studio).
 No automated tests yet (`public partial class Program;` is kept for future `WebApplicationFactory` tests).
 

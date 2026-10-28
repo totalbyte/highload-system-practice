@@ -97,6 +97,10 @@ Defined by EF migrations in `src/PollingPlatform.Api/Data/Migrations` (current: 
   `PollNotStartedException`, `PollVotingEndedException`, `DuplicateVoteException` (409).
 - `GlobalExceptionHandler` maps transient DB failures (ADR 0016) and Redis connection failures/timeouts (ADR 0027)
   to 503.
+- Lab 3 experiments (ADR 0036): setting `Diagnostics:ArtificialDelayMs` (env `Diagnostics__ArtificialDelayMs`) delays
+  every request except `/health` on that instance; default 0 = middleware not registered. One line in `Program.cs`
+  (`app.UseArtificialDelay()` after `UseInstanceIdHeader`). Never set it in `docker-compose.yml` — only in a local,
+  gitignored `docker-compose.override.yml`.
 
 ## Open questions
 
