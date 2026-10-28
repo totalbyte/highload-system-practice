@@ -32,6 +32,7 @@ Course materials and team documents are in Ukrainian ("Учасник 1/2" = Par
 | [`docs/lab1-guide.md`](docs/lab1-guide.md) | Long-form guide to lab 1 for the participants (Ukrainian): architecture, data model, voting logic, why each decision was made, defense Q&A |
 | [`docs/lab2-guide.md`](docs/lab2-guide.md) | Lab 2 defense guide (Ukrainian): stateless concepts, audit, removed in-memory state, how to run the lab 2 demos after lab 3, step-by-step defense script, Q&A |
 | [`docs/lab3-guide.md`](docs/lab3-guide.md) | Lab 3 defense guide (Ukrainian): one-minute cheat sheet, step-by-step defense script for the 4 procedure items, Q&A, what to do if a demo breaks |
+| [`docs/defense/lab2.md`](docs/defense/lab2.md), [`lab3.md`](docs/defense/lab3.md) | Pages to show the lecturer at the defense (Ukrainian): requirement → what was done → proof with numbers, diagrams, live-demo commands; no speaker notes |
 | `docs/labs/*.md`, `docs/*.docx` | Original assignments / design docs (Ukrainian); summarized in `project-context.md` |
 
 ## Stack
