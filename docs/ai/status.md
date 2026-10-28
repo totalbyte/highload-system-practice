@@ -1,7 +1,7 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-10-28 by Participant 1 (lab 3 П1-1, П1-2 merged via PR #7; П1-3 … П1-7 on `lab3/p1-platform`, PR open — see `log/2026-10-28-p1-lab3-platform.md`).
+> Last updated: 2026-10-28 by Participant 2 (lab 3 П2-3 … П2-7 on `lab3/p2-experiments` — see `log/2026-10-28-p2-lab3-experiments.md`; Participant 1's П1-3 … П1-7 on `lab3/p1-platform`, PR #8).
 
 ## Current lab: 3 — Horizontal scaling
 
@@ -28,15 +28,13 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 
 | Task | Status |
 |---|---|
-| П2-1 … П2-7 | ⏳ not started; П2-1 / П2-2 do not depend on the balancer. Python scripts still default to :8082 (П2-7) |
-
-### Lab 3 — Participant 2 (branch `lab3/p2-experiments`; task split in PR #5)
-
-| Task | Status |
-|---|---|
-| П2-1 Artificial delay on one instance | ✅ `Common/Diagnostics/ArtificialDelay.cs`, ADR 0036; 200 ms on `backend-2` → ~215 ms there vs ~20 ms on `backend-1`, `/health` not delayed; off by default (smoke 9/9 on both) |
-| П2-2 Load generator | ✅ `scripts/load.py` (read / write / mixed, p50/p95/p99, split by `X-Instance-ID`, counter check); 3 runs each: read spread 4 %, write 20 %, counters 0 |
-| П2-3 … П2-7 | ⏳ need the load balancer (`lab3/p1-lb`, Participant 1) |
+| П2-1 Artificial delay on one instance | ✅ merged (PR #6): `Common/Diagnostics/ArtificialDelay.cs`, ADR 0036; 200 ms on `backend-2` → ~215 ms there, `/health` not delayed; off by default |
+| П2-2 Load generator | ✅ merged (PR #6): `scripts/load.py`; one process tops out at ≈ 1.8k rps (`read`) — run several in parallel |
+| П2-3 RR vs Least Connections with a slow node | ✅ `lab3/p2-experiments` (not merged): RR 50/50, ≈ 300 rps, p95 209 ms; LC 97.5/2.5, ≈ 1.7–2.0k rps, p95 23–28 ms; p99 ≈ 215 ms in both (2.5 % still on the slow node); README |
+| П2-4 Node loss during voting | ✅ not merged: `be_vote` in `haproxy.cfg` (ADR 0037) — own checks instead of `track`; `kill-test.py` via the LB: 6 kill + 1 stop runs after a cold start, 0 client errors, DOWN in ≈ 1 s (before: 6 × 502 with П1-3, 52 errors with П1-1); 503 trap verified with `redis-outage-check.py` |
+| П2-5 Scale-out 1 / 2 / 3 | ✅ not merged: no CPU limits → flat (one backend served ≈ 5k reads/s); with `cpus: 1` per backend read 1491 / 2785 / 3218 rps, write 108 / 153 / 242 → plateau ≈ 250–300; DB connections 77–79 of 90 on 3 instances (П1-2 criterion) |
+| П2-6 Next bottleneck | ✅ not merged: row locks on the hot `vote_count` rows (`Lock` = 26–29 of ≈ 30 active sessions); next — the connection budget for 4+ instances; README |
+| П2-7 Lab 2 scripts via the LB, docs | ✅ not merged: `kill-test`, `concurrency-checks`, `redis-outage-check` default to the LB; `results-cache-demo` → `docker-compose.debug.yml`; runbook, contracts, ADR 0037 |
 
 ### Joint (after all lab 2 branches are merged)
 
@@ -84,7 +82,8 @@ address `backend-2` on :8082 need the lab 3 versions (П1-5 / П2-7) or a `docke
 
 - **Lab 3, Participant 1:** PR `lab3/p1-platform` (П1-3 … П1-7) → review by Participant 2; agree the
   health-check / retry settings with Participant 2's П2-4 (ADR 0033); then С-2 review of Participant 2's next PR.
-- **Lab 3, Participant 2:** П2-1, П2-2 merged (PR #6); the balancer is in `main` (PR #7), so П2-3 … П2-7 can go
-  through :8080 (algorithm switch: `scripts/lb-algorithm.sh`).
+- **Lab 3, Participant 2:** П2-3 … П2-7 done on `lab3/p2-experiments` on top of `lab3/p1-platform` (PR #8 must be
+  merged first); П2-4 settled: own checks in `be_vote` instead of `track` (ADR 0037, measured). Then С-3 (README
+  consolidation, Participant 2 leads), С-4 defense rehearsal, С-5 `labs/lab3-summary.md`.
 - **Lab 2:** С-5 cold-start rehearsal and С-6 `labs/lab2-summary.md` (both).
 - **Lab 1 leftovers (if lab 1 is not defended yet):** cold-start defense rehearsal and `labs/lab1-summary.md`.

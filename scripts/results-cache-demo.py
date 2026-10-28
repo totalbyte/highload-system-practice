@@ -7,6 +7,12 @@
 Сценарій B — publish: автор прогріває кеш чернетки на backend-2 → publish через backend-1 →
                      сторонній читає результати з обох.
 
+Історичне демо лаби 2: йому потрібен прямий доступ до кожного інстансу, а з лаби 3 backend-и не публікують
+портів (ADR 0031). Запускати лише з docker-compose.debug.yml, що відкриває порти інстансів для налагодження:
+  docker compose -f docker-compose.yml -f docker-compose.debug.yml up -d
+  API1=http://127.0.0.1:8091 API2=http://127.0.0.1:8092 python scripts/results-cache-demo.py
+Через балансувальник демо втрачає сенс — не видно, хто який інстанс.
+
 Запуск (стек має бути піднятий):  python scripts/results-cache-demo.py
 Інші адреси інстансів:            API1=http://host:8080 API2=http://host:8082 python scripts/results-cache-demo.py
 Вивід англійською — щоб не залежати від кодування консолі.

@@ -161,20 +161,28 @@ per-process again (it was, by design, before П2-3: stale counts until the 10 s 
 poll). ~1 s per run; it waits out the TTL only when it sees stale data. Redis side:
 `docker compose exec redis redis-cli TTL results:1` → ≤ 10 after a read, `EXISTS results:1` → 0 after a vote.
 
-**Instance loss (lab 2, П2-7):** `python scripts/kill-test.py` (from the repo root; `--stop` for a graceful stop
-instead of SIGKILL). 800 votes (400 users × 2 fresh polls, 32 threads) alternate between the instances; after 10 %
-it runs `docker compose kill backend-1`; the client retries a failed backend-1 request on backend-2 and then sends
-backend-1's share straight there. Expected: every vote 201 (or 409 on a retry whose first attempt had committed),
-vote rows = users per poll, per-option counters consistent, backend-2 results = DB; then `docker compose start
-backend-1`, `/health` 200 within ~3 s and the same results immediately. It also prints how many backend-1 connections
-PostgreSQL saw break and how many had an open transaction (rolled back). ~20 s per run (incl. a 10 s wait to see
-whether Docker restarts the container — it does not after a manual kill/stop). Always starts backend-1 again in
-`finally`. Uses `127.0.0.1`: on Windows a refused connection to `localhost` takes ~4 s (IPv6, then IPv4).
+**Instance loss through the balancer (lab 2 П2-7 → lab 3 П2-4, ADR 0037):** `python scripts/kill-test.py` (from the
+repo root; `--stop` for a graceful stop instead of SIGKILL). 800 votes (400 users × 2 fresh polls, 32 threads) go to
+the balancer (`API`, default `http://127.0.0.1:8080`); after 10 % it runs `docker compose kill backend-1`. The client
+does not know the instances: any 5xx or broken connection counts as an error the user would see; after an error it
+retries the same vote once (201, or 409 if the first attempt had committed). Prints who answered (`X-Instance-ID`),
+the errors with their timing, how long until HAProxy marked backend-1 DOWN in `be_vote` and in `be_api` (stats CSV on
+`LB_STATS`, default `http://127.0.0.1:8404/stats;csv`), and what PostgreSQL saw. Checks: **no client errors**, every
+vote 201 / 409-on-retry, vote rows = users, per-option counters, results through the balancer = DB; then `docker
+compose start backend-1`, back UP in HAProxy and serving the same results. A 409 as the first answer is fine — HAProxy
+retried a vote that had committed on the killed node. Expected (2026-10-28, 6 kill + 1 stop runs after a cold start):
+0 client errors, DOWN in `be_vote` after ≈ 1 s, back UP after 4–5 s, ≈ 6.5 s per run. Before `be_vote` the same
+run gave 6 × 502 (П1-3 config) or 52 errors (П1-1 config) — see README «Відмова вузла: запис». Always starts
+backend-1 again in `finally`. Uses `127.0.0.1`: on Windows a refused connection to `localhost` takes ~4 s.
 
 **Redis outage (lab 2, П2-4, ADR 0027):** `python scripts/redis-outage-check.py` (from the repo root; it runs
-`docker compose stop/start redis` itself and always starts Redis again in `finally`). Expected: results 503 while
-Redis is down, vote 201 stored once, publish 200, counters consistent; after start — results 200 within ~2 s, fresh,
-no backend restart. ~25 s per run.
+`docker compose stop/start redis` itself and always starts Redis again in `finally`). Since lab 3 both `API1` / `API2`
+default to the balancer. Expected: results 503 **ProblemDetails from the API** while Redis is down (not HAProxy's
+HTML page — both nodes stay UP in `be_api` and `be_vote`, the "503 trap" of ADR 0033 / 0037), vote 201 stored once,
+publish 200, counters consistent; after start — results 200 within ~4 s, fresh, no backend restart. ~25 s per run.
+`concurrency-checks.py` also defaults both addresses to the balancer (HAProxy splits the requests);
+`results-cache-demo.py` needs direct instance access — run it with `docker-compose.debug.yml` and
+`API1=http://127.0.0.1:8091 API2=http://127.0.0.1:8092`.
 
 **Load generator (lab 3, П2-2):** `python scripts/load.py --scenario read|write|mixed --threads 32 --duration 20
 --runs 3` (from the repo root, stdlib only). Closed loop: each thread keeps one keep-alive connection and sends the
@@ -188,6 +196,18 @@ each thread sticks to one URL, so a slow instance simply gets fewer requests; th
 Baseline 2026-10-28 (two instances, client-side split, 32 threads × 10 s, no delay): `read` ≈ 1.9k rps, p99 ≈ 43 ms,
 spread 4 %; `write` ≈ 250–320 rps, p50 ≈ 28 ms, p99 ≈ 1 s (row locks on 4 hot options), spread 20 %; counters 0.
 The generator shares the CPU with the stack and Python has the GIL — compare configurations, not absolute numbers.
+One generator process tops out at ≈ 1.8k rps for `read`; to load the system harder run several in parallel
+(`for k in 1 2 3; do python scripts/load.py ... & done; wait`) and add up their rps — three gave ≈ 4.8k.
+
+**Scale-out runs (lab 3, П2-5):** containers have no CPU limits, so on one machine a second instance adds no
+hardware — one `backend-1` alone served ≈ 5k cached reads/s on 5.6 of 24 cores, and 1 / 2 / 3 instances gave the same
+rps. To model "one instance = one server" put `cpus: 1.0` on every backend in the local
+`docker-compose.override.yml` (same file as the slow instance; delete it afterwards) and `docker compose --profile
+scale up -d`. Measure from the second run — the first one after a restart includes the JIT warm-up. Results and the
+bottleneck analysis: README «Scale-out» / «Наступний bottleneck». During write runs, what the DB waits on:
+`docker compose exec -T postgres psql -U polling -d polling -tAc "SELECT coalesce(wait_event_type,'cpu') || '=' ||
+count(*) FROM pg_stat_activity WHERE state = 'active' AND backend_type = 'client backend' AND pid <> pg_backend_pid()
+GROUP BY wait_event_type"` (`Lock=26` of ≈ 30 = row-lock queue on the hot `vote_count` rows).
 
 **Slow instance (lab 3, П2-1, ADR 0036):** a local `docker-compose.override.yml` (gitignored, picked up by
 `docker compose` automatically):
