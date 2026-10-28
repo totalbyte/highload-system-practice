@@ -24,6 +24,14 @@ Update this file whenever the API, the schema, or code another participant depen
   http://localhost:8404/stats); `backend-1`, `backend-2` and `backend-3` (profile `scale`) publish no host ports and
   are reachable only inside `app-network` as `backend-N:8080`. HAProxy logs every request to stdout (`docker compose
   logs lb`) with the backend/server name, status and timers (`%s`, `%ST`, `%Tr`, `%Ta`).
+- Load balancer behaviour other code relies on (ADR 0033, 0034): `/health` is the readiness check (200 = in the pool,
+  503 = out; it must stay DB-only and never check Redis, ADR 0021); a node is also taken out on the first connection
+  error; failed connects are retried on another node for any method, in-flight failures only for GET. HAProxy never
+  treats the API's 5xx as a node failure. A separate backend for votes (П2-4) can share these checks with
+  `server backend-N backend-N:8080 track be_api/backend-N`. When every node is out (DB down) clients get HAProxy's own
+  `503 text/html`, not ProblemDetails. Default algorithm `roundrobin`, switched by `scripts/lb-algorithm.sh`.
+- `docker-compose.debug.yml` (debug only, never in the standard stack) publishes `backend-1/2/3` on
+  `127.0.0.1:8091/8092/8093`.
 - Errors are RFC 7807 `application/problem+json` with `traceId`; 422 adds `errors: {field: [messages]}`.
 - Enums in JSON are camelCase strings (`"draft"`, `"active"`, `"closed"`).
 - Create validation: title 1..200, description ≤2000, 2..20 options, unique case-insensitively, each 1..200,

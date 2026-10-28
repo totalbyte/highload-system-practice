@@ -31,13 +31,44 @@ All settings have defaults in `docker-compose.yml`; override them via `.env` (se
 (default 30) caps the Npgsql pool of one backend instance — keep *instances × pool ≤ 90* (ADR 0018, 0032); two
 instances use at most 60, three 90 (verified under load). For 4+ instances set `DB_MAX_POOL_SIZE` = floor(90 / N) in
 `.env` (4 → 22) instead of raising `max_connections`. The app role `polling` is a superuser, so PostgreSQL's 3 reserved
-slots do not protect psql/pgAdmin from the backends — the 10 spare slots do. All instances are built from one image and differ only in `INSTANCE_ID` (ADR 0021); they
-publish no host ports — only `lb` does (ADR 0031). Cold start from `down -v` to the first 200 through the balancer
+slots do not protect psql/pgAdmin from the backends — the 10 spare slots do. All instances are built from one image
+and differ only in `INSTANCE_ID` (ADR 0021); they publish no host ports — only `lb` does (ADR 0031). Cold start from `down -v` to the first 200 through the balancer
 took 25 s including the (cached) image build on 2026-10-28; until the backends listen, HAProxy answers its own 503.
 
-**Lab 2 tools vs the balancer:** `scripts/cross-instance.sh`, `requests/cross-instance.http` and the Python scripts in
-`scripts/` still default to `backend-2` on :8082, which is no longer published — they are moved to the balancer in
-lab 3 tasks П1-5 / П2-7.
+**Lab 2 tools vs the balancer:** `scripts/cross-instance.sh` and `requests/cross-instance.http` go through the
+balancer since П1-5 (both addresses default to :8080; HAProxy picks the instance). Participant 2's Python scripts still
+default to `backend-2` on :8082 until П2-7. Direct access to one instance, for debugging or the historical lab 2
+"before" demo, only with the debug overlay (ports bound to `127.0.0.1`):
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.debug.yml up -d   # + backend-1 :8091, backend-2 :8092 (backend-3 :8093)
+I1=http://localhost:8091 I2=http://localhost:8092 bash scripts/cross-instance.sh
+docker compose up -d                                                     # back to the standard stack, ports gone
+```
+
+## Load balancer (lab 3)
+
+Config `haproxy/haproxy.cfg` (ADR 0031, 0033, 0034). Health checks: `GET /health` every 2 s (`fastinter 500ms` while a
+node changes state), `fall 2` / `rise 2`, `timeout check 3s`; passive `observe layer4` takes a node out on the first
+connection error; `retries 2` + `option redispatch 1`; in-flight GETs are retried (`retry-on conn-failure
+empty-response`), other methods only on connection failure. No layer-7 observation and no retries on 5xx (the API's
+honest 503 would take the whole pool out).
+
+```bash
+bash scripts/lb-algorithm.sh                  # current algorithm and weights
+bash scripts/lb-algorithm.sh leastconn        # roundrobin | leastconn | weighted (3:1 on backend-1) | source
+python scripts/lb-distribution.py             # 300 GET /health → split by X-Instance-ID next to the stats-page counters
+python scripts/lb-failover.py [--kill]        # GET stream; stop/kill backend-2 at 3 s, start at 10 s; 5xx, detection, return
+```
+
+`lb-algorithm.sh` edits `haproxy/haproxy.cfg`, validates it with `haproxy -c` inside the `lb` container (restores the
+file on failure), then reloads with SIGUSR2 — no rebuild, no container restart, 0 client errors (checked under
+`load.py`). It changes a tracked file: run `bash scripts/lb-algorithm.sh roundrobin` after a demo. Expected (2026-10-28,
+two instances): RR 50/50, leastconn ≈ 50/50 for sequential requests, weighted 75/25, source 0/100 (all host traffic
+comes from one Docker gateway address). `lb-failover.py`: 0 non-2xx in 4 runs (2 × stop, 2 × kill), node out after
+0.3–0.5 s, back ~6–8 s after `start` (mostly ASP.NET startup).
+
+After a reload the stats page shows `UP 1/3`-style states until the new worker's first check (≤ 2 s) — cosmetic.
 
 ## Run the backend locally (without Docker for the backend)
 
@@ -191,7 +222,8 @@ No automated tests yet (`public partial class Program;` is kept for future `WebA
 | `failed to connect to the docker API` | Docker Desktop isn't running |
 | `503 Service Unavailable` HTML page from HAProxy right after `up`; `backend 'be_api' has no server available!` in `docker compose logs lb` | The backends are still applying migrations / seeding and not listening yet. Wait a few seconds (the stats page shows them DOWN → UP) |
 | `curl localhost:8082` → connection refused | Expected since lab 3: backends publish no ports; use the balancer on 8080 (ADR 0031) |
-| A request hangs ~8 s and gets HAProxy's 503 right after a backend was stopped/removed | The node is still UP in HAProxy until its TCP check fails (`inter × fall`), and retries go to the same node. Fixed by `/health` checks + `option redispatch` in lab 3 П1-3 |
+| A request takes ~1 s instead of ~20 ms right after a backend was stopped / killed | Expected (ADR 0033): it hit the dead node and was retried on another one (`+1` in the retries field of the `lb` log line). The node is out of the pool within ~0.5 s |
+| `git status` shows `haproxy/haproxy.cfg` modified after a demo | `scripts/lb-algorithm.sh` edits it: `bash scripts/lb-algorithm.sh roundrobin` (or `git checkout haproxy/haproxy.cfg` + `docker compose kill -s USR2 lb`) |
 | `backend-3` stays `MAINT (resolution)` on the stats page | It is not running (profile `scale`): `docker compose --profile scale up -d` |
 | A killed/stopped backend stays down despite `restart: unless-stopped` | Expected: a manual `docker kill` / `docker stop` disables the restart policy until the next manual start; the policy only covers a process that exits on its own. `docker compose start backend-1` |
 | Requests take ~5 s; `GET /results` returns 503 "The cache is temporarily unavailable"; `warn: …ResultsCache` "not invalidated" in the logs | Redis is down. Expected (ADR 0027): the client waits its 5 s backlog timeout; reads 503, writes still succeed. `docker compose start redis` — recovers by itself, no backend restart |
@@ -199,7 +231,8 @@ No automated tests yet (`public partial class Program;` is kept for future `WebA
 | First request after a DB restart fails | Should not happen (EF retry strategy, ADR 0008); if it does, check the retry config |
 | `FATAL: sorry, too many clients already` (psql, Adminer, pgAdmin or the API) | The backend pools together exceed PostgreSQL `max_connections` (100). Check `DB_MAX_POOL_SIZE` × number of instances ≤ 90 (ADR 0018, 0032); with 4+ instances lower `DB_MAX_POOL_SIZE` in `.env` |
 | How many connections each instance holds | `docker compose exec -T postgres psql -U polling -d polling -tAc "SELECT client_addr, count(*) FROM pg_stat_activity WHERE client_addr IS NOT NULL GROUP BY 1"` — one row per backend container, ≤ `DB_MAX_POOL_SIZE` each |
-| API requests take ~13–16 s and then return 503 while the DB is down | Expected: EF retries (ADR 0008) plus ~3.3 s Docker DNS lookups for the stopped `postgres` container. `/health` answers 503 within 2 s (ADR 0019) |
+| API requests take ~13–19 s and then return 503 while the DB is down | Expected for the first ~4.6 s: EF retries (ADR 0008) plus ~3.3 s Docker DNS lookups for the stopped `postgres` container. `/health` answers 503 within 2 s (ADR 0019) |
+| `503 text/html` "No server is available to handle this request" from HAProxy while the DB is down | Expected (ADR 0033): every `/health` is 503, so ~4.6 s after the DB goes down the whole pool is out and HAProxy answers in ~3 ms instead of the API's 503 ProblemDetails. Back ~2.3 s after `docker compose start postgres` |
 | `/health` says "PostgreSQL did not respond within the timeout" | The probe hit its 2 s timeout (`HealthChecks:DbTimeoutSeconds`) — typically the DB container is stopped (its DNS name no longer resolves). Start it; `/health` returns 200 within a second |
 | `~$...docx` files appear in `docs/` | Word lock files while a document is open; ignored by `.gitignore` |
 
