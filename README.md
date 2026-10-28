@@ -4,6 +4,8 @@
 
 > **Розгорнутий посібник до лаби 1** (архітектура, логіка, обґрунтування рішень, питання на захист): [`docs/lab1-guide.md`](docs/lab1-guide.md).
 >
+> **Посібник до захисту лаби 2** (stateless, аудит стану, сценарій захисту з командами, питання на захист): [`docs/lab2-guide.md`](docs/lab2-guide.md).
+>
 > Контекст для учасників і AI-агентів: [`CLAUDE.md`](CLAUDE.md) → [`docs/ai/`](docs/ai/status.md) (стан, рішення/ADR, контракти, runbook, журнал сесій).
 
 **Стек:** C# / ASP.NET Core 10 · EF Core 10 + Npgsql · PostgreSQL 17 · JWT · FluentValidation · Docker Compose
@@ -319,6 +321,8 @@ grep -rnE "\bstatic\b|AddSingleton|AddHostedService|IMemoryCache|AddMemoryCache|
 | `lock` | `DataSeeder` — `pg_advisory_xact_lock`; коментар у `DatabaseInitializer` | Блокування в PostgreSQL, а не в процесі |
 
 Не знайдено жодного: `IMemoryCache` / `AddMemoryCache`, `Concurrent*`, `lock (…)`, `SemaphoreSlim`, `Interlocked`, таймерів, фонових сервісів, роботи з файлами, сесій, `ThreadStatic` / `AsyncLocal`. До лаби 2 (`06692fe`) той самий пошук знаходив `AddMemoryCache()` у `Program.cs` і `ResultsCache(IMemoryCache cache)` — це і є усунений кеш у пам'яті процесу.
+
+З лаби 3 той самий пошук дає **32** збіги замість 30: два нові — `public static class ArtificialDelayExtensions` і його метод `UseArtificialDelay` (`Common/Diagnostics`, Учасник 2, [ADR 0036](docs/ai/decisions/0036-artificial-delay-middleware.md)). Це клас-розширення без полів: затримка читається з конфігурації один раз при старті, між запитами нічого не зберігається.
 
 #### Доказ, що сесій немає
 
