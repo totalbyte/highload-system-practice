@@ -45,3 +45,12 @@ end of the session.
 Merge order: PR #8 (`lab3/p1-platform`) first, then this branch. С-3 README consolidation (Participant 2 leads), С-4
 defense rehearsal, С-5 `labs/lab3-summary.md`. The 15–20 % rps spread of `write` runs (same poll, growing contention
 as all 300 users have voted) is noted, not investigated further.
+
+## Later in the session: С-3, С-4
+- С-3: README «Підсумок лаби 3» — one algorithm table (П1-4 distribution + П2-3 slow-node numbers), one node-failure
+  table (reads, votes, Redis, PostgreSQL), §3 checklist.
+- С-4: `docs/lab3-guide.md` (cheat sheet, defense script for the 4 procedure items, Q&A, troubleshooting); dry run from
+  a cold start passed every step (numbers in the guide). Still to do together: the real rehearsal, then С-5
+  `labs/lab3-summary.md` after the defense.
+- A `git pull` hit a conflict in `status.md`: Participant 1 had merged `main` into the remote `lab3/p2-experiments`
+  the same way I had locally; kept the newer local text, marked П2-3 … П2-7 as merged (PR #10).
