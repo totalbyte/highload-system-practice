@@ -40,11 +40,12 @@ Docker Compose. Redis arrives in labs 2/4, Nginx in lab 3, k6 in lab 5.
 ## Quick start
 
 ```bash
-docker compose up -d --build     # backend + postgres; migrations and seed run automatically
+docker compose up -d --build     # backend-1 + backend-2 + postgres + redis; migrations and seed run automatically
 docker compose down -v           # wipe everything (cold start)
 ```
 
-API http://localhost:8080 · Swagger `/swagger` · health `/health` · Postgres from host `localhost:5433` (`polling`/`polling`).
+API `backend-1` http://localhost:8080, `backend-2` http://localhost:8082 · Swagger `/swagger` · health `/health` ·
+Postgres from host `localhost:5433` (`polling`/`polling`) · Redis `localhost:6379`.
 Seed users: `user001@example.com` … `user500@example.com`, password `Password123!`. Details: `docs/ai/runbook.md`.
 
 ## Rules that must not be broken

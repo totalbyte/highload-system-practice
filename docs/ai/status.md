@@ -43,7 +43,7 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 | С-1 Agree on the proposals | ✅ followed by both |
 | С-2 PR reviews | ✅ PR #2, #4, #3 merged |
 | С-3 Consolidated README audit | ✅ one table in the lab's three categories + summary of the two eliminated dependencies (`62b6713`) |
-| С-4 Code audit (grep `src/` for in-process state, explain every hit) | ✅ README «Аудит коду»: one grep command for the defense, 30 hits all explained; `IMemoryCache` 2 hits before lab 2 → 0 (not committed) |
+| С-4 Code audit (grep `src/` for in-process state, explain every hit) | ✅ README «Аудит коду»: one grep command for the defense, 30 hits all explained; `IMemoryCache` 2 hits before lab 2 → 0 (`d1f53ea`) |
 | С-5 Cold-start defense rehearsal | ⏳ both |
 | С-6 `docs/ai/labs/lab2-summary.md` | ⏳ both |
 
