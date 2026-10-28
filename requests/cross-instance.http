@@ -1,9 +1,12 @@
 ### Лаба 2, п. 2.5 — Cross-Instance Consistency (VS Code REST Client / Rider / Visual Studio).
 ### Виконуйте зверху вниз; кроки йдуть на різні інстанси — дивіться заголовок X-Instance-ID у відповіді.
 ### Cookies не використовуються, тож sticky sessions немає. Те саме через curl: scripts/cross-instance.sh.
+### З лаби 3 обидві адреси — балансувальник: інстанс для кожного кроку обирає HAProxy (round robin), тож «→ backend-N»
+### нижче — це роль кроку з лаби 2, а фактичний інстанс видно в X-Instance-ID. Конкретний інстанс — лише з
+### docker-compose.debug.yml: @i1 = http://localhost:8091, @i2 = http://localhost:8092.
 
 @i1 = http://localhost:8080
-@i2 = http://localhost:8082
+@i2 = http://localhost:8080
 
 ### 1. Логін → backend-1
 # @name login

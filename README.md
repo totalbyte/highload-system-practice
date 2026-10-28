@@ -180,7 +180,7 @@ flowchart LR
 - **Між запитами в процесі нічого не лишається:** бізнес-дані — у PostgreSQL, кеш результатів і ключі DataProtection — у Redis, ідентичність користувача — у JWT на боці клієнта. Тому будь-який інстанс обробить будь-який запит, і будь-який можна вбити без втрати даних.
 - **Однакова конфігурація:** обидва інстанси — один YAML-якір у `docker-compose.yml` (той самий JWT-секрет і рядки підключення); відрізняються лише `INSTANCE_ID` і портом ([ADR 0021](docs/ai/decisions/0021-redis-and-two-backend-instances.md)).
 - **Узгодженість записів** тримає PostgreSQL: транзакція «голос + лічильник», `UNIQUE(poll_id, user_id)`, `FOR UPDATE`; міграції й сід при одночасному старті серіалізуються блокуваннями в БД ([ADR 0022](docs/ai/decisions/0022-concurrent-startup-verified.md)).
-- **Балансувальника ще немає** (лаба 3): клієнт сам обирає інстанс портом.
+- **Балансувальника ще немає** (стан лаби 2): клієнт сам обирає інстанс портом. З лаби 3 перед пулом стоїть HAProxy — схема в розділі «Лабораторна 3 → Архітектура і розгортання з балансувальником».
 
 ## Структура репозиторію
 
@@ -193,11 +193,14 @@ src/PollingPlatform.Api/
   Domain/        сутності User, Poll, PollOption, Vote
   Data/          DbContext, конфігурації EF, міграції, сід
   Common/        бізнес-винятки → HTTP-коди, обробник помилок, X-Instance-ID
-docker-compose.yml
+docker-compose.yml        стек: lb (HAProxy), backend-1/2 (+ backend-3 у профілі scale), postgres, redis, pgAdmin
+docker-compose.debug.yml  лише для налагодження: порти 8091–8093 до окремих інстансів
+haproxy/         конфіг балансувальника (haproxy.cfg)
 requests/        колекції запитів для демо (polls.http, cross-instance.http)
-scripts/         перевірки лаби 2 на двох інстансах (cross-instance.sh; Python-скрипти — лише стандартна бібліотека, запуск — у runbook)
+scripts/         перевірки й експерименти лаб 2–3 (lb-algorithm.sh, lb-distribution.py, lb-failover.py, cross-instance.sh,
+                 load.py та ін.; Python — лише стандартна бібліотека, запуск — у runbook)
 docs/            методички та дизайн-документи
-docs/lab2/       розподіл задач лаби 2 між учасниками
+docs/lab2/, docs/lab3/  розподіл задач лаб 2 і 3 між учасниками
 docs/ai/         контекст для AI-агентів: стан, ADR, контракти, runbook, журнал сесій
 CLAUDE.md        точка входу для Claude Code
 ```
@@ -224,6 +227,12 @@ R — Responsible, A — Accountable, C — Consulted, I — Informed.
 | Лаба 2: Stateless Request Flow | I | R/A |
 | Лаба 2: cross-instance перевірка | R/A | C |
 | Лаба 2: тест втрати інстансу | C | R/A |
+| Лаба 3: HAProxy, інкапсуляція, пул інстансів, бюджет з'єднань | R/A | C |
+| Лаба 3: health checks, повтори, відмова вузла (читання) | R/A | C |
+| Лаба 3: алгоритми балансування, live-перемикання, статистика розподілу | R/A | C |
+| Лаба 3: затримка, генератор навантаження, RR vs Least Connections | C | R/A |
+| Лаба 3: відмова вузла під час запису, scale-out, наступний bottleneck | C | R/A |
+| Лаба 3: схема, розгортання, SPOF | R/A | C |
 
 ## High-Load сценарій
 
@@ -634,7 +643,7 @@ Instance comes back
 
 Методичка — [`docs/labs/Lab3 - Horizontal Scaling.md`](docs/labs/Lab3%20-%20Horizontal%20Scaling.md), розподіл задач — [`docs/lab3/`](docs/lab3/participant-1.md). Кожен підрозділ має власника: кожен пише лише у свої підрозділи.
 
-> Скрипти й колекції лаби 2, які звертаються до `backend-2` напряму на `:8082` (`scripts/cross-instance.sh`, `requests/cross-instance.http`, Python-скрипти в `scripts/`), після появи балансувальника його вже не бачать — їх переводять на балансувальник у задачах П1-5 і П2-7.
+> Скрипти й колекції лаби 2 раніше зверталися до `backend-2` напряму на `:8082`, якого тепер немає. `scripts/cross-instance.sh` і `requests/cross-instance.http` уже йдуть через балансувальник (П1-5); Python-скрипти Учасника 2 переводяться в П2-7. Прямий доступ до інстансу для налагодження — [`docker-compose.debug.yml`](docker-compose.debug.yml) (порти 8091–8093 лише на `127.0.0.1`), ніколи не в стандартному стеку.
 
 ### Балансувальник і інкапсуляція *(Учасник 1)*
 
@@ -663,7 +672,29 @@ docker compose logs -f lb                       # HTTP-лог: який вузо
 
 ### Алгоритми балансування і статистика розподілу *(Учасник 1)*
 
-_П1-4._
+Алгоритм перемикається **наживо однією командою**, без перезбирання образу і без перезапуску контейнера ([ADR 0034](docs/ai/decisions/0034-balancing-algorithms-and-live-switch.md)):
+
+```bash
+bash scripts/lb-algorithm.sh leastconn      # roundrobin | leastconn | weighted | source; без аргументу — поточний
+python scripts/lb-distribution.py           # 300 GET через балансувальник → розподіл по X-Instance-ID
+```
+
+Скрипт змінює рядок `balance` (і вагу `backend-1` для `weighted`) у [`haproxy/haproxy.cfg`](haproxy/haproxy.cfg), перевіряє конфіг тим самим HAProxy у контейнері (битий файл відновлюється і до перезавантаження не доходить) і шле master-процесу SIGUSR2: новий worker читає новий конфіг, старий доробляє свої з'єднання. `lb-distribution.py` поруч із підрахунком `X-Instance-ID` друкує приріст відповідей кожного сервера зі сторінки статистики HAProxy — числа збігалися завжди, до запиту.
+
+**Розподіл** (300 послідовних `GET /health`, 2026-10-28):
+
+| Алгоритм | 2 інстанси (b1 / b2) | 3 інстанси (b1 / b2 / b3) | Для якого профілю навантаження |
+|---|---|---|---|
+| `roundrobin` | 50.0 / 50.0 % | 33.3 / 33.3 / 33.3 % | однакові вузли, короткі однакові запити — наш випадок після лаби 2; повільного вузла не бачить |
+| `leastconn` | 52.7 / 47.3 % | 31.0 / 34.0 / 35.0 % | запити різної тривалості або вузол деградує: повільний вузол довше тримає з'єднання і отримує менше нових |
+| weighted 3 : 1 (: 1) | 75.3 / 24.7 % | 60.3 / 19.7 / 20.0 % | вузли різної потужності; ваги ставляться руками і не реагують на раптову деградацію |
+| `source` (IP Hash) | 0 / 100 % | 0 / 100 / 0 % | прив'язка клієнта до вузла; нам не потрібна, бо стану в інстансах немає |
+
+- **Least Connections ≈ Round Robin** у цьому тесті, бо запити йдуть по одному: у кожного вузла 0 активних з'єднань, і нічия розв'язується по черзі. Різниця з'являється лише при паралельних запитах різної тривалості — це експеримент Учасника 2 з повільним вузлом (підрозділ нижче).
+- **`source` віддає все одному інстансу**, бо всі запити з хоста потрапляють у Docker-мережу з однієї адреси шлюзу (`172.20.0.1` у лозі HAProxy). Це той самий ефект, що й NAT або корпоративний проксі в реальному світі: тисячі клієнтів — «один IP», і IP Hash вантажить один вузол.
+- **Live-перемикання під навантаженням:** `scripts/load.py --scenario mixed --threads 16 --duration 14` (≈ 600 rps), посередині RR → Least Connections → RR — 8365 запитів, **0 5xx, 0 обривів з'єднання**.
+
+На захисті ті самі числа видно на сторінці статистики http://localhost:8404/stats (стовпці Sessions → Total і стан кожного сервера). Після демо — `bash scripts/lb-algorithm.sh roundrobin`, щоб у Git лишився алгоритм за замовчуванням.
 
 ### Асиметричне навантаження: Round Robin vs Least Connections *(Учасник 2)*
 
@@ -671,11 +702,58 @@ _П2-1 … П2-3._
 
 ### Health checks і виключення вузла *(Учасник 1)*
 
-_П1-3._
+**Readiness-ендпоінт** `GET /health` (з лаби 1, [ADR 0012](docs/ai/decisions/0012-instance-id-and-health.md), [0019](docs/ai/decisions/0019-health-check-timeout.md)): власний `SELECT 1` до PostgreSQL з таймаутом 2 с, без EF-повторів; 200 `Healthy` або 503 `Unhealthy`. Redis навмисно не перевіряє: падіння одного спільного Redis зробило б «хворими» всі інстанси одночасно, і балансувальник вимкнув би весь пул навіть для запитів, яким Redis не потрібен ([ADR 0021](docs/ai/decisions/0021-redis-and-two-backend-instances.md)). Штучна затримка Учасника 2 `/health` теж не зачіпає — повільний вузол лишається в пулі.
+
+Налаштування в `backend be_api` ([ADR 0033](docs/ai/decisions/0033-health-checks-and-retries.md)):
+
+| Механізм | Конфіг | Що робить |
+|---|---|---|
+| Активна перевірка | `option httpchk` + `http-check send meth GET uri /health`, `expect status 200`, `inter 2s fastinter 500ms fall 2 rise 2`, `timeout check 3s` | HAProxy сам питає `/health` кожного вузла кожні 2 с; 2 невдачі поспіль → вузол поза пулом, 2 успіхи → назад. Вузол без БД (503) — «degraded», теж поза пулом. `timeout check` більший за 2 с, з якими `/health` повідомляє про мертву БД |
+| Пасивна перевірка | `observe layer4 error-limit 1 on-error mark-down` | перша ж помилка з'єднання на живому запиті одразу виключає вузол, не чекаючи наступної перевірки |
+| Повтор, коли не вдалося з'єднатися | `retries 2`, `option redispatch 1` | запит ще не відправлено — безпечно для будь-якого методу; кожен повтор іде на **інший** вузол |
+| Повтор обірваного запиту | `retry-on conn-failure empty-response` + `http-request disable-l7-retry if !METH_GET` | вузол помер посеред відповіді: GET повторюється, POST / PATCH / DELETE — ні (повтор `POST /api/polls` створив би друге опитування) |
+
+**Чого навмисно немає — «пастка 503».** Ні `observe layer7`, ні `retry-on 503`: наше API чесно віддає 503 ProblemDetails, коли недоступні БД або Redis ([ADR 0016](docs/ai/decisions/0016-transient-db-errors-503.md), [0027](docs/ai/decisions/0027-redis-unavailable.md)), і віддає їх **усі інстанси одночасно**. Якби балансувальник вважав це відмовою вузла, падіння Redis вимкнуло б увесь пул, і клієнт побачив би сторінку HAProxy замість відповіді API. Повтори голосування — окреме рішення Учасника 2 (підрозділ «Відмова вузла: запис»).
+
+**Коли падає PostgreSQL** (перевірено): `/health` усіх вузлів віддає 503, через ~4.6 с після `docker compose stop postgres` обидва вузли поза пулом, і нові запити за ~3 мс отримують від HAProxy `503 text/html` «No server is available» замість очікування 13–19 с на наш 503. Після `docker compose start postgres` пул повертається сам за ~2.3 с. Це ціна вимоги 2.4.1 (готовність = доступна БД).
 
 ### Відмова вузла: читання *(Учасник 1)*
 
-_П1-3._
+Сценарій для захисту (п. 3 процедури): потік GET через балансувальник, посеред нього вузол зупиняється, потім повертається.
+
+```bash
+python scripts/lb-failover.py           # docker compose stop backend-2 на 3-й с, start на 10-й
+python scripts/lb-failover.py --kill    # те саме з kill (SIGKILL)
+```
+
+Вивід прогону з `kill` (8 потоків × `GET /api/polls?pageSize=5`, 2026-10-28):
+
+```text
+    3.03s  docker compose kill backend-2
+    3.55s  HAProxy: backend-2 DOWN
+   10.03s  docker compose start backend-2
+   16.12s  HAProxy: backend-2 DOWN 1/2
+   16.65s  HAProxy: backend-2 UP
+
+phase        requests  by instance                       non-2xx / errors    max latency
+before           1925  backend-1 962, backend-2 963      0                          80ms
+node down        3587  backend-1 3480, backend-2 107     0                        1041ms
+after start      9302  backend-1 7333, backend-2 1969    0                         417ms
+
+client saw 0 non-2xx responses / connection errors out of 14834 requests
+```
+
+| Прогін | Запитів | 5xx / обривів у клієнта | Вузол поза пулом через | Повторено на backend-1 | Повернувся після `start` |
+|---|---|---|---|---|---|
+| `stop` № 1 | 18 943 | **0** | 0.49 с | — | 7.8 с |
+| `stop` № 2 | 20 924 | **0** | 0.44 с | 2 | 6.3 с |
+| `kill` № 1 | 14 834 | **0** | 0.52 с | — | 6.6 с |
+| `kill` № 2 | 21 421 | **0** | 0.34 с | 7 | 6.8 с |
+
+- **Виявлення за пів секунди**, а не за `inter × fall` ≈ 4 с: першим вузол вимикає пасивна перевірка — у лозі HAProxy `reason: Health analyze, info: "Detected 1 consecutive errors, last one was: L4 unsuccessful connection"`.
+- **Нуль помилок у клієнта.** Запити, що встигли піти на мертвий вузол, HAProxy повторив на `backend-1` (у лозі — `+1` у полі повторів); клієнт отримав 200, лише довше (до ~1 с замість ~20 мс).
+- **Повернення без перезапуску `lb`.** Після `start` HAProxy сам знаходить контейнер через Docker DNS (навіть якщо IP змінився) і повертає його в пул після двох вдалих перевірок `/health`. Більшість із ~6–8 с — старт самого ASP.NET (перевірка міграцій і сіду); від першої вдалої перевірки (`DOWN 1/2`) до `UP` — ~0.5 с.
+- **`stop` проти `kill`.** При `stop` ASP.NET закриває listener і доробляє прийняті запити; при `kill` процес зникає миттєво, і запити на льоту обриваються — для GET це закриває `retry-on empty-response`. Для запису (голосування) повтор після відправлення — рішення Учасника 2 нижче.
 
 ### Відмова вузла: запис *(Учасник 2)*
 
@@ -691,8 +769,83 @@ _П2-6._
 
 ### Архітектура і розгортання з балансувальником *(Учасник 1)*
 
-_П1-6._
+```mermaid
+flowchart LR
+    Client["Клієнт<br/>curl / Swagger / load.py"]
+
+    subgraph host ["Хост: опубліковані порти"]
+        P8080[":8080 — API"]
+        P8404[":8404 — /stats"]
+    end
+
+    subgraph net ["app-network — приватна мережа, назовні відкритий лише lb"]
+        LB["lb: HAProxy 3.4<br/>frontend fe_api :8080<br/>backend be_api: roundrobin<br/>активна перевірка GET /health, пасивна layer4<br/>retries + redispatch"]
+        subgraph pool ["Upstream-пул be_api (stateless, один образ)"]
+            B1["backend-1:8080"]
+            B2["backend-2:8080"]
+            B3["backend-3:8080<br/>профіль scale"]
+        end
+        PG[("PostgreSQL 17<br/>max_connections 100<br/>≤ 30 з'єднань на інстанс")]
+        RD[("Redis 8<br/>кеш результатів,<br/>ключі DataProtection")]
+    end
+
+    Client -->|HTTP/JSON + JWT| P8080 --> LB
+    Client -.->|браузер| P8404 -.-> LB
+    LB -->|HTTP + X-Forwarded-For| B1
+    LB -->|HTTP| B2
+    LB -->|HTTP| B3
+    B1 --> PG
+    B2 --> PG
+    B3 --> PG
+    B1 --> RD
+    B2 --> RD
+    B3 --> RD
+```
+
+- **Клієнтський трафік** іде лише на `lb:8080`; backend-и портів не мають, тож обійти балансувальник неможливо (п. 2.2). Сторінка статистики — інтерфейс самого балансувальника.
+- **Upstream-пул** — 2 інстанси за замовчуванням, 3-й у профілі `scale`; HAProxy знаходить їх через Docker DNS під час роботи. Компоненти всередині інстансу ті самі, що на C4 лаби 2 (розділ «Архітектура»).
+- **Сховища спільні й не масштабуються разом із пулом:** кожен інстанс тримає до 30 з'єднань з PostgreSQL, тому для 4+ інстансів пул одного інстансу зменшується до `floor(90 / N)` ([ADR 0032](docs/ai/decisions/0032-connection-budget-for-scale-out.md)).
+
+**Розгортання з балансувальником** — усе однією командою, без ручних кроків:
+
+```bash
+docker compose up -d --build                     # 2 інстанси: postgres, redis, lb, backend-1, backend-2 (+ pgAdmin)
+docker compose --profile scale up -d             # 3 інстанси: + backend-3, у пулі за ~9 с без перезапуску lb
+docker compose stop backend-2                    # 1 інстанс: балансувальник виключає вузол сам за < 1 с
+docker compose start backend-2                   # вузол повертається в пул сам після 2 вдалих перевірок
+docker compose --profile scale rm -sf backend-3  # прибрати 3-й інстанс
+bash scripts/lb-algorithm.sh leastconn           # перемкнути алгоритм наживо (roundrobin | leastconn | weighted | source)
+docker compose logs -f lb                        # лог HAProxy: вузол, код, таймінги кожного запиту; зміни стану вузлів
+docker compose down -v                           # повне очищення → наступний up — холодний старт
+```
+
+| Що | Де |
+|---|---|
+| Стан вузлів, кількість запитів і час відповіді кожного | http://localhost:8404/stats (CSV — `/stats;csv`) |
+| Лог запитів: `fe_api be_api/backend-2 0/0/0/3/3 200 …` — вузол, таймінги `Tq/Tw/Tc/Tr/Ta`, код, повтори (`+1`) | `docker compose logs lb` |
+| Конфіг балансувальника | [`haproxy/haproxy.cfg`](haproxy/haproxy.cfg) (змонтований read-only; зміни — `docker compose kill -s USR2 lb`) |
+| Прямий доступ до інстансу (налагодження) | `docker compose -f docker-compose.yml -f docker-compose.debug.yml up -d` → `127.0.0.1:8091 / 8092 / 8093` |
+
+На холодному старті перші секунди (поки backend-и застосовують міграції й сід) HAProxy відповідає власним 503 «No server is available» — вузли ще DOWN на сторінці статистики.
 
 ### Балансувальник як SPOF *(Учасник 1)*
 
-_П1-6._
+Ми прибрали точку відмови в compute-шарі — будь-який backend можна вбити без помилок у клієнта, — але поставили перед ним **один** HAProxy. Якщо впаде він, система недоступна при повністю живих backend-ах: це і є Single Point of Failure (п. 4 процедури захисту). Шляхи усунення:
+
+| Підхід | Як працює | Ціна / обмеження |
+|---|---|---|
+| **Keepalived / VRRP** (active-passive) | два балансувальники ділять одну віртуальну IP-адресу (VIP); активний шле VRRP-heartbeat, а коли той зникає, резервний забирає VIP за 1–3 с. Клієнти й DNS бачать ту саму адресу | потрібна спільна L2-мережа; резервний вузол простоює; конфіги двох LB тримати однаковими |
+| **DNS Round Robin** | кілька A-записів на різні балансувальники, клієнти розходяться між ними | дешево, але DNS кешується (TTL): клієнт не знає, що адреса мертва, health check-ів немає — частина клієнтів «висить» до спливання TTL |
+| **Керований хмарний балансувальник** (AWS ALB / NLB, GCP LB), anycast | провайдер сам тримає кілька екземплярів у різних зонах доступності за однією адресою | залежність від провайдера, гроші |
+
+```mermaid
+flowchart LR
+    C["Клієнти"] --> VIP(["VIP 10.0.0.100"])
+    VIP --> LB1["HAProxy #1<br/>MASTER"]
+    VIP -.->|після відмови #1| LB2["HAProxy #2<br/>BACKUP"]
+    LB1 <-.->|VRRP heartbeat| LB2
+    LB1 --> POOL["backend-1..N"]
+    LB2 -.-> POOL
+```
+
+У нашому стенді один HAProxy у compose — свідомо: це навчальний стенд на одному хості, де сам хост і так є точкою відмови, а Keepalived потребує окремої мережі й прав `NET_ADMIN`. На захисті показуємо схему вище і пояснюємо, як VIP переїжджає на резервний вузол.
