@@ -1,7 +1,7 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-10-28 by Participant 1 (lab 3 П1-1 and П1-2 done, not committed — see `log/2026-10-28-p1-lab3-lb.md`).
+> Last updated: 2026-10-28 by Participant 1 (lab 3 П1-1 and П1-2 committed on `lab3/p1-lb`, not pushed — see `log/2026-10-28-p1-lab3-lb.md`).
 
 ## Current lab: 3 — Horizontal scaling
 
@@ -16,8 +16,8 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 
 | Task | Status |
 |---|---|
-| П1-1 HAProxy as the single entry point, backends without ports, `backend-3` in profile `scale` | ✅ done in the working tree on `main`, **not committed, no branch yet** (meant for `lab3/p1-lb`); ADR 0031; verified on a cold start (rotation, :8082 refused, `backend-3` joins without `lb` restart, smoke 11/11 via :8080, live reload `kill -s USR2 lb` with 0 errors) |
-| П1-2 Three instances + connection budget for 4+ | ✅ done in the same uncommitted tree; ADR 0032 (4+ → `DB_MAX_POOL_SIZE = floor(90 / N)`, `max_connections` stays 100); 5 simultaneous cold starts of three instances clean; 150 threads via lb → peak 90 connections (30 × 3), psql connects. Re-check `pg_stat_activity` ≤ 90 during Participant 2's П2-5 runs |
+| П1-1 HAProxy as the single entry point, backends without ports, `backend-3` in profile `scale` | ✅ `f0566d4` on `lab3/p1-lb` (not pushed, no PR yet); ADR 0031; verified on a cold start (rotation, :8082 refused, `backend-3` joins without `lb` restart, smoke 11/11 via :8080, live reload `kill -s USR2 lb` with 0 errors) |
+| П1-2 Three instances + connection budget for 4+ | ✅ `a6e298c` on `lab3/p1-lb`; ADR 0032 (4+ → `DB_MAX_POOL_SIZE = floor(90 / N)`, `max_connections` stays 100); 5 simultaneous cold starts of three instances clean; 150 threads via lb → peak 90 connections (30 × 3), psql connects. Re-check `pg_stat_activity` ≤ 90 during Participant 2's П2-5 runs |
 | П1-3 Active/passive health checks, node exclusion (read path) | ⏳ — known gap until then: ~8 s hang + HAProxy 503 right after a node disappears (ADR 0031) |
 | П1-4 Algorithms + `lb-distribution` script | ⏳ (reload command already verified) |
 | П1-5 Lab 2 chain (`cross-instance.*`, `polls.http`) through the balancer | ⏳ — `cross-instance.sh` still targets :8082 |
@@ -49,7 +49,7 @@ address `backend-2` on :8082 need the lab 3 versions (П1-5 / П2-7) or a `docke
 |---|---|
 | 1 System Design + MVP | 🟡 stages 1–9 done; stage 10 (cold-start defense rehearsal) and `labs/lab1-summary.md` not recorded |
 | 2 Stateless | 🟡 all П1/П2 tasks merged into `main` (PR #2, #4, #3) and verified on a cold start; joint tasks С-5, С-6 left |
-| 3 Horizontal Scaling | 🟡 task split merged (PR #5); П1-1 (HAProxy on 8080, ADR 0031) done, not committed |
+| 3 Horizontal Scaling | 🟡 task split merged (PR #5); П1-1, П1-2 on `lab3/p1-lb` (ADRs 0031–0032), PR pending |
 | 4 Distributed Caching | ⏳ |
 | 5 Load Testing | ⏳ (groundwork: 500 seed users, hot poll #1) |
 
@@ -67,15 +67,13 @@ address `backend-2` on :8082 need the lab 3 versions (П1-5 / П2-7) or a `docke
   `main` 2026-10-27 (cold start): smoke 11/11 on both instances, `cross-instance.sh` 8/8, `results-cache-demo`,
   `concurrency-checks`, `kill-test`, `redis-outage-check` all passed. 2026-10-28, uncommitted lab 3 П1-1 tree (cold
   start): smoke 11/11 through the balancer on :8080; the lab 2 scripts were not re-run (they still target :8082).
-- The working tree on `main` holds uncommitted lab 3 П1-1 + П1-2 changes (`haproxy/`, compose, `.env.example`,
-  README, ADRs 0031–0032, amended 0018 / 0021, runbook, contracts, this file, session log).
+- Branch `lab3/p1-lb` (local, not pushed): П1-1 `f0566d4`, П1-2 `a6e298c`.
 - `.gitattributes` keeps LF in the repository. If Git shows whole-file changes after a pull, run
   `git add --renormalize .` and check that `git diff --cached` is empty — then nothing really changed.
 
 ## Next steps
 
-- **Lab 3, Participant 1:** create branch `lab3/p1-lb` from the current working tree, commit П1-1 + П1-2 → PR →
-  review by Participant 2. Then `lab3/p1-platform`: П1-3 → П1-7.
+- **Lab 3, Participant 1:** push `lab3/p1-lb` → PR into `main` → review by Participant 2. Then `lab3/p1-platform`: П1-3 → П1-7.
 - **Lab 3, Participant 2:** П2-1, П2-2 can start now; after `lab3/p1-lb` is merged, the rest goes through :8080.
 - **Lab 2:** С-5 cold-start rehearsal and С-6 `labs/lab2-summary.md` (both).
 - **Lab 1 leftovers (if lab 1 is not defended yet):** cold-start defense rehearsal and `labs/lab1-summary.md`.
