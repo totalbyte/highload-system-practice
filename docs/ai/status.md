@@ -1,13 +1,14 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-10-27 by Participant 1 (lab 2 merged and verified on `main`, see `log/2026-10-27-p1-lab2-task-split.md`).
+> Last updated: 2026-10-28 by Participant 1 (lab 3 П1-1 and П1-2 done, not committed — see `log/2026-10-28-p1-lab3-lb.md`).
 
-## Current lab: 2 — Stateless architecture
+## Current lab: 3 — Horizontal scaling
 
-Task lists (Ukrainian, task ids П1-N / П2-N / С-N): [`docs/lab2/participant-1.md`](../lab2/participant-1.md),
-[`docs/lab2/participant-2.md`](../lab2/participant-2.md). Their «Домовленості» section (branches, file ownership,
-ADR number ranges, ports 8080 / 8082, Redis contract) was followed by both participants.
+Task lists (Ukrainian, task ids П1-N / П2-N / С-N): [`docs/lab3/participant-1.md`](../lab3/participant-1.md),
+[`docs/lab3/participant-2.md`](../lab3/participant-2.md). Load balancer: HAProxy (ADR 0031). Branches `lab3/p1-lb`
+(П1-1, П1-2 — merge first, it unblocks Participant 2), `lab3/p1-platform`, `lab3/p2-experiments`; ADR ranges
+0031–0035 / 0036–0040.
 
 To avoid merge conflicts, each participant edits **only their own table** below.
 
@@ -15,37 +16,32 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 
 | Task | Status |
 |---|---|
-| П1-1 Redis + `backend-1` / `backend-2` in compose (branch `lab2/p1-infra`) | ✅ merged into `main` via PR #2 (`78128e9`), ADR 0021 |
-| П1-2 Concurrent cold start of two instances on an empty DB (ADR 0009 "Unverified") | ✅ merged via PR #2: 12 simultaneous cold starts all clean, no migrator needed (ADR 0022) |
-| П1-3 DataProtection keys → shared store | ✅ merged via PR #4 (ADR 0023) |
-| П1-4 State audit: platform modules | ✅ merged via PR #4 |
-| П1-5 Cross-instance consistency chain (`requests/cross-instance.http`, `scripts/cross-instance.sh`) | ✅ merged via PR #4; on `main` after PR #3 all 8 steps consistent (step 8 `totalVotes: 1`), README output updated |
-| П1-6 C4 component diagram + multi-instance deployment docs | ✅ merged via PR #4; target-state note removed now that the cache is in Redis |
-| П1-7 Smoke test on both instances, docs | ✅ merged via PR #4 |
+| П1-1 HAProxy as the single entry point, backends without ports, `backend-3` in profile `scale` | ✅ done in the working tree on `main`, **not committed, no branch yet** (meant for `lab3/p1-lb`); ADR 0031; verified on a cold start (rotation, :8082 refused, `backend-3` joins without `lb` restart, smoke 11/11 via :8080, live reload `kill -s USR2 lb` with 0 errors) |
+| П1-2 Three instances + connection budget for 4+ | ✅ done in the same uncommitted tree; ADR 0032 (4+ → `DB_MAX_POOL_SIZE = floor(90 / N)`, `max_connections` stays 100); 5 simultaneous cold starts of three instances clean; 150 threads via lb → peak 90 connections (30 × 3), psql connects. Re-check `pg_stat_activity` ≤ 90 during Participant 2's П2-5 runs |
+| П1-3 Active/passive health checks, node exclusion (read path) | ⏳ — known gap until then: ~8 s hang + HAProxy 503 right after a node disappears (ADR 0031) |
+| П1-4 Algorithms + `lb-distribution` script | ⏳ (reload command already verified) |
+| П1-5 Lab 2 chain (`cross-instance.*`, `polls.http`) through the balancer | ⏳ — `cross-instance.sh` still targets :8082 |
+| П1-6 Architecture diagram, deployment docs, SPOF | ⏳ (README skeleton for lab 3 with owners is in place) |
+| П1-7 Close-out | ⏳ |
 
 ### Participant 2
 
 | Task | Status |
 |---|---|
-| П2-1 State audit: voting and results modules | ✅ in README «Аудит стану → Голосування й результати» (branch `lab2/p2-voting`) |
-| П2-2 "Before" demo: stale results across instances with the in-memory cache (must precede П2-3) | ✅ `scripts/results-cache-demo.py`; stale counts **and** stale 404 after publish, stable in 3 runs; output in README «Усунені in-memory залежності → Кеш результатів» |
-| П2-3 `ResultsCache` → Redis (supersedes ADR 0013) | ✅ ADR 0026; demo prints «no» twice (3 runs), same `generatedAt` on both instances; TTL ≤ 10, key gone after a vote; no `IMemoryCache` in `src/` |
-| П2-4 Redis unavailable → 503, committed vote not reported as failed | ✅ ADR 0027; `scripts/redis-outage-check.py` (2 runs): results 503, vote 201 stored once, publish 200, recovery without restart. Known cost: ~5 s per Redis-touching request during an outage (lab 4) |
-| П2-5 Stateless request flow for `POST /vote` | ✅ in README (table + sequence diagram); matches the code after П2-3 |
-| П2-6 The three concurrency checks across two instances | ✅ `scripts/concurrency-checks.py`: green in 4 runs; proven to catch the vote-change race (fails without `FOR UPDATE`) |
-| П2-7 Instance-loss test (`docker compose kill` during voting) | ✅ `scripts/kill-test.py`: 3 kill runs + 1 stop run green; PostgreSQL rolled back 1/3/10 open transactions; one retry got 409 (committed, response lost); Docker does not auto-restart after a manual kill |
-| П2-8 README sections, docs | ✅ README (audit, before/after, Request Flow, Redis outage, instance loss), runbook, contracts, ADRs 0026–0027; full re-run on a cold start |
+| П2-1 … П2-7 | ⏳ not started; П2-1 / П2-2 do not depend on the balancer. Python scripts still default to :8082 (П2-7) |
 
-### Joint (after all lab 2 branches are merged)
+### Joint
 
 | Task | Status |
 |---|---|
-| С-1 Agree on the proposals | ✅ followed by both |
-| С-2 PR reviews | ✅ PR #2, #4, #3 merged |
-| С-3 Consolidated README audit | ✅ one table in the lab's three categories + summary of the two eliminated dependencies (`62b6713`) |
-| С-4 Code audit (grep `src/` for in-process state, explain every hit) | ✅ README «Аудит коду»: one grep command for the defense, 30 hits all explained; `IMemoryCache` 2 hits before lab 2 → 0 (`d1f53ea`) |
-| С-5 Cold-start defense rehearsal | ⏳ both |
-| С-6 `docs/ai/labs/lab2-summary.md` | ⏳ both |
+| С-1 Confirm the agreements and HAProxy | ⏳ both (Participant 1 started П1-1 on the proposal) |
+| С-2 … С-5 | ⏳ |
+
+### Lab 2 leftovers
+
+All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-10-27; С-1…С-4 done. Left: С-5
+cold-start defense rehearsal and С-6 `labs/lab2-summary.md` (both). Note: since П1-1 of lab 3 the lab 2 demos that
+address `backend-2` on :8082 need the lab 3 versions (П1-5 / П2-7) or a `docker-compose.debug.yml`.
 
 ## All labs
 
@@ -53,7 +49,7 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 |---|---|
 | 1 System Design + MVP | 🟡 stages 1–9 done; stage 10 (cold-start defense rehearsal) and `labs/lab1-summary.md` not recorded |
 | 2 Stateless | 🟡 all П1/П2 tasks merged into `main` (PR #2, #4, #3) and verified on a cold start; joint tasks С-5, С-6 left |
-| 3 Horizontal Scaling | ⏳ task split (PR #5, HAProxy): `docs/lab3/participant-1.md`, `participant-2.md` (to confirm in С-1); groundwork: `/health` |
+| 3 Horizontal Scaling | 🟡 task split merged (PR #5); П1-1 (HAProxy on 8080, ADR 0031) done, not committed |
 | 4 Distributed Caching | ⏳ |
 | 5 Load Testing | ⏳ (groundwork: 500 seed users, hot poll #1) |
 
@@ -65,19 +61,21 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 - Lab 2 merged into `main` on 2026-10-27: PR #2 `lab2/p1-infra` (`78128e9`), PR #4 `lab2/p1-platform` (`7d6ede8`),
   PR #3 `lab2/p2-voting` (`288534e`). GitGuardian flags the long-standing local-dev default DB password `polling` in
   compose (incident 37528464) — a false positive.
-- No branching convention agreed yet; the lab 2 files propose `lab2/p1-infra`, `lab2/p1-platform`, `lab2/p2-voting`.
+- No branching convention agreed yet; lab 2 used `lab2/p1-infra`, `lab2/p1-platform`, `lab2/p2-voting`, the lab 3
+  files propose `lab3/p1-lb`, `lab3/p1-platform`, `lab3/p2-experiments`.
 - No automated tests — verification is the runbook smoke test and the lab 2 scripts in `scripts/`. Last full run on
   `main` 2026-10-27 (cold start): smoke 11/11 on both instances, `cross-instance.sh` 8/8, `results-cache-demo`,
-  `concurrency-checks`, `kill-test`, `redis-outage-check` all passed.
+  `concurrency-checks`, `kill-test`, `redis-outage-check` all passed. 2026-10-28, uncommitted lab 3 П1-1 tree (cold
+  start): smoke 11/11 through the balancer on :8080; the lab 2 scripts were not re-run (they still target :8082).
+- The working tree on `main` holds uncommitted lab 3 П1-1 + П1-2 changes (`haproxy/`, compose, `.env.example`,
+  README, ADRs 0031–0032, amended 0018 / 0021, runbook, contracts, this file, session log).
 - `.gitattributes` keeps LF in the repository. If Git shows whole-file changes after a pull, run
   `git add --renormalize .` and check that `git diff --cached` is empty — then nothing really changed.
 
 ## Next steps
 
-- **Lab 2:** both branches merged (PR #4, PR #3), С-3 and С-4 done; next — С-5 cold-start
-  rehearsal (both), С-6 `labs/lab2-summary.md`.
-- **Lab 3:** task split in PR #5 (load balancer: HAProxy — active `/health` checks and a stats page in the free
-  version) — confirm it together in С-1 (branches
-  `lab3/p1-lb`, `lab3/p1-platform`, `lab3/p2-experiments`, ADR ranges 0031–0035 / 0036–0040), then Participant 1
-  starts with `lab3/p1-lb`.
+- **Lab 3, Participant 1:** create branch `lab3/p1-lb` from the current working tree, commit П1-1 + П1-2 → PR →
+  review by Participant 2. Then `lab3/p1-platform`: П1-3 → П1-7.
+- **Lab 3, Participant 2:** П2-1, П2-2 can start now; after `lab3/p1-lb` is merged, the rest goes through :8080.
+- **Lab 2:** С-5 cold-start rehearsal and С-6 `labs/lab2-summary.md` (both).
 - **Lab 1 leftovers (if lab 1 is not defended yet):** cold-start defense rehearsal and `labs/lab1-summary.md`.
