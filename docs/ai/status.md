@@ -53,7 +53,7 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 |---|---|
 | 1 System Design + MVP | 🟡 stages 1–9 done; stage 10 (cold-start defense rehearsal) and `labs/lab1-summary.md` not recorded |
 | 2 Stateless | 🟡 all П1/П2 tasks merged into `main` (PR #2, #4, #3) and verified on a cold start; joint tasks С-5, С-6 left |
-| 3 Horizontal Scaling | ⏳ task split drafted: `docs/lab3/participant-1.md`, `participant-2.md` (to confirm in С-1); groundwork: `/health` |
+| 3 Horizontal Scaling | ⏳ task split (PR #5, HAProxy): `docs/lab3/participant-1.md`, `participant-2.md` (to confirm in С-1); groundwork: `/health` |
 | 4 Distributed Caching | ⏳ |
 | 5 Load Testing | ⏳ (groundwork: 500 seed users, hot poll #1) |
 
@@ -76,7 +76,8 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 
 - **Lab 2:** both branches merged (PR #4, PR #3), С-3 and С-4 done; next — С-5 cold-start
   rehearsal (both), С-6 `labs/lab2-summary.md`.
-- **Lab 3:** task split drafted (not committed) — confirm it together in С-1 (Nginx vs HAProxy, branches
+- **Lab 3:** task split in PR #5 (load balancer: HAProxy — active `/health` checks and a stats page in the free
+  version) — confirm it together in С-1 (branches
   `lab3/p1-lb`, `lab3/p1-platform`, `lab3/p2-experiments`, ADR ranges 0031–0035 / 0036–0040), then Participant 1
   starts with `lab3/p1-lb`.
 - **Lab 1 leftovers (if lab 1 is not defended yet):** cold-start defense rehearsal and `labs/lab1-summary.md`.

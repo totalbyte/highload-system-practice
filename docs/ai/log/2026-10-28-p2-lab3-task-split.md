@@ -13,14 +13,18 @@ Analyse the lab 3 assignment and split it between the participants the same way 
 - Knowledge map row in `CLAUDE.md`, lab 3 line and next step in `status.md`.
 
 ## Decisions (link ADRs)
-None yet — proposals to confirm in С-1: Nginx (passive checks only in open source) or HAProxy (active checks);
-LB on host port 8080, backends without published ports; `backend-3` in a `scale` profile; ADR ranges 0031–0035 (P1),
+Load balancer: **HAProxy**, not Nginx — free HAProxy has active `/health` checks (`option httpchk`, `inter` / `fall`
+/ `rise`), passive checks, `leastconn` / `weight` / `source`, a stats page per server and starts without `backend-3`
+(`init-addr none` + Docker DNS resolvers); open source Nginx has passive checks only. The comparison table is in the
+«Домовленості» section; Participant 1 records it as an ADR in П1-1. Still to confirm in С-1:
+LB on host port 8080 (stats on 8404), backends without published ports; `backend-3` in a `scale` profile; ADR ranges 0031–0035 (P1),
 0036–0040 (P2).
 
 ## Problems & fixes
 - Found while planning: all lab 2 scripts hard-code 8080 / 8082 — moving them behind the LB is a task for each owner
-  (П1-5, П2-7). Nginx does not retry POST/PATCH by default, and `proxy_next_upstream http_503` would drop the whole
-  pool during a Redis/DB outage (the API answers 503 by design) — both flagged in П1-3 / П2-4.
+  (П1-5, П2-7). HAProxy redispatches only on connection failure (safe for any method); L7 retries (`retry-on`) do
+  not look at the method, so they go only into a vote-only backend; treating the API's by-design 503 (Redis/DB
+  outage) as a node failure would drop the whole pool — both flagged in П1-3 / П2-4.
 
 ## Verified (how)
 Docs only; shared sections compared with `diff`.
