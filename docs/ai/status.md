@@ -1,7 +1,7 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-10-28 by Participant 2 (lab 3 П2-3 … П2-7 on `lab3/p2-experiments` — see `log/2026-10-28-p2-lab3-experiments.md`; Participant 1's П1-3 … П1-7 on `lab3/p1-platform`, PR #8).
+> Last updated: 2026-10-28 by Participant 2 (lab 3 П2-3 … П2-7, С-3, С-4 — PR #10, see `log/2026-10-28-p2-lab3-experiments.md`; Participant 1's П1-1 … П1-7 merged via PR #7, #8; lab 2 guide via PR #9).
 
 ## Current lab: 3 — Horizontal scaling
 
@@ -18,10 +18,10 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 |---|---|
 | П1-1 HAProxy as the single entry point, backends without ports, `backend-3` in profile `scale` | ✅ merged via PR #7 (`f0566d4`); ADR 0031; verified on a cold start (rotation, :8082 refused, `backend-3` joins without `lb` restart, smoke 11/11 via :8080, live reload `kill -s USR2 lb` with 0 errors) |
 | П1-2 Three instances + connection budget for 4+ | ✅ merged via PR #7 (`a6e298c`); ADR 0032 (4+ → `DB_MAX_POOL_SIZE = floor(90 / N)`, `max_connections` stays 100); 5 simultaneous cold starts of three instances clean; 150 threads via lb → peak 90 connections (30 × 3), psql connects. Re-check `pg_stat_activity` ≤ 90 during Participant 2's П2-5 runs |
-| П1-3 Active/passive health checks, node exclusion (read path) | ✅ `lab3/p1-platform` (PR open); ADR 0033; `scripts/lb-failover.py`: stop × 2, kill × 2 under a GET stream → 0 non-2xx, node out in 0.3–0.5 s (passive layer4), back ~6–8 s after `start`; DB down → whole pool out in ~4.6 s (HAProxy 503 text/html), back in ~2.3 s. **To settle with Participant 2 (П2-4):** no `observe layer7`, no 5xx retries; vote backend can `track be_api/backend-N` |
-| П1-4 Algorithms + live switch + distribution | ✅ `lab3/p1-platform`; ADR 0034; `scripts/lb-algorithm.sh` (validate + SIGUSR2), `scripts/lb-distribution.py`; RR 50/50, LC 53/47, weighted 75/25, source 0/100 (and 3-instance table); RR → LC → RR under `load.py` mixed: 0 5xx |
-| П1-5 Lab 2 chain through the balancer | ✅ `lab3/p1-platform`; `cross-instance.sh` / `.http` default to :8080 (8/8, steps split 4/4), `docker-compose.debug.yml` (127.0.0.1:8091–8093) for direct access; `polls.http` already on :8080 |
-| П1-6 Architecture diagram, deployment docs, SPOF | ✅ `lab3/p1-platform`; README lab 3 subsections (diagram, deployment, SPOF with Keepalived/VRRP diagram), RACI, repo structure; runbook «Load balancer (lab 3)», contracts |
+| П1-3 Active/passive health checks, node exclusion (read path) | ✅ merged via PR #8; ADR 0033; `scripts/lb-failover.py`: stop × 2, kill × 2 under a GET stream → 0 non-2xx, node out in 0.3–0.5 s (passive layer4), back ~6–8 s after `start`; DB down → whole pool out in ~4.6 s (HAProxy 503 text/html), back in ~2.3 s. **To settle with Participant 2 (П2-4):** no `observe layer7`, no 5xx retries; vote backend can `track be_api/backend-N` |
+| П1-4 Algorithms + live switch + distribution | ✅ merged via PR #8; ADR 0034; `scripts/lb-algorithm.sh` (validate + SIGUSR2), `scripts/lb-distribution.py`; RR 50/50, LC 53/47, weighted 75/25, source 0/100 (and 3-instance table); RR → LC → RR under `load.py` mixed: 0 5xx |
+| П1-5 Lab 2 chain through the balancer | ✅ merged via PR #8; `cross-instance.sh` / `.http` default to :8080 (8/8, steps split 4/4), `docker-compose.debug.yml` (127.0.0.1:8091–8093) for direct access; `polls.http` already on :8080 |
+| П1-6 Architecture diagram, deployment docs, SPOF | ✅ merged via PR #8; README lab 3 subsections (diagram, deployment, SPOF with Keepalived/VRRP diagram), RACI, repo structure; runbook «Load balancer (lab 3)», contracts |
 | П1-7 Close-out | ✅ cold start: smoke 11/11 via :8080, `cross-instance.sh` 8/8, distribution 150/150, kill demo 0 errors; log, ADR index |
 
 ### Participant 2
@@ -45,17 +45,21 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 
 ### Lab 2 leftovers
 
-All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-10-27; С-1…С-4 done. Left: С-5
-cold-start defense rehearsal and С-6 `labs/lab2-summary.md` (both). Note: since П1-1 of lab 3 the lab 2 demos that
-address `backend-2` on :8082 need the lab 3 versions (П1-5 / П2-7) or a `docker-compose.debug.yml`.
+All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-10-27; С-1…С-4 done.
+- С-6 ✅ `labs/lab2-summary.md` + defense guide `docs/lab2-guide.md` (2026-10-28, Participant 1; branch
+  `lab2/defense-guide`, PR into `main`).
+- С-5 🟡 dry run 2026-10-28 on the current `main` with `docker-compose.debug.yml` (instances on 8091 / 8092, scripts
+  via `API1` / `API2`): cold start 16 s, `cross-instance.sh` 8/8, `results-cache-demo` no/no, `concurrency-checks`,
+  `redis-outage-check`, `kill-test` (kill and stop) all passed, no-sessions and JWT-affinity demos as documented.
+  Left: the participants' own rehearsal by the guide §11 checklist, then the defense.
 
 ## All labs
 
 | Lab | Status |
 |---|---|
-| 1 System Design + MVP | 🟡 stages 1–9 done; stage 10 (cold-start defense rehearsal) and `labs/lab1-summary.md` not recorded |
-| 2 Stateless | 🟡 all П1/П2 tasks merged into `main` (PR #2, #4, #3) and verified on a cold start; joint tasks С-5, С-6 left |
-| 3 Horizontal Scaling | 🟡 П1-1, П1-2 (PR #7) and П2-1, П2-2 (PR #6) merged; П1-3 … П1-7 on `lab3/p1-platform` (PR open); П2-3 … П2-7 and joint tasks left |
+| 1 System Design + MVP | ✅ defended (per Participant 1, 2026-10-28); `labs/lab1-summary.md` was never written |
+| 2 Stateless | 🟡 all tasks merged (PR #2, #4, #3); `labs/lab2-summary.md` + `docs/lab2-guide.md` written, dry-run rehearsal green; joint rehearsal and defense left |
+| 3 Horizontal Scaling | 🟡 П1-1, П1-2 (PR #7) and П2-1, П2-2 (PR #6) merged; П1-3 … П1-7 (PR #8) merged; П2-3 … П2-7 and joint tasks left |
 | 4 Distributed Caching | ⏳ |
 | 5 Load Testing | ⏳ (groundwork: 500 seed users, hot poll #1) |
 
@@ -73,17 +77,17 @@ address `backend-2` on :8082 need the lab 3 versions (П1-5 / П2-7) or a `docke
   `main` 2026-10-27 (cold start): smoke 11/11 on both instances, `cross-instance.sh` 8/8, `results-cache-demo`,
   `concurrency-checks`, `kill-test`, `redis-outage-check` all passed. 2026-10-28, `lab3/p1-platform` on a cold
   start: smoke 11/11 through :8080, `cross-instance.sh` 8/8, `lb-distribution.py`, `lb-failover.py --kill` (0 errors).
-- Lab 3 merged into `main`: PR #7 `lab3/p1-lb` (П1-1, П1-2), PR #6 `lab3/p2-experiments` (П2-1, П2-2). Branch
-  `lab3/p1-platform` (from `main` `65f5ded`): П1-3 … П1-7, PR open.
+- Lab 3 merged into `main`: PR #7 `lab3/p1-lb` (П1-1, П1-2), PR #6 `lab3/p2-experiments` (П2-1, П2-2). PR #8
+  `lab3/p1-platform` (П1-3 … П1-7) merged as `d4bad11`.
 - `.gitattributes` keeps LF in the repository. If Git shows whole-file changes after a pull, run
   `git add --renormalize .` and check that `git diff --cached` is empty — then nothing really changed.
 
 ## Next steps
 
-- **Lab 3, Participant 1:** PR `lab3/p1-platform` (П1-3 … П1-7) → review by Participant 2; agree the
-  health-check / retry settings with Participant 2's П2-4 (ADR 0033); then С-2 review of Participant 2's next PR.
-- **Lab 3, Participant 2:** П2-3 … П2-7 done on `lab3/p2-experiments` on top of `lab3/p1-platform` (PR #8 must be
-  merged first); П2-4 settled: own checks in `be_vote` instead of `track` (ADR 0037, measured). Then С-3 (README
-  consolidation, Participant 2 leads), С-4 defense rehearsal, С-5 `labs/lab3-summary.md`.
-- **Lab 2:** С-5 cold-start rehearsal and С-6 `labs/lab2-summary.md` (both).
-- **Lab 1 leftovers (if lab 1 is not defended yet):** cold-start defense rehearsal and `labs/lab1-summary.md`.
+- **Lab 3, Participant 1:** own tasks merged (PR #7, #8); review Participant 2's PR #10 (С-2) — the `be_vote`
+  section in `haproxy.cfg` and own checks instead of `track` (ADR 0037). `pg_stat_activity` on three instances under
+  load: 77–79 of 90 (П1-2 criterion, measured in П2-5).
+- **Lab 3, Participant 2:** П2-3 … П2-7, С-3 (README «Підсумок лаби 3»), С-4 dry run by `docs/lab3-guide.md` — PR #10.
+  Left: С-4 rehearsal together, С-5 `labs/lab3-summary.md` after the defense.
+- **Lab 2:** rehearse together by `docs/lab2-guide.md` §11 (С-5), then defend; record what was asked in
+  `labs/lab2-summary.md`.
