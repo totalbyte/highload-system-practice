@@ -1,5 +1,5 @@
 # 0021. Redis and two backend instances in compose (lab 2)
-**Status:** Accepted · **Date:** 2026-10-27 · **Author:** Participant 1
+**Status:** Accepted, amended by 0031 (lab 3: no per-instance host ports, HAProxy on 8080) · **Date:** 2026-10-27 · **Author:** Participant 1
 
 ## Context
 Lab 2 requires at least two parallel backend instances built from one codebase/container, a way to tell which

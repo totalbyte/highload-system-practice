@@ -22,10 +22,10 @@ if a decision changes, add a new ADR and set the old one's status to `Superseded
 | [0015](0015-vote-and-results-api-shape.md) | Vote and results API shape | Accepted |
 | [0016](0016-transient-db-errors-503.md) | Transient database errors map to 503 | Accepted, extended by 0027 |
 | [0017](0017-serialize-vote-changes.md) | Vote changes serialized with `FOR UPDATE`; option rows locked in id order | Accepted |
-| [0018](0018-connection-pool-budget.md) | `Maximum Pool Size` 30 per instance; instances × pool ≤ `max_connections` | Accepted |
+| [0018](0018-connection-pool-budget.md) | `Maximum Pool Size` 30 per instance; instances × pool ≤ `max_connections` | Accepted, amended by 0032 |
 | [0019](0019-health-check-timeout.md) | `/health` uses its own PostgreSQL probe with a 2 s timeout | Accepted |
 | [0020](0020-pgadmin-pinned.md) | pgAdmin 4 pinned to `9.17.0`, server pre-registered (starts with the stack since the amendment) | Accepted, amended |
-| [0021](0021-redis-and-two-backend-instances.md) | Lab 2: Redis + `backend-1`/`backend-2` from one image, ports 8080/8082, one shared `IConnectionMultiplexer` | Accepted |
+| [0021](0021-redis-and-two-backend-instances.md) | Lab 2: Redis + `backend-1`/`backend-2` from one image, ports 8080/8082, one shared `IConnectionMultiplexer` | Accepted, amended by 0031 |
 | [0022](0022-concurrent-startup-verified.md) | Concurrent startup of several instances on an empty DB verified safe; no separate migrator | Accepted |
 | [0023](0023-dataprotection-keys-in-redis.md) | DataProtection keys in Redis with one application name — one key ring for all instances | Accepted |
 | [0026](0026-results-cache-in-redis.md) | Lab 2: results cache in Redis (`results:{pollId}`, JSON, TTL 10 s, `DEL` on invalidation), async `ResultsCache` | Accepted (supersedes 0013) |

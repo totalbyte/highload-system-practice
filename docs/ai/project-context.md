@@ -90,16 +90,17 @@ Every participant is questioned about the **whole** system, not only their own p
 
 ## Groundwork for later labs
 
-- **Lab 2:** state-audit candidates — the in-memory results cache, DataProtection keys (stored in the container
-  filesystem; we don't use them, but they show up in logs), any static/singleton holding data. For 2 instances in
-  compose, remove the fixed backend `ports` mapping or give each instance its own. Verify that two instances starting
-  on an empty DB don't race on migrations (ADR 0009). Keep the connection budget: instances × `DB_MAX_POOL_SIZE`
-  (30) ≤ 97 (ADR 0018).
-- **Lab 3:** Nginx in front of the backend; the backend stops publishing its port externally; `/health` is ready and
-  answers within 2 s even when the DB is down (ADR 0019) — set the LB check timeout above that (e.g. 3 s). With 3+
-  instances re-check the connection budget (ADR 0018).
-- **Lab 4:** Redis; keys like `polls:results:{pollId}`; invalidation on vote, publish, close and delete. Known,
-  accepted lab 1 gap to discuss there: a `GET /results` computed just before a vote commits can be written to the
+- **Lab 2 (done, see status and ADRs 0021–0027):** Redis and `backend-1` / `backend-2` (ports 8080 / 8082) from one
+  image; concurrent startup verified safe; results cache and DataProtection keys moved to Redis; Redis down → reads
+  503, committed writes still succeed. Checks live in `scripts/`.
+- **Lab 3:** Nginx in front of the instances; drop the per-instance host ports 8080 / 8082 (ADR 0021) so the LB is the
+  only entry point; `/health` answers within 2 s even when the DB is down and does not check Redis (ADR 0019, 0021)
+  — set the LB check timeout above that (e.g. 3 s). 3 instances × 30 = 90 ≤ 97 connections (ADR 0018); more needs a
+  smaller pool or a higher `max_connections`.
+- **Lab 4:** Redis is already there (lab 2, ADR 0026: key `results:{pollId}`, TTL 10 s, invalidation on vote,
+  publish, close and delete). Lab 4 adds the key schema (e.g. `polls:results:{pollId}`), TTL rationale, `X-Cache:
+  HIT/MISS`, cold/hot latency and a DB fallback when Redis is down — today a Redis outage costs ~5 s per
+  Redis-touching request and reads return 503 (ADR 0027). Known, accepted gap to discuss there: a `GET /results` computed just before a vote commits can be written to the
   cache right after that vote's invalidation → stale for up to one TTL (10 s). Typical fixes: versioned keys or
   delete-after-write with a short delay.
 - **Lab 5:** k6 in `/load-tests`; log seed users in during `setup()` and share tokens via `SharedArray` (login is

@@ -5,8 +5,11 @@
 Docker Desktop must be running (on Participant 1's machine it does not start automatically).
 
 ```bash
-docker compose up -d --build          # backend-1 + backend-2 + postgres + redis; migrations + seed run on backend startup
+docker compose up -d --build          # lb (HAProxy) + backend-1 + backend-2 + postgres + redis; migrations + seed on backend startup
+docker compose --profile scale up -d  # + backend-3; HAProxy picks it up by itself (~9 s), no lb restart
 docker compose logs -f backend-1 backend-2
+docker compose logs -f lb             # HAProxy: one line per request with the server that served it, status, timers
+docker compose kill -s USR2 lb        # reload haproxy/haproxy.cfg after editing it (no rebuild, no restart, ~0.4 s)
 docker compose restart postgres       # data survives (named volume pgdata)
 docker compose down -v                # wipe everything, including data → next `up` is a cold start
 docker compose --profile tools up -d  # + Adminer on :8081 (pgAdmin 4 on :5050 starts with the normal `up`)
@@ -14,19 +17,27 @@ docker compose --profile tools up -d  # + Adminer on :8081 (pgAdmin 4 on :5050 s
 
 | What | Address |
 |---|---|
-| API, instance `backend-1` | http://localhost:8080 (`API_PORT`) |
-| API, instance `backend-2` | http://localhost:8082 (`API2_PORT`) |
-| Swagger UI | http://localhost:8080/swagger (spec: `/swagger/v1/swagger.json`), same on :8082 |
-| Health | http://localhost:8080/health, http://localhost:8082/health |
+| API through the load balancer (HAProxy) | http://localhost:8080 (`LB_PORT`); instances alternate, see `X-Instance-ID` |
+| HAProxy statistics (per-server state, requests, response times) | http://localhost:8404/stats (`LB_STATS_PORT`); CSV: `/stats;csv` |
+| Swagger UI | http://localhost:8080/swagger (spec: `/swagger/v1/swagger.json`) |
+| Health | http://localhost:8080/health (answered by whichever instance the balancer picks) |
+| A backend instance directly | not exposed (lab 3, ADR 0031); `docker compose exec`/logs only |
 | Postgres from the host | `localhost:5433`, db/user/password `polling` (container-internal port is 5432) |
 | Redis | `localhost:6379` (`REDIS_PORT`); `docker compose exec redis redis-cli` |
 | Adminer | http://localhost:8081 (server `postgres`) |
 | pgAdmin 4 | http://localhost:5050 — no login (desktop mode); server "polling (docker)" is pre-registered from the inline `configs.pgadmin_servers` in `docker-compose.yml`; enter DB password `polling` once and tick "Save password". Starts in ~40 s (ADR 0020) |
 
 All settings have defaults in `docker-compose.yml`; override them via `.env` (see `.env.example`). `DB_MAX_POOL_SIZE`
-(default 30) caps the Npgsql pool of one backend instance — keep *instances × pool ≤ 97* (ADR 0018); two instances
-use at most 60. Both instances are built from one image and differ only in `INSTANCE_ID` and host port (ADR 0021).
-Cold start from `down -v` to healthy takes ≈11–13 s (measured 2026-09-22 and 2026-09-30).
+(default 30) caps the Npgsql pool of one backend instance — keep *instances × pool ≤ 90* (ADR 0018, 0032); two
+instances use at most 60, three 90 (verified under load). For 4+ instances set `DB_MAX_POOL_SIZE` = floor(90 / N) in
+`.env` (4 → 22) instead of raising `max_connections`. The app role `polling` is a superuser, so PostgreSQL's 3 reserved
+slots do not protect psql/pgAdmin from the backends — the 10 spare slots do. All instances are built from one image and differ only in `INSTANCE_ID` (ADR 0021); they
+publish no host ports — only `lb` does (ADR 0031). Cold start from `down -v` to the first 200 through the balancer
+took 25 s including the (cached) image build on 2026-10-28; until the backends listen, HAProxy answers its own 503.
+
+**Lab 2 tools vs the balancer:** `scripts/cross-instance.sh`, `requests/cross-instance.http` and the Python scripts in
+`scripts/` still default to `backend-2` on :8082, which is no longer published — they are moved to the balancer in
+lab 3 tasks П1-5 / П2-7.
 
 ## Run the backend locally (without Docker for the backend)
 
@@ -178,11 +189,16 @@ No automated tests yet (`public partial class Program;` is kept for future `WebA
 | Warning "No XML encryptor configured. Key … may be persisted to storage in unencrypted form" | Expected: DataProtection keys live unencrypted in Redis, shared by all instances (ADR 0023). The old "not persisted outside of the container" warning must no longer appear |
 | `The Entity Framework tools version '10.0.5' is older than ...` | Harmless; `dotnet tool update -g dotnet-ef` |
 | `failed to connect to the docker API` | Docker Desktop isn't running |
+| `503 Service Unavailable` HTML page from HAProxy right after `up`; `backend 'be_api' has no server available!` in `docker compose logs lb` | The backends are still applying migrations / seeding and not listening yet. Wait a few seconds (the stats page shows them DOWN → UP) |
+| `curl localhost:8082` → connection refused | Expected since lab 3: backends publish no ports; use the balancer on 8080 (ADR 0031) |
+| A request hangs ~8 s and gets HAProxy's 503 right after a backend was stopped/removed | The node is still UP in HAProxy until its TCP check fails (`inter × fall`), and retries go to the same node. Fixed by `/health` checks + `option redispatch` in lab 3 П1-3 |
+| `backend-3` stays `MAINT (resolution)` on the stats page | It is not running (profile `scale`): `docker compose --profile scale up -d` |
 | A killed/stopped backend stays down despite `restart: unless-stopped` | Expected: a manual `docker kill` / `docker stop` disables the restart policy until the next manual start; the policy only covers a process that exits on its own. `docker compose start backend-1` |
 | Requests take ~5 s; `GET /results` returns 503 "The cache is temporarily unavailable"; `warn: …ResultsCache` "not invalidated" in the logs | Redis is down. Expected (ADR 0027): the client waits its 5 s backlog timeout; reads 503, writes still succeed. `docker compose start redis` — recovers by itself, no backend restart |
 | `Bind for 127.0.0.1:5433 failed: port is already allocated` on `up` | Another container or service holds the host port (on Participant 2's machine: `kafka-sandbox-db-1` from an unrelated project, auto-started by Docker Desktop). Put `POSTGRES_PORT=5434` in `.env` (gitignored) and `docker compose up -d` again — only host tools (psql, pgAdmin from the host) see the change; the backends talk to `postgres:5432` inside the network |
 | First request after a DB restart fails | Should not happen (EF retry strategy, ADR 0008); if it does, check the retry config |
-| `FATAL: sorry, too many clients already` (psql, Adminer, pgAdmin or the API) | The backend pools together exceed PostgreSQL `max_connections` (100). Check `DB_MAX_POOL_SIZE` × number of instances ≤ 97 (ADR 0018) |
+| `FATAL: sorry, too many clients already` (psql, Adminer, pgAdmin or the API) | The backend pools together exceed PostgreSQL `max_connections` (100). Check `DB_MAX_POOL_SIZE` × number of instances ≤ 90 (ADR 0018, 0032); with 4+ instances lower `DB_MAX_POOL_SIZE` in `.env` |
+| How many connections each instance holds | `docker compose exec -T postgres psql -U polling -d polling -tAc "SELECT client_addr, count(*) FROM pg_stat_activity WHERE client_addr IS NOT NULL GROUP BY 1"` — one row per backend container, ≤ `DB_MAX_POOL_SIZE` each |
 | API requests take ~13–16 s and then return 503 while the DB is down | Expected: EF retries (ADR 0008) plus ~3.3 s Docker DNS lookups for the stopped `postgres` container. `/health` answers 503 within 2 s (ADR 0019) |
 | `/health` says "PostgreSQL did not respond within the timeout" | The probe hit its 2 s timeout (`HealthChecks:DbTimeoutSeconds`) — typically the DB container is stopped (its DNS name no longer resolves). Start it; `/health` returns 200 within a second |
 | `~$...docx` files appear in `docs/` | Word lock files while a document is open; ignored by `.gitignore` |

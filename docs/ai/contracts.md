@@ -19,8 +19,11 @@ Update this file whenever the API, the schema, or code another participant depen
 | POST | `/api/polls/{id}/vote` | JWT | 201 new vote / 200 changed or repeated; `{pollId, optionId, votedAt}` | 401, 404, 409, 422 | P2 |
 | GET | `/api/polls/{id}/results` | optional | 200 `{pollId, title, status, totalVotes, generatedAt, options[]}` | 404, 503 (Redis down, ADR 0027) | P2 |
 
-- Every response carries `X-Instance-ID` (container hostname or env `INSTANCE_ID`). In compose: `backend-1` on
-  http://localhost:8080 and `backend-2` on http://localhost:8082 (ADR 0021).
+- Every response carries `X-Instance-ID` (container hostname or env `INSTANCE_ID`); the balancer passes it through
+  unchanged. In compose (lab 3, ADR 0031) clients reach only HAProxy on http://localhost:8080 (`LB_PORT`, stats page
+  http://localhost:8404/stats); `backend-1`, `backend-2` and `backend-3` (profile `scale`) publish no host ports and
+  are reachable only inside `app-network` as `backend-N:8080`. HAProxy logs every request to stdout (`docker compose
+  logs lb`) with the backend/server name, status and timers (`%s`, `%ST`, `%Tr`, `%Ta`).
 - Errors are RFC 7807 `application/problem+json` with `traceId`; 422 adds `errors: {field: [messages]}`.
 - Enums in JSON are camelCase strings (`"draft"`, `"active"`, `"closed"`).
 - Create validation: title 1..200, description ≤2000, 2..20 options, unique case-insensitively, each 1..200,

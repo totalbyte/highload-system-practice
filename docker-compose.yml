@@ -24,21 +24,41 @@ x-backend: &backend
     - app-network
 
 services:
+  # Єдина точка входу (лаба 3): назовні відкритий лише балансувальник, backend-и — тільки всередині app-network.
+  lb:
+    image: haproxy:3.4.6-alpine
+    ports:
+      - "${LB_PORT:-8080}:8080"
+      - "${LB_STATS_PORT:-8404}:8404"
+    volumes:
+      # Каталог, а не окремий файл: редактори на Windows замінюють файл новим, і змонтований файл не оновився б.
+      - ./haproxy:/usr/local/etc/haproxy:ro
+    depends_on:
+      - backend-1
+      - backend-2
+    restart: unless-stopped
+    networks:
+      - app-network
+
   backend-1:
     <<: *backend
     environment:
       <<: *backend-environment
       INSTANCE_ID: backend-1
-    ports:
-      - "${API_PORT:-8080}:8080"
 
   backend-2:
     <<: *backend
     environment:
       <<: *backend-environment
       INSTANCE_ID: backend-2
-    ports:
-      - "${API2_PORT:-8082}:8080"
+
+  # Третій інстанс для scale-out: `docker compose --profile scale up -d`. Балансувальник підхоплює його сам.
+  backend-3:
+    <<: *backend
+    profiles: ["scale"]
+    environment:
+      <<: *backend-environment
+      INSTANCE_ID: backend-3
 
   postgres:
     image: postgres:17-alpine

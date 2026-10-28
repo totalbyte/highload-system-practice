@@ -141,5 +141,13 @@ No ADRs — the proposals below are not yet confirmed by Participant 2 (task С-
 - Pitfall: writing the command through a Python string turned `` into a backspace and the grep silently matched
   less; fixed with a raw string and verified by extracting the command from README and running it.
 
+## Agent-docs sweep after the merges
+- Root `CLAUDE.md` quick start still said "backend + postgres" and only port 8080 → now both instances, Redis, ports.
+- `project-context.md` "Groundwork for later labs": lab 2 entry rewritten as done (pointer to ADRs 0021–0027); lab 3
+  entry now says to drop the per-instance ports and that `/health` ignores Redis; lab 4 entry says Redis already
+  exists and lists what lab 4 still adds (key schema, TTL rationale, `X-Cache`, cold/hot latency, DB fallback).
+- `status.md`: С-4 commit hash. Checked and already current: `contracts.md`, `runbook.md`, `src/.../CLAUDE.md`,
+  ADR index (0013 superseded by 0026).
+
 ## Not done / next steps
 - Joint tasks: С-5 cold-start rehearsal (both), С-6 `docs/ai/labs/lab2-summary.md`.

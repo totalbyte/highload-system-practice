@@ -21,6 +21,7 @@ Course materials and team documents are in Ukrainian ("Учасник 1/2" = Par
 |---|---|
 | [`docs/ai/status.md`](docs/ai/status.md) | Always, at session start |
 | [`docs/lab2/participant-1.md`](docs/lab2/participant-1.md), [`participant-2.md`](docs/lab2/participant-2.md) | Lab 2 task list of the participant you are working with (Ukrainian) |
+| [`docs/lab3/participant-1.md`](docs/lab3/participant-1.md), [`participant-2.md`](docs/lab3/participant-2.md) | Lab 3 task list of the participant you are working with (Ukrainian) |
 | [`docs/ai/project-context.md`](docs/ai/project-context.md) | You need lab requirements, the design-doc summary, the high-load scenario, bottlenecks, defense questions |
 | [`docs/ai/contracts.md`](docs/ai/contracts.md) | You touch the API, DB schema, or code another participant depends on; open questions for Participant 2 |
 | [`docs/ai/runbook.md`](docs/ai/runbook.md) | Running, testing, migrations, seed data, troubleshooting |
@@ -39,11 +40,12 @@ Docker Compose. Redis arrives in labs 2/4, Nginx in lab 3, k6 in lab 5.
 ## Quick start
 
 ```bash
-docker compose up -d --build     # backend + postgres; migrations and seed run automatically
+docker compose up -d --build     # backend-1 + backend-2 + postgres + redis; migrations and seed run automatically
 docker compose down -v           # wipe everything (cold start)
 ```
 
-API http://localhost:8080 · Swagger `/swagger` · health `/health` · Postgres from host `localhost:5433` (`polling`/`polling`).
+API `backend-1` http://localhost:8080, `backend-2` http://localhost:8082 · Swagger `/swagger` · health `/health` ·
+Postgres from host `localhost:5433` (`polling`/`polling`) · Redis `localhost:6379`.
 Seed users: `user001@example.com` … `user500@example.com`, password `Password123!`. Details: `docs/ai/runbook.md`.
 
 ## Rules that must not be broken

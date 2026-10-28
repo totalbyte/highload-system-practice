@@ -1,5 +1,5 @@
 # 0018. Connection budget: `Maximum Pool Size` 30 per backend instance
-**Status:** Accepted · **Date:** 2026-09-30 · **Author:** Participant 1
+**Status:** Accepted, amended by 0032 (budget for 3 and 4+ instances) · **Date:** 2026-09-30 · **Author:** Participant 1
 
 ## Context
 The review (`log/2026-09-22-p1-lab1-review.md`, problem 3) found that Npgsql's default pool maximum (100) equals
