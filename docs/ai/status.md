@@ -1,7 +1,7 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-10-28 by Participant 2 (lab 3 П2-3 … П2-7, С-3, С-4 — PR #10, see `log/2026-10-28-p2-lab3-experiments.md`; Participant 1's П1-1 … П1-7 merged via PR #7, #8; lab 2 guide via PR #9).
+> Last updated: 2026-10-28 by Participant 2 (lab 3 П2-3 … П2-7 merged via PR #10; С-3, С-4 in progress — see `log/2026-10-28-p2-lab3-experiments.md`; Participant 1's П1-1 … П1-7 merged via PR #7, #8; lab 2 guide via PR #9).
 
 ## Current lab: 3 — Horizontal scaling
 
@@ -30,11 +30,11 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 |---|---|
 | П2-1 Artificial delay on one instance | ✅ merged (PR #6): `Common/Diagnostics/ArtificialDelay.cs`, ADR 0036; 200 ms on `backend-2` → ~215 ms there, `/health` not delayed; off by default |
 | П2-2 Load generator | ✅ merged (PR #6): `scripts/load.py`; one process tops out at ≈ 1.8k rps (`read`) — run several in parallel |
-| П2-3 RR vs Least Connections with a slow node | ✅ `lab3/p2-experiments` (not merged): RR 50/50, ≈ 300 rps, p95 209 ms; LC 97.5/2.5, ≈ 1.7–2.0k rps, p95 23–28 ms; p99 ≈ 215 ms in both (2.5 % still on the slow node); README |
-| П2-4 Node loss during voting | ✅ not merged: `be_vote` in `haproxy.cfg` (ADR 0037) — own checks instead of `track`; `kill-test.py` via the LB: 6 kill + 1 stop runs after a cold start, 0 client errors, DOWN in ≈ 1 s (before: 6 × 502 with П1-3, 52 errors with П1-1); 503 trap verified with `redis-outage-check.py` |
-| П2-5 Scale-out 1 / 2 / 3 | ✅ not merged: no CPU limits → flat (one backend served ≈ 5k reads/s); with `cpus: 1` per backend read 1491 / 2785 / 3218 rps, write 108 / 153 / 242 → plateau ≈ 250–300; DB connections 77–79 of 90 on 3 instances (П1-2 criterion) |
-| П2-6 Next bottleneck | ✅ not merged: row locks on the hot `vote_count` rows (`Lock` = 26–29 of ≈ 30 active sessions); next — the connection budget for 4+ instances; README |
-| П2-7 Lab 2 scripts via the LB, docs | ✅ not merged: `kill-test`, `concurrency-checks`, `redis-outage-check` default to the LB; `results-cache-demo` → `docker-compose.debug.yml`; runbook, contracts, ADR 0037 |
+| П2-3 RR vs Least Connections with a slow node | ✅ merged (PR #10): RR 50/50, ≈ 300 rps, p95 209 ms; LC 97.5/2.5, ≈ 1.7–2.0k rps, p95 23–28 ms; p99 ≈ 215 ms in both (2.5 % still on the slow node); README |
+| П2-4 Node loss during voting | ✅ merged (PR #10): `be_vote` in `haproxy.cfg` (ADR 0037) — own checks instead of `track`; `kill-test.py` via the LB: 6 kill + 1 stop runs after a cold start, 0 client errors, DOWN in ≈ 1 s (before: 6 × 502 with П1-3, 52 errors with П1-1); 503 trap verified with `redis-outage-check.py` |
+| П2-5 Scale-out 1 / 2 / 3 | ✅ merged (PR #10): no CPU limits → flat (one backend served ≈ 5k reads/s); with `cpus: 1` per backend read 1491 / 2785 / 3218 rps, write 108 / 153 / 242 → plateau ≈ 250–300; DB connections 77–79 of 90 on 3 instances (П1-2 criterion) |
+| П2-6 Next bottleneck | ✅ merged (PR #10): row locks on the hot `vote_count` rows (`Lock` = 26–29 of ≈ 30 active sessions); next — the connection budget for 4+ instances; README |
+| П2-7 Lab 2 scripts via the LB, docs | ✅ merged (PR #10): `kill-test`, `concurrency-checks`, `redis-outage-check` default to the LB; `results-cache-demo` → `docker-compose.debug.yml`; runbook, contracts, ADR 0037 |
 
 ### Joint (after all lab 2 branches are merged)
 
@@ -84,10 +84,10 @@ All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-
 
 ## Next steps
 
-- **Lab 3, Participant 1:** own tasks merged (PR #7, #8); review Participant 2's PR #10 (С-2) — the `be_vote`
+- **Lab 3, Participant 1:** own tasks merged (PR #7, #8); PR #10 merged — if not done in review, look at the `be_vote`
   section in `haproxy.cfg` and own checks instead of `track` (ADR 0037). `pg_stat_activity` on three instances under
   load: 77–79 of 90 (П1-2 criterion, measured in П2-5).
-- **Lab 3, Participant 2:** П2-3 … П2-7, С-3 (README «Підсумок лаби 3»), С-4 dry run by `docs/lab3-guide.md` — PR #10.
+- **Lab 3, Participant 2:** П2-3 … П2-7 merged (PR #10); С-3 (README «Підсумок лаби 3»), С-4 dry run by `docs/lab3-guide.md`.
   Left: С-4 rehearsal together, С-5 `labs/lab3-summary.md` after the defense.
 - **Lab 2:** rehearse together by `docs/lab2-guide.md` §11 (С-5), then defend; record what was asked in
   `labs/lab2-summary.md`.
