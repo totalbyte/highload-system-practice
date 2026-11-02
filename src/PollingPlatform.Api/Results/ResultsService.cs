@@ -14,6 +14,15 @@ public class ResultsService(AppDbContext db, ResultsCache cache, ResultsSingleFl
 {
     public async Task<PollResultsRead> GetAsync(long pollId, long? currentUserId, CancellationToken ct)
     {
+        // Кеш вимкнено для порівняльного прогону лаби 5 (ADR 0046): кожне читання — запит до БД.
+        if (!cache.Enabled)
+        {
+            var direct = await LoadAsync(db, pollId, timeProvider, ct);
+            if (direct.Response.Status == PollStatus.Draft && direct.CreatorId != currentUserId)
+                throw new PollNotFoundException(pollId);
+            return new PollResultsRead(direct.Response, CacheResult.Disabled);
+        }
+
         // Cache-Aside (ADR 0041). Кеш містить і CreatorId, тому на попадання видимість перевіряється без звернення до БД.
         var lookup = await cache.GetAsync(pollId);
         var (entry, source) = lookup switch
