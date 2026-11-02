@@ -14,6 +14,8 @@ x-backend: &backend
     Seed__Enabled: ${SEED_ENABLED:-true}
     Seed__Users: ${SEED_USERS:-500}
     Seed__Polls: ${SEED_POLLS:-50}
+    # Debug — рядок у лозі backend на кожен HIT / MISS / STORE / INVALIDATE кешу результатів (лаба 4, демо).
+    Logging__LogLevel__PollingPlatform.Api.Results: ${CACHE_LOG_LEVEL:-Information}
   depends_on:
     postgres:
       condition: service_healthy

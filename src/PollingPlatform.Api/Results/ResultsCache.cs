@@ -58,6 +58,9 @@ public class ResultsCache(IConnectionMultiplexer redis, ILogger<ResultsCache> lo
 
         var generation = (long)reply[0];
         var entry = reply[1].IsNull ? null : JsonSerializer.Deserialize<CachedPollResults>((byte[])reply[1]!, Json);
+        // Debug, а не Information: під навантаженням це рядок на кожне читання. Увімкнути — CACHE_LOG_LEVEL=Debug.
+        logger.LogDebug("Results cache {Result}: poll {PollId}, generation {Generation}",
+            entry is null ? "MISS" : "HIT", pollId, generation);
         return new ResultsCacheLookup(entry, generation);
     }
 
@@ -69,9 +72,11 @@ public class ResultsCache(IConnectionMultiplexer redis, ILogger<ResultsCache> lo
     {
         try
         {
+            var ttl = TtlFor(entry.Response.Status);
             await redis.GetDatabase().StringSetAsync(
-                ValueKey(pollId, generation), JsonSerializer.SerializeToUtf8Bytes(entry, Json),
-                new Expiration(TtlFor(entry.Response.Status)));
+                ValueKey(pollId, generation), JsonSerializer.SerializeToUtf8Bytes(entry, Json), new Expiration(ttl));
+            logger.LogDebug("Results cache STORE: poll {PollId}, generation {Generation}, status {Status}, TTL {Ttl:0.0} s",
+                pollId, generation, entry.Response.Status, ttl.TotalSeconds);
         }
         catch (Exception ex) when (IsUnavailable(ex))
         {
@@ -88,8 +93,10 @@ public class ResultsCache(IConnectionMultiplexer redis, ILogger<ResultsCache> lo
     {
         try
         {
-            await redis.GetDatabase().ScriptEvaluateAsync(
+            var generation = (long)await redis.GetDatabase().ScriptEvaluateAsync(
                 InvalidateScript, [GenerationKey(pollId)], [ValueKeyPrefix(pollId)]);
+            logger.LogDebug("Results cache INVALIDATE: poll {PollId}, generation {Previous} -> {Generation}",
+                pollId, generation - 1, generation);
         }
         catch (Exception ex) when (IsUnavailable(ex))
         {

@@ -24,7 +24,7 @@ Votes/                      VotesController (POST /api/polls/{id}/vote), VoteSer
                             VoteModels, VoteValidators
 Results/                    ResultsController (GET /api/polls/{id}/results), ResultsService, ResultsModels,
                             ResultsCache (Redis via the shared IConnectionMultiplexer, ADR 0026; generation-based
-                            keys and TTL by poll status, ADR 0041)
+                            keys and TTL by poll status, ADR 0041); X-Cache: HIT | MISS set by the controller (ADR 0042)
 Common/
   Exceptions/               AppException (carries StatusCode) + NotFound/Conflict/Unauthorized/Forbidden/Validation;
                             PollNotFoundException, InvalidPollStateException; VoteExceptions.cs (option not in poll,

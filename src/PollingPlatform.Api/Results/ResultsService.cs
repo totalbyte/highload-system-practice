@@ -12,16 +12,17 @@ namespace PollingPlatform.Api.Results;
 /// </summary>
 public class ResultsService(AppDbContext db, ResultsCache cache, TimeProvider timeProvider)
 {
-    public async Task<PollResultsResponse> GetAsync(long pollId, long? currentUserId, CancellationToken ct)
+    public async Task<PollResultsRead> GetAsync(long pollId, long? currentUserId, CancellationToken ct)
     {
         // Cache-Aside (ADR 0041). Кеш містить і CreatorId, тому на попадання видимість перевіряється без звернення до БД.
         var lookup = await cache.GetAsync(pollId);
+        var source = lookup.Entry is null ? CacheResult.Miss : CacheResult.Hit;
         var entry = lookup.Entry ?? await LoadAndCacheAsync(pollId, lookup.Generation, ct);
 
         if (entry.Response.Status == PollStatus.Draft && entry.CreatorId != currentUserId)
             throw new PollNotFoundException(pollId);
 
-        return entry.Response;
+        return new PollResultsRead(entry.Response, source);
     }
 
     /// <summary>

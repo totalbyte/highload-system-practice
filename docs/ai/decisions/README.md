@@ -35,6 +35,7 @@ if a decision changes, add a new ADR and set the old one's status to `Superseded
 | [0037](0037-vote-backend-retries.md) | Lab 3: `be_vote` backend for `POST …/vote` — in-flight retries on another node (safe: one transaction + `UNIQUE`), own `/health` checks + `observe layer4` instead of `track`; 5xx not retried | Accepted (extends 0033) |
 | [0036](0036-artificial-delay-middleware.md) | Lab 3: artificial delay on one instance via middleware (`Diagnostics:ArtificialDelayMs`, `/health` not delayed) | Accepted |
 | [0041](0041-results-cache-target-keys-and-ttl.md) | Lab 4: cache only `GET /results`; keys `polling:results:v1:{pollId}:g{gen}` + generation counter (invalidation = `INCR`, fixes the lab 2 race); TTL by status (active / draft 10 s, closed 1 h) + 0–20 % jitter; verified with `cache-race-check.py` | Accepted (amends 0026) |
+| [0042](0042-x-cache-header-and-cache-logs.md) | Lab 4: `X-Cache: HIT \| MISS` on `GET /results`, captured in the HAProxy log (`{HIT}`); cache operations logged at Debug, switched by `CACHE_LOG_LEVEL` | Accepted |
 
 Template:
 

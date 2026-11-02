@@ -169,6 +169,13 @@ simultaneous votes for one option while 12 readers poll the results; then a cont
 committed number of votes. Expected: `0 of 60`, exit code 0. With the lab 2 `DEL` invalidation it found 2–5 stale
 rounds of 60 in every run.
 
+**Cache source (lab 4, П1-4, ADR 0042):** `curl -si localhost:8080/api/polls/1/results | grep -i x-cache` → `MISS`
+on the first read after a cold start or a mutation, `HIT` after that. The LB log shows it for every request:
+`docker compose logs lb | grep results` → `... be_api/backend-2 0/0/0/5/5 200 ... {HIT} "GET /api/polls/1/results ..."`.
+Per-operation backend logs (`HIT` / `MISS` / `STORE` with TTL / `INVALIDATE n -> n+1`) are at Debug:
+`CACHE_LOG_LEVEL=Debug docker compose up -d` (recreates the backends), then `docker compose logs -f backend-1 backend-2
+| grep "Results cache"`; plain `docker compose up -d` switches them off again.
+
 **Instance loss through the balancer (lab 2 П2-7 → lab 3 П2-4, ADR 0037):** `python scripts/kill-test.py` (from the
 repo root; `--stop` for a graceful stop instead of SIGKILL). 800 votes (400 users × 2 fresh polls, 32 threads) go to
 the balancer (`API`, default `http://127.0.0.1:8080`); after 10 % it runs `docker compose kill backend-1`. The client

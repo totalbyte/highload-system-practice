@@ -1109,7 +1109,40 @@ flowchart LR
 
 ### `X-Cache` і логування
 
-_П1-4._
+Рішення — ADR 0042. Джерело даних видно трьома способами, від найпростішого до найдокладнішого:
+
+| Де | Що видно | Як подивитися |
+|---|---|---|
+| Заголовок відповіді `X-Cache` | `HIT` — з Redis без звернення до БД, `MISS` — прочитано з БД і покладено в кеш | `curl -si localhost:8080/api/polls/1/results \| grep -i x-cache` |
+| Лог балансувальника | джерело, інстанс і час відповіді кожного читання в одному рядку: `{HIT}` / `{MISS}` (у решти ендпоінтів — `{}`) | `docker compose logs lb \| grep results` |
+| Лог backend (рівень Debug) | кожна операція кешу: `HIT` / `MISS` з поколінням, `STORE` зі статусом і TTL, `INVALIDATE n -> n+1` | `CACHE_LOG_LEVEL=Debug docker compose up -d`, далі `docker compose logs -f backend-1 backend-2` |
+
+Лог backend за замовчуванням на рівні `Information` і про кеш мовчить: під навантаженням це був би рядок на кожен запит. Для демонстрації рівень вмикається змінною `CACHE_LOG_LEVEL` без перезбирання образу. Попередження про недоступний Redis пишуться завжди.
+
+Приклад через балансувальник (2026-11-02): читання → голос → читання.
+
+```text
+fe_api be_api/backend-2 0/0/0/75/75 200 426 - - ---- 1/1/0/0/0 0/0 {MISS} "GET /api/polls/73/results HTTP/1.1"
+fe_api be_api/backend-1 0/0/0/30/30 200 425 - - ---- 1/1/0/0/0 0/0 {HIT} "GET /api/polls/73/results HTTP/1.1"
+fe_api be_api/backend-2 0/0/0/14/14 200 425 - - ---- 1/1/0/0/0 0/0 {HIT} "GET /api/polls/73/results HTTP/1.1"
+                                                         (POST /vote → 201 через backend-1)
+fe_api be_api/backend-1 0/0/0/51/51 200 428 - - ---- 1/1/0/0/0 0/0 {MISS} "GET /api/polls/73/results HTTP/1.1"
+fe_api be_api/backend-2 0/0/0/5/5   200 427 - - ---- 1/1/0/0/0 0/0 {HIT} "GET /api/polls/73/results HTTP/1.1"
+```
+
+Те саме в лозі backend з `CACHE_LOG_LEVEL=Debug`:
+
+```text
+backend-2  Results cache MISS: poll 73, generation 1
+backend-2  Results cache STORE: poll 73, generation 1, status Active, TTL 10.1 s
+backend-2  Results cache HIT: poll 73, generation 1
+backend-1  Results cache INVALIDATE: poll 73, generation 1 -> 2
+backend-1  Results cache MISS: poll 73, generation 2
+backend-1  Results cache STORE: poll 73, generation 2, status Active, TTL 11.0 s
+backend-2  Results cache HIT: poll 73, generation 2
+```
+
+Копію, яку поклав у кеш `backend-2`, одразу віддає `backend-1`, і навпаки: кеш один на всі інстанси. Час у цих рядках — з першого прогону після старту (прогрів JIT), тому він не є заміром; заміри cold vs hot — нижче.
 
 ### Cold vs Hot
 

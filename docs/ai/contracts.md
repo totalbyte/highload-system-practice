@@ -17,13 +17,14 @@ Update this file whenever the API, the schema, or code another participant depen
 | DELETE | `/api/polls/{id}` | author | 204 | 403, 404, 409 | P1 |
 | GET | `/health` | — | 200 / 503 `{status, instance, checks, durationMs}`, answers within 2 s (ADR 0019) | | P1 |
 | POST | `/api/polls/{id}/vote` | JWT | 201 new vote / 200 changed or repeated; `{pollId, optionId, votedAt}` | 401, 404, 409, 422 | P2 |
-| GET | `/api/polls/{id}/results` | optional | 200 `{pollId, title, status, totalVotes, generatedAt, options[]}` | 404, 503 (Redis down, ADR 0027) | P2 |
+| GET | `/api/polls/{id}/results` | optional | 200 `{pollId, title, status, totalVotes, generatedAt, options[]}` + header `X-Cache: HIT \| MISS` (ADR 0042) | 404, 503 (Redis down, ADR 0027) | P2 → P1 (lab 4) |
 
 - Every response carries `X-Instance-ID` (container hostname or env `INSTANCE_ID`); the balancer passes it through
   unchanged. In compose (lab 3, ADR 0031) clients reach only HAProxy on http://localhost:8080 (`LB_PORT`, stats page
   http://localhost:8404/stats); `backend-1`, `backend-2` and `backend-3` (profile `scale`) publish no host ports and
   are reachable only inside `app-network` as `backend-N:8080`. HAProxy logs every request to stdout (`docker compose
-  logs lb`) with the backend/server name, status and timers (`%s`, `%ST`, `%Tr`, `%Ta`).
+  logs lb`) with the backend/server name, status and timers (`%s`, `%ST`, `%Tr`, `%Ta`), and since lab 4 the captured
+  `X-Cache` response header in braces — `{HIT}` / `{MISS}` on results reads, `{}` elsewhere (ADR 0042).
 - Load balancer behaviour other code relies on (ADR 0033, 0034): `/health` is the readiness check (200 = in the pool,
   503 = out; it must stay DB-only and never check Redis, ADR 0021); a node is also taken out on the first connection
   error; failed connects are retried on another node for any method, in-flight failures only for GET. HAProxy never
