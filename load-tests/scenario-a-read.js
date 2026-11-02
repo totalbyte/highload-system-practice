@@ -19,7 +19,7 @@ export const options = {
 
 export function setup() {
   const r = http.get(`${BASE}/api/polls?status=active&pageSize=100`, { tags: { name: 'setup_catalog' } });
-  return { active: r.json('items').map((p) => p.id) };
+  return { active: r.json('items').map((p) => p.id), startedAt: Date.now() };
 }
 
 export function read(data) {

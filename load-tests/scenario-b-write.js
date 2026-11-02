@@ -22,12 +22,23 @@ export const options = {
 export function setup() {
   const tokens = loginUsers(1, 500);
   const fresh = [1, 2, 3].map((n) => createVotablePoll(tokens[0], `Load B #${n}`, ['A', 'B', 'C', 'D']));
-  return { tokens, hot: { id: 1, options: optionIds(1) }, fresh };
+  return { tokens, hot: { id: 1, options: optionIds(1) }, fresh, startedAt: Date.now() };
+}
+
+// Користувачі розділені між VU (VU v — користувачі v, v + 200, v + 400): один користувач не голосує з двох VU одночасно.
+// Інакше два перші голоси того самого користувача в одне опитування йшли паралельно, FOR UPDATE не мав що блокувати
+// (голосу ще немає), і другий INSERT отримував 409 від UNIQUE — коректно, але нереалістично для живого користувача.
+const SLOTS = 200;
+
+function userToken(tokens) {
+  const slot = (__VU - 1) % SLOTS;
+  const own = Math.ceil((tokens.length - slot) / SLOTS);
+  return tokens[slot + SLOTS * Math.floor(Math.random() * own)];
 }
 
 export function vote(data) {
   const poll = Math.random() < 0.7 ? data.hot : pick(data.fresh);
-  const r = jsonPost(`/api/polls/${poll.id}/vote`, { optionId: pick(poll.options) }, pick(data.tokens), 'vote');
+  const r = jsonPost(`/api/polls/${poll.id}/vote`, { optionId: pick(poll.options) }, userToken(data.tokens), 'vote');
   check(r, { 'vote 201/200': (x) => x.status === 201 || x.status === 200 });
 }
 

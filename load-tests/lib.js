@@ -126,9 +126,13 @@ export function summaryFor(name, step) {
     }
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
     const tag = __ENV.RUN_TAG ? `-${__ENV.RUN_TAG}` : '';
+    // Без токенів: вони не потрібні звіту і роздувають JSON. startedAt (кінець setup) — щоб зіставити ступені з
+    // ресурсами, знятими run.sh.
+    const { tokens, ...setupData } = data.setup_data || {};
+    const saved = { ...data, setup_data: setupData, schedule: { step, warmup: Number(__ENV.WARMUP || 20), gap: 5 } };
     return {
       stdout: out,
-      [`results/${name}${tag}-${stamp}.json`]: JSON.stringify(data, null, 1),
+      [`results/${name}${tag}-${stamp}.json`]: JSON.stringify(saved, null, 1),
     };
   };
 }

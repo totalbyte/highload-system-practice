@@ -25,7 +25,7 @@ export const options = {
 export function setup() {
   const tokens = loginUsers(1, 500);
   const polls = [1, 2, 3, 4, 5].map((n) => createVotablePoll(tokens[0], `Load C #${n}`, ['A', 'B', 'C']));
-  return { tokens, polls: [{ id: 1, options: optionIds(1) }, ...polls] };
+  return { tokens, polls: [{ id: 1, options: optionIds(1) }, ...polls], startedAt: Date.now() };
 }
 
 function think() {
