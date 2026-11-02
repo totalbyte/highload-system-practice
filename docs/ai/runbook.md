@@ -169,6 +169,19 @@ simultaneous votes for one option while 12 readers poll the results; then a cont
 committed number of votes. Expected: `0 of 60`, exit code 0. With the lab 2 `DEL` invalidation it found 2–5 stale
 rounds of 60 in every run.
 
+**Cache demo for the defense (lab 4, П1-6):** `python scripts/cache-demo.py [--pause]` (via the LB, ~15 s, stdlib
+only; reads Redis state directly on `localhost:6379`, env `REDIS`). Runs the three procedure items in a row: MISS →
+HIT → HIT; vote → generation +1 → MISS with the new count → HIT; close → MISS `closed` with TTL ≈ 1 h; then
+`docker compose stop redis` → BYPASS 200, a vote 201 visible on the next read, `/health` 200; `start redis` → a few
+BYPASS reads while the client reconnects (~2.5 s), then MISS (`gen=0`, Redis empty) → HIT. It always starts Redis
+again in `finally`. `--pause` waits for Enter before each step.
+
+**Cold vs hot latency (lab 4, П1-6):** `python scripts/cache-latency.py [--poll 1] [--pairs 500] [--warmup 50]`
+(~10 s). Each pair: `INCR polling:results:gen:<poll>` straight into Redis (= an invalidation), then a read that must be
+`MISS` and one that must be `HIT`; one keep-alive connection through the LB. Measured 2026-11-02 on poll #1, idle
+stack, 3 runs: MISS p50 ≈ 3.8 ms / p99 6.5–8.2 ms, HIT p50 ≈ 2.0 ms / p99 ≈ 3.7 ms (× 1.9). Numbers several times
+higher usually mean the stack is still warming up or another load is running.
+
 **Cache source (lab 4, П1-4, ADR 0042):** `curl -si localhost:8080/api/polls/1/results | grep -i x-cache` → `MISS`
 on the first read after a cold start or a mutation, `HIT` after that. The LB log shows it for every request:
 `docker compose logs lb | grep results` → `... be_api/backend-2 0/0/0/5/5 200 ... {HIT} "GET /api/polls/1/results ..."`.

@@ -199,8 +199,9 @@ docker-compose.yml        стек: lb (HAProxy), backend-1/2 (+ backend-3 у п
 docker-compose.debug.yml  лише для налагодження: порти 8091–8093 до окремих інстансів
 haproxy/         конфіг балансувальника (haproxy.cfg)
 requests/        колекції запитів для демо (polls.http, cross-instance.http)
-scripts/         перевірки й експерименти лаб 2–3 (lb-algorithm.sh, lb-distribution.py, lb-failover.py, cross-instance.sh,
-                 load.py та ін.; Python — лише стандартна бібліотека, запуск — у runbook)
+scripts/         перевірки й експерименти лаб 2–4 (lb-algorithm.sh, lb-distribution.py, lb-failover.py, cross-instance.sh,
+                 load.py, cache-demo.py, cache-latency.py, cache-race-check.py та ін.; Python — лише стандартна
+                 бібліотека, запуск — у runbook)
 docs/            методички та дизайн-документи
 docs/lab2/, docs/lab3/  розподіл задач лаб 2 і 3 між учасниками
 docs/lab4/       задачі лаби 4 (виконує Учасник 1)
@@ -1146,7 +1147,62 @@ backend-2  Results cache HIT: poll 73, generation 2
 
 ### Cold vs Hot
 
-_П1-6: `scripts/cache-latency.py`, p50 / p95 / p99._
+**Як міряли — [`scripts/cache-latency.py`](scripts/cache-latency.py).** Кожна пара вимірювань:
+- **cold** — перше читання після інвалідації. Скрипт сам робить `INCR polling:results:gen:1` — те саме, що голос чи publish, — тож backend промахується, читає PostgreSQL і пише в Redis;
+- **hot** — одразу наступне читання того самого опитування, тобто попадання.
+
+Кожне вимірювання звіряється з `X-Cache` (MISS / HIT); невідповідні відкидаються. Спершу 50 пар прогріву (JIT, пули з'єднань), їх не рахуємо. Запити йдуть через балансувальник по одному keep-alive з'єднанню, по черзі на обидва інстанси. Час міряє клієнт, тож він включає HAProxy і мережу Docker. Опитування — гаряче #1 із сіду (4 варіанти), стек без навантаження. Три прогони по 500 пар, 2026-11-02:
+
+| Запит | p50 | p95 | p99 | середнє | мін |
+|---|---|---|---|---|---|
+| cold (MISS) | 3.80 / 3.79 / 3.82 мс | 4.80–5.48 мс | 6.54–8.16 мс | ≈ 4.0 мс | ≈ 2.9 мс |
+| hot (HIT) | 1.99 / 2.00 / 1.99 мс | 2.52–2.70 мс | 3.67–3.82 мс | ≈ 2.1 мс | ≈ 1.5 мс |
+| cold / hot | **× 1.9** | × 1.9–2.0 | × 1.7–2.1 | | |
+
+Що з цього випливає:
+- **Попадання вдвічі швидше за промах.** З ~2 мс hot-запиту ~1.5 мс — це спільні накладні витрати (HTTP, HAProxy, мережа Docker, ASP.NET); сам Redis відповідає за частки мілісекунди. Отже, без цих накладних витрат кеш скорочує роботу backend у кілька разів.
+- **Абсолютний виграш — ~2 мс, і це очікувано.** Запит результатів дешевий за конструкцією: агрегат читається з денормалізованого `vote_count`, а не рахується `COUNT(*)` по `votes` (ADR 0014). На порожній БД промах коштує один короткий запит до PostgreSQL.
+- **Головна цінність кешу — не latency одного запиту, а те, що при HIT немає жодного звернення до БД.** Під час піку голосування транзакції голосів стоять у черзі на блокуванні рядка `vote_count` і тримають з'єднання з пулу (лаба 3, П2-6: 26–29 з ≈ 30 активних сесій у `Lock`). Кожне читання дашборду, яке йде в БД, забирає ще одне з'єднання. Кеш знімає з PostgreSQL усі читання, крім першого після кожного голосу. Кількісне порівняння під навантаженням (cache on / off, p99 під ramp-up) — сценарій лаби 5.
+- Найперший запит після старту контейнера — 50–75 мс (прогрів JIT і пулу з'єднань): видно в лозі HAProxy в підрозділі «`X-Cache` і логування». Тому скрипт відкидає прогрів.
+
+**Демонстрація всіх трьох пунктів процедури захисту — [`scripts/cache-demo.py`](scripts/cache-demo.py)** (`--pause` — чекати Enter перед кожним кроком). Біля кожного читання скрипт показує інстанс, `X-Cache`, `totalVotes`, час відповіді, а також покоління і TTL ключа в Redis, прочитані напряму. Прогін 2026-11-02:
+
+```text
+=== 1. Cache Hit / Miss ===
+  first read (cold)          backend-1  HTTP 200  X-Cache=MISS   totalVotes=0 status=active    6.6 ms   redis: gen=1 TTL(g1)=10s
+  second read                backend-2  HTTP 200  X-Cache=HIT    totalVotes=0 status=active   21.8 ms   redis: gen=1 TTL(g1)=10s
+  third read                 backend-1  HTTP 200  X-Cache=HIT    totalVotes=0 status=active    5.0 ms   redis: gen=1 TTL(g1)=10s
+
+=== 2. Invalidation on a mutation ===
+  POST vote                  backend-1  HTTP 201  25.4 ms   redis: gen=2 TTL(g2)=no entry
+  read after the vote        backend-2  HTTP 200  X-Cache=MISS   totalVotes=1 status=active    8.2 ms   redis: gen=2 TTL(g2)=11s
+  read again                 backend-1  HTTP 200  X-Cache=HIT    totalVotes=1 status=active    5.7 ms   redis: gen=2 TTL(g2)=11s
+  PATCH close                backend-2  HTTP 200   redis: gen=3 TTL(g3)=no entry
+  read after close           backend-1  HTTP 200  X-Cache=MISS   totalVotes=1 status=closed    8.4 ms   redis: gen=3 TTL(g3)=3845s
+  read again                 backend-2  HTTP 200  X-Cache=HIT    totalVotes=1 status=closed    5.5 ms   redis: gen=3 TTL(g3)=3845s
+  poll 92: warm the cache    backend-1  HTTP 200  X-Cache=MISS   totalVotes=0 status=active   26.1 ms   redis: gen=1 TTL(g1)=11s
+  read again                 backend-2  HTTP 200  X-Cache=HIT    totalVotes=0 status=active   20.0 ms   redis: gen=1 TTL(g1)=11s
+
+=== 3. Fallback: docker compose stop redis ===
+  read, Redis down           backend-1  HTTP 200  X-Cache=BYPASS totalVotes=0 status=active    6.5 ms   redis: unavailable
+  POST vote, Redis down      backend-2  HTTP 201  11.5 ms
+  read after the vote        backend-2  HTTP 200  X-Cache=BYPASS totalVotes=1 status=active   23.8 ms   redis: unavailable
+  GET /health                           HTTP 200  Healthy - nodes stay in the LB pool
+
+=== 3. Fallback: docker compose start redis ===
+  read, Redis back           backend-2  HTTP 200  X-Cache=BYPASS totalVotes=1 status=active   14.1 ms   redis: gen=0 TTL(g0)=no entry
+  ... (ще 4 такі рядки: клієнт Redis перепідключається ~2.5 с)
+  read, Redis back           backend-1  HTTP 200  X-Cache=MISS   totalVotes=1 status=active   19.1 ms   redis: gen=0 TTL(g0)=10s
+  read again                 backend-2  HTTP 200  X-Cache=HIT    totalVotes=1 status=active   14.0 ms   redis: gen=0 TTL(g0)=10s
+```
+
+На що звернути увагу:
+- Копію, яку поклав у кеш один інстанс, одразу віддає інший.
+- Голос і закриття збільшують покоління, і нове покоління ще не має запису (`no entry`). Тому наступне читання — MISS зі свіжими даними.
+- Закрите опитування отримує TTL ≈ 1 год, активне — 10–12 с.
+- Під час збою читання йдуть у БД і вже бачать голос, зроблений під час збою.
+- Після `start` Redis порожній (`gen=0`), а не з воскреслими старими записами.
+- Час в одиничних запитах демо — «шумний» (інколи 20+ мс); для цифр — `cache-latency.py`.
 
 ### Fallback: Redis недоступний
 
