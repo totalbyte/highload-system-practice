@@ -1,8 +1,8 @@
 # Lab 2 summary — Stateless architecture
 
-**Status:** all tasks merged into `main` (PR #2, #4, #3, 2026-10-27); end-of-lab code = `2633293`. Defense rehearsal
-(С-5) dry-run 2026-10-28 on the current `main`, all demos green; the participants' own rehearsal and the defense
-itself are not recorded yet. Long-form guide for the defense (Ukrainian): [`docs/lab2-guide.md`](../../lab2-guide.md).
+**Status:** ✅ defended (rehearsed together first). All tasks merged into `main` (PR #2, #4, #3, 2026-10-27);
+end-of-lab code = `2633293`. Defense guide (Ukrainian): [`docs/lab2-guide.md`](../../lab2-guide.md); lecturer page:
+[`docs/about/lab2.md`](../../about/lab2.md).
 
 ## What was built
 - **Two instances** `backend-1` / `backend-2` from one YAML anchor (one image, same env, differ only in
@@ -51,4 +51,4 @@ Backends no longer publish ports; use the debug overlay:
   ~5 s per Redis-touching request during an outage.
 
 ## Leftovers
-- С-5: the participants' own cold-start rehearsal (guide §11 checklist), then the defense; record what was asked here.
+None. What the lecturer asked at the defense was not recorded.
