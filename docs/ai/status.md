@@ -1,14 +1,19 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-10-28 by Participant 2 (lab 3 П2-3 … П2-7 merged via PR #10; С-3, С-4 in progress — see `log/2026-10-28-p2-lab3-experiments.md`; Participant 1's П1-1 … П1-7 merged via PR #7, #8; lab 2 guide via PR #9).
+> Last updated: 2026-11-02 by Participant 1 (labs 2 and 3 rehearsed and defended; status refreshed after PR #9 – #11 — see `log/2026-11-02-p1-status-refresh.md`).
 
-## Current lab: 3 — Horizontal scaling
+## Current lab: 4 — Distributed caching (not started)
+
+Labs 1–3 are defended. Next: read `docs/labs/Lab4 - Distributed Caching.md` and split the lab 4 tasks.
+
+## Lab 3 — Horizontal scaling (✅ defended)
 
 Task lists (Ukrainian, task ids П1-N / П2-N / С-N): [`docs/lab3/participant-1.md`](../lab3/participant-1.md),
-[`docs/lab3/participant-2.md`](../lab3/participant-2.md). Load balancer: HAProxy (ADR 0031). Branches `lab3/p1-lb`
-(П1-1, П1-2 — merge first, it unblocks Participant 2), `lab3/p1-platform`, `lab3/p2-experiments`; ADR ranges
-0031–0035 / 0036–0040.
+[`docs/lab3/participant-2.md`](../lab3/participant-2.md). Load balancer: HAProxy (ADR 0031). All task branches are
+merged: `lab3/p1-lb` (PR #7), `lab3/p1-platform` (PR #8), `lab3/p2-experiments` (PR #6, #10, #11); ADRs 0031–0034
+(Participant 1), 0036–0037 (Participant 2). Defense material: guide [`docs/lab3-guide.md`](../lab3-guide.md), lecturer
+page [`docs/about/lab3.md`](../about/lab3.md), README «Підсумок лаби 3».
 
 To avoid merge conflicts, each participant edits **only their own table** below.
 
@@ -36,30 +41,30 @@ To avoid merge conflicts, each participant edits **only their own table** below.
 | П2-6 Next bottleneck | ✅ merged (PR #10): row locks on the hot `vote_count` rows (`Lock` = 26–29 of ≈ 30 active sessions); next — the connection budget for 4+ instances; README |
 | П2-7 Lab 2 scripts via the LB, docs | ✅ merged (PR #10): `kill-test`, `concurrency-checks`, `redis-outage-check` default to the LB; `results-cache-demo` → `docker-compose.debug.yml`; runbook, contracts, ADR 0037 |
 
-### Joint (after all lab 2 branches are merged)
+### Joint (lab 3)
 
 | Task | Status |
 |---|---|
-| С-1 Confirm the agreements and HAProxy | ⏳ both (Participant 1 started П1-1 on the proposal) |
-| С-2 … С-5 | ⏳ |
+| С-1 Confirm the agreements and HAProxy | ✅ followed by both in practice (HAProxy, branches, file ownership, ADR ranges) |
+| С-2 PR reviews | ✅ PR #7, #8, #10, #11 merged |
+| С-3 README consolidation | ✅ Participant 2, PR #11: README «Підсумок лаби 3» (one algorithm table, one node-failure table, §3 checklist) |
+| С-4 Defense rehearsal | ✅ guide + dry run (Participant 2, PR #11), joint rehearsal done, lab defended |
+| С-5 `labs/lab3-summary.md` | ✅ written 2026-11-02 |
 
-### Lab 2 leftovers
+### Lab 2 (✅ defended)
 
 All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-10-27; С-1…С-4 done.
-- С-6 ✅ `labs/lab2-summary.md` + defense guide `docs/lab2-guide.md` (2026-10-28, Participant 1; branch
-  `lab2/defense-guide`, PR into `main`).
-- С-5 🟡 dry run 2026-10-28 on the current `main` with `docker-compose.debug.yml` (instances on 8091 / 8092, scripts
-  via `API1` / `API2`): cold start 16 s, `cross-instance.sh` 8/8, `results-cache-demo` no/no, `concurrency-checks`,
-  `redis-outage-check`, `kill-test` (kill and stop) all passed, no-sessions and JWT-affinity demos as documented.
-  Left: the participants' own rehearsal by the guide §11 checklist, then the defense.
+- С-6 ✅ `labs/lab2-summary.md` + defense guide `docs/lab2-guide.md` — merged via PR #9 (2026-10-28); lecturer page
+  `docs/about/lab2.md` added by Participant 2 (PR #11).
+- С-5 ✅ dry run 2026-10-28, joint rehearsal done, lab defended.
 
 ## All labs
 
 | Lab | Status |
 |---|---|
 | 1 System Design + MVP | ✅ defended (per Participant 1, 2026-10-28); `labs/lab1-summary.md` was never written |
-| 2 Stateless | 🟡 all tasks merged (PR #2, #4, #3); `labs/lab2-summary.md` + `docs/lab2-guide.md` written, dry-run rehearsal green; joint rehearsal and defense left |
-| 3 Horizontal Scaling | 🟡 П1-1, П1-2 (PR #7) and П2-1, П2-2 (PR #6) merged; П1-3 … П1-7 (PR #8) merged; П2-3 … П2-7 and joint tasks left |
+| 2 Stateless | ✅ defended; `labs/lab2-summary.md`, `docs/lab2-guide.md`, `docs/about/lab2.md` |
+| 3 Horizontal Scaling | ✅ defended; `labs/lab3-summary.md`, `docs/lab3-guide.md`, `docs/about/lab3.md` |
 | 4 Distributed Caching | ⏳ |
 | 5 Load Testing | ⏳ (groundwork: 500 seed users, hot poll #1) |
 
@@ -77,17 +82,16 @@ All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-
   `main` 2026-10-27 (cold start): smoke 11/11 on both instances, `cross-instance.sh` 8/8, `results-cache-demo`,
   `concurrency-checks`, `kill-test`, `redis-outage-check` all passed. 2026-10-28, `lab3/p1-platform` on a cold
   start: smoke 11/11 through :8080, `cross-instance.sh` 8/8, `lb-distribution.py`, `lb-failover.py --kill` (0 errors).
-- Lab 3 merged into `main`: PR #7 `lab3/p1-lb` (П1-1, П1-2), PR #6 `lab3/p2-experiments` (П2-1, П2-2). PR #8
-  `lab3/p1-platform` (П1-3 … П1-7) merged as `d4bad11`.
+- Lab 3 merged into `main`: PR #6 (П2-1, П2-2), PR #7 `lab3/p1-lb` (П1-1, П1-2), PR #8 `lab3/p1-platform`
+  (П1-3 … П1-7, `d4bad11`), PR #10 (П2-3 … П2-7, `e2a9b38`), PR #11 (С-3, С-4: README summary, `docs/lab3-guide.md`,
+  lecturer pages, `d567b02`). PR #9 `lab2/defense-guide` (lab 2 С-6, `9f7b2d9`). `1c03d0d` renamed `docs/defense/`
+  → `docs/about/`. Open PRs: none (2026-11-02).
 - `.gitattributes` keeps LF in the repository. If Git shows whole-file changes after a pull, run
   `git add --renormalize .` and check that `git diff --cached` is empty — then nothing really changed.
 
 ## Next steps
 
-- **Lab 3, Participant 1:** own tasks merged (PR #7, #8); PR #10 merged — if not done in review, look at the `be_vote`
-  section in `haproxy.cfg` and own checks instead of `track` (ADR 0037). `pg_stat_activity` on three instances under
-  load: 77–79 of 90 (П1-2 criterion, measured in П2-5).
-- **Lab 3, Participant 2:** П2-3 … П2-7 merged (PR #10); С-3 (README «Підсумок лаби 3»), С-4 dry run by `docs/lab3-guide.md`.
-  Left: С-4 rehearsal together, С-5 `labs/lab3-summary.md` after the defense.
-- **Lab 2:** rehearse together by `docs/lab2-guide.md` §11 (С-5), then defend; record what was asked in
-  `labs/lab2-summary.md`.
+- **Lab 4 (both):** read the assignment, write `docs/lab4/participant-1.md` / `participant-2.md` (task split, as for labs 2–3).
+  Carried over from labs 2–3: key schema, TTL rationale, `X-Cache`, DB fallback when Redis is down, cache-stampede
+  protection, the invalidation race (ADR 0026 / 0027).
+- Record what the lecturer asked at the lab 2 / 3 defenses in `labs/lab2-summary.md` / `lab3-summary.md` if remembered.
