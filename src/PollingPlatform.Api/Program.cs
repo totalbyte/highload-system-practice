@@ -95,6 +95,8 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 // Кеш результатів — у Redis через спільний IConnectionMultiplexer (ADR 0026); сам ResultsCache стану не має.
 builder.Services.AddSingleton<ResultsCache>();
+// Об'єднання одночасних промахів проти Cache Stampede (ADR 0044); тримає лише запити, що виконуються зараз.
+builder.Services.AddSingleton<ResultsSingleFlight>();
 
 // --- API ---
 builder.Services

@@ -24,7 +24,9 @@ Votes/                      VotesController (POST /api/polls/{id}/vote), VoteSer
                             VoteModels, VoteValidators
 Results/                    ResultsController (GET /api/polls/{id}/results), ResultsService, ResultsModels,
                             ResultsCache (Redis via the shared IConnectionMultiplexer, ADR 0026; generation-based
-                            keys and TTL by poll status, ADR 0041); X-Cache: HIT | MISS | BYPASS set by the controller (ADR 0042, 0043)
+                            keys and TTL by poll status, ADR 0041); X-Cache: HIT | MISS | BYPASS set by the controller (ADR 0042, 0043);
+                            ResultsSingleFlight — one shared DB load per (poll, generation) per instance on a
+                            miss, against Cache Stampede (ADR 0044)
 Common/
   Exceptions/               AppException (carries StatusCode) + NotFound/Conflict/Unauthorized/Forbidden/Validation;
                             PollNotFoundException, InvalidPollStateException; VoteExceptions.cs (option not in poll,
@@ -74,4 +76,6 @@ Common/
   (`X-Cache: BYPASS`, nothing written to Redis); `InvalidateAsync` / `SetAsync` swallow connection failures and
   timeouts (they run after the DB commit — a committed vote must not look failed). Don't add try/catch around the
   calls, and don't make invalidation throw. The client is fail-fast (`Program.cs`) — don't put the backlog back.
+- Misses go through `ResultsSingleFlight` keyed by (poll, generation) — never key it by poll alone and never use it for
+  BYPASS: either would let a read that started after a mutation's response join an older DB load (ADR 0044).
 - `/health` must not go through the DbContext / EF retry strategy and must answer within 2 s (ADR 0019).

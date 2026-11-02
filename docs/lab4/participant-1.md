@@ -22,10 +22,9 @@
 
 ## Межі лаби 4 — чого не робимо
 
-- **Захист від Cache Stampede** (single-flight, розподілений lock, probabilistic early expiration) — **відкладено
-  свідомо**, рішення Учасника 1 від 2026-11-02. На захисті пояснюємо теорію і показуємо, де саме stampede виникає в нас
-  (кожен голос у гаряче опитування скидає кеш, і всі читачі одночасно йдуть у БД). **Нагадати** перед П1-8 і в П1-9 —
-  можливо, все ж додати мінімальний варіант.
+- **Захист від Cache Stampede** спершу відклали (2026-11-02), перед П1-8 Учасник 1 вирішив додати мінімальний
+  варіант — single-flight у процесі (П1-10, ADR 0044). Розподілений lock, stale-while-revalidate і XFetch не робимо —
+  чому, див. ADR 0044; на захисті це теорія.
 - **Кеш on/off для порівняльних прогонів, k6, ramp-up** — лаба 5.
 - **Кешування інших ендпоінтів** — ні: критерій оцінювання «кешування лише відповідних read-intensive операцій»;
   чому саме так — у П1-1.
@@ -125,6 +124,29 @@
 - Холодний старт (`down -v` → `up -d --build`), smoke test з runbook, `cross-instance.sh`, `concurrency-checks.py`,
   `kill-test.py`, `redis-outage-check.py`, `cache-demo.py`, `cache-latency.py`.
 
+Готово, коли:
+
+- [x] 2026-11-02, `lab4/caching` @ `d20999a`, холодний старт — `/health` 200 через 23 с, Redis `save` порожній;
+  smoke 25/25, `cross-instance.sh` 8/8, `concurrency-checks.py` ALL PASSED; лаба 4: `cache-demo.py` rc 0,
+  `cache-latency.py` MISS p50 3.83 / HIT 1.99 мс, `cache-race-check.py` 0 з 60, `redis-outage-check.py` ALL PASSED
+  (BYPASS за 23 мс); регресія лаб 2–3: `kill-test.py` ALL PASSED (800 голосів, 0 помилок), `lb-failover.py --kill`
+  0 не-2xx із 17 911, `results-cache-demo.py` (через `docker-compose.debug.yml`) no / no.
+
+### П1-10. Захист від Cache Stampede: single-flight у процесі (§4 п. 4) — ≈30–45 хв
+
+Зроблено між П1-7 і П1-8 (номер — за часом рішення).
+
+- `Results/ResultsSingleFlight.cs`: одночасні промахи інстансу по одному (опитування, покоління) чекають одне читання
+  з БД у власному scope; не для BYPASS.
+- `scripts/cache-stampede-check.py`: 100 одночасних читань одразу після інвалідації, кількість звернень до БД — за
+  різними `generatedAt`.
+
+Готово, коли:
+
+- [x] «до» / «після» на тому самому стеку: 6.7–14.4 → 2.1–2.4 звернень до БД на інвалідацію (2 інстанси, 100 читачів);
+- [x] `cache-race-check.py` 3 × 0 з 60, smoke 25/25, `concurrency-checks.py`, `cross-instance.sh` 8/8,
+  `redis-outage-check.py`, `cache-demo.py`, `cache-latency.py` без змін; ADR 0044.
+
 ### П1-8. Документація (§3) — ≈30–45 хв
 
 - README «Лабораторна 4»: обґрунтування ендпоінта, специфікація ключів і TTL, cold vs hot, оновлена схема архітектури
@@ -155,4 +177,4 @@
 | 2.6.3 `docker stop redis` → graceful degradation | П1-5 |
 | §3 README: обґрунтування, ключі і TTL, cold vs hot, схема з Redis | П1-1, П1-8 |
 | §4 п. 1–3 Демонстрація hit / miss, інвалідації, fallback | П1-6, П1-9 |
-| §4 п. 4 Stampede, Avalanche, LRU / LFU, Expiration vs Invalidation | П1-9 |
+| §4 п. 4 Stampede, Avalanche, LRU / LFU, Expiration vs Invalidation | П1-9; Stampede — ще й на практиці, П1-10; Avalanche — jitter, П1-3 |

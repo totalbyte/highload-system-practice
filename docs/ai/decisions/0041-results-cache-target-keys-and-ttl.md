@@ -1,5 +1,5 @@
 # 0041. Lab 4: cache only `GET /results`; generation-based keys; TTL by poll status with jitter
-**Status:** Accepted (amends 0026; implemented in lab 4 П1-3) · **Date:** 2026-11-02 · **Author:** Participant 1
+**Status:** Accepted (amends 0026; implemented in lab 4 П1-3; the stampede left open below is addressed by [0044](0044-single-flight-against-cache-stampede.md)) · **Date:** 2026-11-02 · **Author:** Participant 1
 
 ## Context
 Since lab 2 `GET /api/polls/{id}/results` is cached in Redis (ADR 0026): key `results:{pollId}`, TTL 10 s, `DEL` on

@@ -176,6 +176,11 @@ HIT → HIT; vote → generation +1 → MISS with the new count → HIT; close �
 BYPASS reads while the client reconnects (~2.5 s), then MISS (`gen=0`, Redis empty) → HIT. It always starts Redis
 again in `finally`. `--pause` waits for Enter before each step.
 
+**Cache stampede (lab 4, П1-10, ADR 0044):** `python scripts/cache-stampede-check.py [--poll 1] [--readers 100]
+[--rounds 20]` (~5 s). Each round: `INCR` of the poll's generation in Redis, then 100 simultaneous reads through the LB
+(connections opened beforehand); DB loads = distinct `generatedAt` in the answers. Expected with single-flight ≈ one per
+instance (2.1–2.4 on 2 instances, max 3), exit code 0; without it it was 6.7–14.4 on average, up to 98 of 100.
+
 **Cold vs hot latency (lab 4, П1-6):** `python scripts/cache-latency.py [--poll 1] [--pairs 500] [--warmup 50]`
 (~10 s). Each pair: `INCR polling:results:gen:<poll>` straight into Redis (= an invalidation), then a read that must be
 `MISS` and one that must be `HIT`; one keep-alive connection through the LB. Measured 2026-11-02 on poll #1, idle

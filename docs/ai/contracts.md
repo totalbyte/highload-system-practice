@@ -99,6 +99,10 @@ Defined by EF migrations in `src/PollingPlatform.Api/Data/Migrations` (current: 
   — ADR 0041) — `Task<ResultsCacheLookup> GetAsync(pollId)` (entry or null + the generation read) /
   `Task SetAsync(pollId, generation, entry)` (write under the generation from `GetAsync`, never the current one) /
   `Task InvalidateAsync(pollId)` (unchanged signature, so the callers did not change).
+- `ResultsSingleFlight` (`Results/ResultsSingleFlight.cs`, singleton, ADR 0044) — `LoadAsync(pollId, generation, ct)`:
+  concurrent misses of one instance for the same (poll, generation) share one DB load (own DI scope, no shared
+  cancellation), which also writes the entry. Used by `ResultsService` for MISS only, never for BYPASS. Waiters answer
+  `X-Cache: MISS` too — MISS means "not from Redis", not "this request queried the DB".
   **Any code that changes votes or a poll's status must `await InvalidateAsync`** — invalidation is now visible to
   every instance. `PollService` takes `ResultsCache` in its constructor and invalidates in `PublishAsync`,
   `CloseAsync` and `DeleteAsync` (publish/delete were added on 2026-09-30 after the review found stale draft entries).

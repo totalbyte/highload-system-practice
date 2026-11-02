@@ -37,6 +37,7 @@ if a decision changes, add a new ADR and set the old one's status to `Superseded
 | [0041](0041-results-cache-target-keys-and-ttl.md) | Lab 4: cache only `GET /results`; keys `polling:results:v1:{pollId}:g{gen}` + generation counter (invalidation = `INCR`, fixes the lab 2 race); TTL by status (active / draft 10 s, closed 1 h) + 0–20 % jitter; verified with `cache-race-check.py` | Accepted (amends 0026) |
 | [0042](0042-x-cache-header-and-cache-logs.md) | Lab 4: `X-Cache: HIT \| MISS` on `GET /results`, captured in the HAProxy log (`{HIT}`); cache operations logged at Debug, switched by `CACHE_LOG_LEVEL` | Accepted |
 | [0043](0043-redis-down-fallback-to-db.md) | Lab 4: Redis down → results from PostgreSQL with `X-Cache: BYPASS` (200, ~70 ms instead of 503 after 5 s); fail-fast client (`BacklogPolicy.FailFast`, 1 s timeouts); Redis without persistence (`--save ""`) | Accepted (supersedes 0027) |
+| [0044](0044-single-flight-against-cache-stampede.md) | Lab 4: single-flight per instance against Cache Stampede — concurrent misses for one (poll, generation) share one DB load in its own scope; not for BYPASS; 6.7–14.4 → ≈ 2 DB loads per invalidation | Accepted |
 
 Template:
 
