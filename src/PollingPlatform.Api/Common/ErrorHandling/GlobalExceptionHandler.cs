@@ -60,7 +60,8 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
     /// запит має сенс повторити. У лабі 3 за цим кодом балансувальник вимикає вузол з пулу,
     /// у лабі 5 — k6 відрізняє інфраструктурну відмову від помилки застосунку.
     /// БД (ADR 0016): EF уже вичерпав власні повтори, тож сюди доходять стійкі збої.
-    /// Redis (ADR 0027): клієнт чекав на з'єднання до свого таймауту. Redis-перевірки йдуть першими,
+    /// Redis (ADR 0027): з лаби 4 читання результатів сюди не доходять — fallback на БД (ADR 0043); мапінг лишається
+    /// страховкою для майбутніх викликів Redis. Redis-перевірки йдуть першими,
     /// бо RedisTimeoutException — теж TimeoutException.
     /// </summary>
     private static string? UnavailableDependency(Exception exception) => exception switch

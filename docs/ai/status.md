@@ -1,7 +1,7 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-11-02 by Participant 1 (lab 4 П1-1 … П1-3 committed `5f06fe0`, П1-4 done, not committed — see `log/2026-11-02-p1-lab4-design.md`).
+> Last updated: 2026-11-02 by Participant 1 (lab 4 П1-1 … П1-4 committed `5f06fe0`, `5f2b348`; П1-5 done, not committed — see `log/2026-11-02-p1-lab4-design.md`).
 
 ## Current lab: 4 — Distributed caching
 
@@ -15,7 +15,7 @@ labs 1–3; Participant 2 reviews the PR. Task list (Ukrainian, ids П1-N):
 | П1-2 Key schema and TTL (2.4) | ✅ ADR 0041 accepted: `polling:results:v1:{pollId}:g{gen}` + counter `polling:results:gen:{pollId}`, TTL by status (active / draft 10 s, closed 1 h) + 0–20 % jitter |
 | П1-3 Cache-Aside with generations and TTL by status | ✅ `ResultsCache` (Lua lookup / invalidate), README «Cache-Aside…», «Інвалідація»; `scripts/cache-race-check.py`: lab 2 `DEL` 2–5 stale rounds of 60 in each of 5 runs → generations 0 of 60 × 5; smoke, `concurrency-checks`, `cross-instance` 8/8, `redis-outage-check` green |
 | П1-4 `X-Cache` + logging | ✅ ADR 0042: header `HIT` / `MISS`, `{HIT}` in the HAProxy log, Debug logs via `CACHE_LOG_LEVEL`; smoke 25/25 |
-| П1-5 Fallback to the DB when Redis is down (replaces ADR 0027) | ⏳ |
+| П1-5 Fallback to the DB when Redis is down (replaces ADR 0027) | ✅ ADR 0043: `X-Cache: BYPASS` 200 in 68 ms (was 503 after 5.2 s), fail-fast client, Redis `--save ""` (it reloaded `dump.rdb` on `start` — stale HIT in a counter-test); `redis-outage-check.py` rewritten, ALL PASSED |
 | П1-6 `cache-demo.py`, `cache-latency.py` | ⏳ |
 | П1-7 Verification on a cold start | ⏳ |
 | П1-8 README / contracts / runbook | ⏳ — **remind about cache-stampede protection first** (deferred on 2026-11-02) |
@@ -79,7 +79,7 @@ All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-
 | 1 System Design + MVP | ✅ defended (per Participant 1, 2026-10-28); `labs/lab1-summary.md` was never written |
 | 2 Stateless | ✅ defended; `labs/lab2-summary.md`, `docs/lab2-guide.md`, `docs/about/lab2.md` |
 | 3 Horizontal Scaling | ✅ defended; `labs/lab3-summary.md`, `docs/lab3-guide.md`, `docs/about/lab3.md` |
-| 4 Distributed Caching | 🟡 in progress (Participant 1 alone), branch `lab4/caching`: П1-1 … П1-4 done |
+| 4 Distributed Caching | 🟡 in progress (Participant 1 alone), branch `lab4/caching`: П1-1 … П1-5 done |
 | 5 Load Testing | ⏳ (groundwork: 500 seed users, hot poll #1) |
 
 ## Repository state
@@ -105,6 +105,6 @@ All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-
 
 ## Next steps
 
-- **Lab 4 (Participant 1):** next П1-5 (fallback to the DB with `X-Cache: BYPASS`, fail-fast Redis, replaces ADR 0027). Cache-stampede protection is deliberately out of scope
+- **Lab 4 (Participant 1):** next П1-6 (`scripts/cache-demo.py`, `scripts/cache-latency.py` — cold vs hot). Cache-stampede protection is deliberately out of scope
   for now — remind Participant 1 before П1-8 and when preparing the defense (П1-9).
 - Record what the lecturer asked at the lab 2 / 3 defenses in `labs/lab2-summary.md` / `lab3-summary.md` if remembered.

@@ -99,7 +99,7 @@ Every participant is questioned about the **whole** system, not only their own p
   smaller pool or a higher `max_connections`.
 - **Lab 4 (in progress, Participant 1 alone — `docs/lab4/participant-1.md`):** only `GET /results` is cached;
   generation-based keys `polling:results:v1:{pollId}:g{gen}` fixed the lab 2 invalidation race, TTL by poll status
-  with jitter (ADR 0041). Still to do: `X-Cache: HIT/MISS`, cold/hot latency, a DB fallback when Redis is down
-  (today a Redis outage costs ~5 s per Redis-touching request and reads return 503, ADR 0027).
+  with jitter (ADR 0041); `X-Cache: HIT | MISS | BYPASS` (ADR 0042); Redis down → reads from PostgreSQL, fail-fast
+  client, Redis without persistence (ADR 0043). Still to do: cold / hot latency, demo script, defense material.
 - **Lab 5:** k6 in `/load-tests`; log seed users in during `setup()` and share tokens via `SharedArray` (login is
   deliberately CPU-heavy); write scenario → hot poll #1; read scenario → `GET /results`.

@@ -16,7 +16,12 @@ public class ResultsService(AppDbContext db, ResultsCache cache, TimeProvider ti
     {
         // Cache-Aside (ADR 0041). Кеш містить і CreatorId, тому на попадання видимість перевіряється без звернення до БД.
         var lookup = await cache.GetAsync(pollId);
-        var source = lookup.Entry is null ? CacheResult.Miss : CacheResult.Hit;
+        var source = lookup switch
+        {
+            { Generation: null } => CacheResult.Bypass,
+            { Entry: null } => CacheResult.Miss,
+            _ => CacheResult.Hit
+        };
         var entry = lookup.Entry ?? await LoadAndCacheAsync(pollId, lookup.Generation, ct);
 
         if (entry.Response.Status == PollStatus.Draft && entry.CreatorId != currentUserId)
@@ -29,8 +34,9 @@ public class ResultsService(AppDbContext db, ResultsCache cache, TimeProvider ti
     /// Промах: читання з БД і запис під поколінням <paramref name="generation"/>, прочитаним до цього запиту.
     /// Якщо поки ми читали, зміна встигла закомітитись і інвалідувати кеш, наш запис ляже під старе покоління і не
     /// буде прочитаний — наступний читач піде в БД і побачить зміну.
+    /// Без покоління (Redis недоступний) лише читаємо: записати без нього означало б повернути гонку з лаби 2.
     /// </summary>
-    private async Task<CachedPollResults> LoadAndCacheAsync(long pollId, long generation, CancellationToken ct)
+    private async Task<CachedPollResults> LoadAndCacheAsync(long pollId, long? generation, CancellationToken ct)
     {
         var poll = await db.Polls.AsNoTracking()
             .Where(p => p.Id == pollId)
@@ -59,7 +65,8 @@ public class ResultsService(AppDbContext db, ResultsCache cache, TimeProvider ti
             poll.CreatorId,
             new PollResultsResponse(pollId, poll.Title, poll.Status, totalVotes, timeProvider.GetUtcNow(), options));
 
-        await cache.SetAsync(pollId, generation, entry);
+        if (generation is { } readGeneration)
+            await cache.SetAsync(pollId, readGeneration, entry);
         return entry;
     }
 }

@@ -26,7 +26,10 @@ public enum CacheResult
     Hit,
 
     /// <summary>У Redis не було — прочитано з БД і покладено в кеш.</summary>
-    Miss
+    Miss,
+
+    /// <summary>Redis недоступний — прочитано прямо з БД, у кеш нічого не записано (fallback, ADR 0043).</summary>
+    Bypass
 }
 
 public record PollResultsRead(PollResultsResponse Response, CacheResult Cache);

@@ -9,7 +9,7 @@ namespace PollingPlatform.Api.Results;
 public class ResultsController(ResultsService resultsService) : ControllerBase
 {
     /// <summary>Агреговані результати опитування (голоси та відсотки по варіантах).</summary>
-    /// <remarks>Заголовок відповіді <c>X-Cache</c>: <c>HIT</c> — з Redis без звернення до БД, <c>MISS</c> — з БД.</remarks>
+    /// <remarks>Заголовок відповіді <c>X-Cache</c>: <c>HIT</c> — з Redis без звернення до БД, <c>MISS</c> — з БД, <c>BYPASS</c> — Redis недоступний, відповідь прямо з БД.</remarks>
     [HttpGet("{id:long}/results")]
     [ProducesResponseType<PollResultsResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]

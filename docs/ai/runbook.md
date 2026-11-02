@@ -190,11 +190,14 @@ retried a vote that had committed on the killed node. Expected (2026-10-28, 6 ki
 run gave 6 × 502 (П1-3 config) or 52 errors (П1-1 config) — see README «Відмова вузла: запис». Always starts
 backend-1 again in `finally`. Uses `127.0.0.1`: on Windows a refused connection to `localhost` takes ~4 s.
 
-**Redis outage (lab 2, П2-4, ADR 0027):** `python scripts/redis-outage-check.py` (from the repo root; it runs
-`docker compose stop/start redis` itself and always starts Redis again in `finally`). Since lab 3 both `API1` / `API2`
-default to the balancer. Expected: results 503 **ProblemDetails from the API** while Redis is down (not HAProxy's
-HTML page — both nodes stay UP in `be_api` and `be_vote`, the "503 trap" of ADR 0033 / 0037), vote 201 stored once,
-publish 200, counters consistent; after start — results 200 within ~4 s, fresh, no backend restart. ~25 s per run.
+**Redis outage (lab 2 П2-4 → lab 4 П1-5, ADR 0043):** `python scripts/redis-outage-check.py` (from the repo root; it
+runs `docker compose stop/start redis` itself and always starts Redis again in `finally`). Both `API1` / `API2` default
+to the balancer. Expected since lab 4: with Redis down results **200 with `X-Cache: BYPASS` in well under 1 s** (read
+from PostgreSQL; lab 2 answered 503 after ~5 s), vote 201 stored once and visible on the next read, publish 200 and the
+poll visible to others, `/health` 200 (both nodes stay UP), counters consistent; after start — the first read is
+**MISS** (Redis came back empty: it runs with `--save ""`), fresh, no backend restart. ~10 s per run. A **HIT** with
+an old `totalVotes` after the restart means Redis loaded a `dump.rdb` — check `redis-cli CONFIG GET save` (must be
+empty).
 `concurrency-checks.py` also defaults both addresses to the balancer (HAProxy splits the requests);
 `results-cache-demo.py` needs direct instance access — run it with `docker-compose.debug.yml` and
 `API1=http://127.0.0.1:8091 API2=http://127.0.0.1:8092`.
@@ -261,7 +264,7 @@ No automated tests yet (`public partial class Program;` is kept for future `WebA
 | `git status` shows `haproxy/haproxy.cfg` modified after a demo | `scripts/lb-algorithm.sh` edits it: `bash scripts/lb-algorithm.sh roundrobin` (or `git checkout haproxy/haproxy.cfg` + `docker compose kill -s USR2 lb`) |
 | `backend-3` stays `MAINT (resolution)` on the stats page | It is not running (profile `scale`): `docker compose --profile scale up -d` |
 | A killed/stopped backend stays down despite `restart: unless-stopped` | Expected: a manual `docker kill` / `docker stop` disables the restart policy until the next manual start; the policy only covers a process that exits on its own. `docker compose start backend-1` |
-| Requests take ~5 s; `GET /results` returns 503 "The cache is temporarily unavailable"; `warn: …ResultsCache` "not invalidated" in the logs | Redis is down. Expected (ADR 0027): the client waits its 5 s backlog timeout; reads 503, writes still succeed. `docker compose start redis` — recovers by itself, no backend restart |
+| `X-Cache: BYPASS` on `GET /results`; `warn: …ResultsCache` "not invalidated" in the logs | Redis is down. Expected (ADR 0043): reads go straight to PostgreSQL (200, no Redis timeout wait), writes still succeed. `docker compose start redis` — recovers by itself, no backend restart. Requests taking ~1 s each instead means Redis is reachable but not answering (hung / paused): the 1 s client timeout, then the same fallback |
 | `Bind for 127.0.0.1:5433 failed: port is already allocated` on `up` | Another container or service holds the host port (on Participant 2's machine: `kafka-sandbox-db-1` from an unrelated project, auto-started by Docker Desktop). Put `POSTGRES_PORT=5434` in `.env` (gitignored) and `docker compose up -d` again — only host tools (psql, pgAdmin from the host) see the change; the backends talk to `postgres:5432` inside the network |
 | First request after a DB restart fails | Should not happen (EF retry strategy, ADR 0008); if it does, check the retry config |
 | `FATAL: sorry, too many clients already` (psql, Adminer, pgAdmin or the API) | The backend pools together exceed PostgreSQL `max_connections` (100). Check `DB_MAX_POOL_SIZE` × number of instances ≤ 90 (ADR 0018, 0032); with 4+ instances lower `DB_MAX_POOL_SIZE` in `.env` |

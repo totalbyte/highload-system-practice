@@ -24,7 +24,7 @@ Votes/                      VotesController (POST /api/polls/{id}/vote), VoteSer
                             VoteModels, VoteValidators
 Results/                    ResultsController (GET /api/polls/{id}/results), ResultsService, ResultsModels,
                             ResultsCache (Redis via the shared IConnectionMultiplexer, ADR 0026; generation-based
-                            keys and TTL by poll status, ADR 0041); X-Cache: HIT | MISS set by the controller (ADR 0042)
+                            keys and TTL by poll status, ADR 0041); X-Cache: HIT | MISS | BYPASS set by the controller (ADR 0042, 0043)
 Common/
   Exceptions/               AppException (carries StatusCode) + NotFound/Conflict/Unauthorized/Forbidden/Validation;
                             PollNotFoundException, InvalidPollStateException; VoteExceptions.cs (option not in poll,
@@ -70,7 +70,8 @@ Common/
   `await resultsCache.InvalidateAsync(pollId)` — the cache is shared by all instances (ADR 0026). On a miss, write
   with the generation returned by `GetAsync` (read **before** the DB query), never re-read it — that is what keeps
   a pre-commit aggregate out of the cache (ADR 0041).
-- Redis down (ADR 0027): `InvalidateAsync` / `SetAsync` swallow connection failures and timeouts (they run after the DB
-  commit — a committed vote must not look failed); `GetAsync` lets them through → 503. Don't add try/catch around the
-  calls, and don't make invalidation throw.
+- Redis down (ADR 0043): `GetAsync` returns `ResultsCacheLookup.Unavailable` and the read falls back to the DB
+  (`X-Cache: BYPASS`, nothing written to Redis); `InvalidateAsync` / `SetAsync` swallow connection failures and
+  timeouts (they run after the DB commit — a committed vote must not look failed). Don't add try/catch around the
+  calls, and don't make invalidation throw. The client is fail-fast (`Program.cs`) — don't put the backlog back.
 - `/health` must not go through the DbContext / EF retry strategy and must answer within 2 s (ADR 0019).

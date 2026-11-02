@@ -1,5 +1,5 @@
 # 0027. Redis unavailable (lab 2): reads → 503, cache writes and invalidation are best-effort
-**Status:** Accepted (extends 0016) · **Date:** 2026-10-27 · **Author:** Participant 2
+**Status:** Superseded by [0043](0043-redis-down-fallback-to-db.md) (lab 4: reads fall back to the DB; the "Redis comes back empty" claim below was wrong for `stop` / `start`) · was: Accepted (extends 0016) · **Date:** 2026-10-27 · **Author:** Participant 2
 
 ## Context
 Since ADR 0026 every results read and every write goes through Redis. Measured with `docker compose stop redis`

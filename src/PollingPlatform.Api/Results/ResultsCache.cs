@@ -5,8 +5,14 @@ using StackExchange.Redis;
 
 namespace PollingPlatform.Api.Results;
 
-/// <summary>Результат пошуку в кеші: запис (null — промах) і покоління, під яким його треба записати після читання з БД.</summary>
-public readonly record struct ResultsCacheLookup(CachedPollResults? Entry, long Generation);
+/// <summary>
+/// Результат пошуку в кеші: запис (null — промах) і покоління, під яким його треба записати після читання з БД.
+/// Покоління null — Redis недоступний: читаємо з БД і нічого не записуємо (ADR 0043).
+/// </summary>
+public readonly record struct ResultsCacheLookup(CachedPollResults? Entry, long? Generation)
+{
+    public static ResultsCacheLookup Unavailable => new(null, null);
+}
 
 /// <summary>
 /// Кеш результатів у Redis — спільний для всіх інстансів (лаба 2, ADR 0026), Cache-Aside з поколіннями (лаба 4, ADR 0041).
@@ -50,11 +56,25 @@ public class ResultsCache(IConnectionMultiplexer redis, ILogger<ResultsCache> lo
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
     };
 
-    /// <summary>Недоступний Redis тут не перехоплюється: без fallback на БД (П1-5) це 503 для клієнта (ADR 0027).</summary>
+    /// <summary>
+    /// Недоступний Redis — не помилка для клієнта, а <see cref="ResultsCacheLookup.Unavailable"/>: кеш лише прискорює,
+    /// джерело правди — БД, тож читання йде туди (graceful degradation, ADR 0043). Завдяки fail-fast клієнта
+    /// (Program.cs) це відбувається одразу, а не після таймауту.
+    /// </summary>
     public async Task<ResultsCacheLookup> GetAsync(long pollId)
     {
-        var reply = (RedisResult[])(await redis.GetDatabase().ScriptEvaluateAsync(
-            LookupScript, [GenerationKey(pollId)], [ValueKeyPrefix(pollId)]))!;
+        RedisResult[] reply;
+        try
+        {
+            reply = (RedisResult[])(await redis.GetDatabase().ScriptEvaluateAsync(
+                LookupScript, [GenerationKey(pollId)], [ValueKeyPrefix(pollId)]))!;
+        }
+        catch (Exception ex) when (IsUnavailable(ex))
+        {
+            // Debug: під час збою це рядок на кожне читання; сам збій видно з Warning при записах та інвалідації.
+            logger.LogDebug("Results cache BYPASS: poll {PollId}, Redis unavailable: {Error}", pollId, ex.Message);
+            return ResultsCacheLookup.Unavailable;
+        }
 
         var generation = (long)reply[0];
         var entry = reply[1].IsNull ? null : JsonSerializer.Deserialize<CachedPollResults>((byte[])reply[1]!, Json);
@@ -87,7 +107,8 @@ public class ResultsCache(IConnectionMultiplexer redis, ILogger<ResultsCache> lo
     /// <summary>
     /// Best-effort: викликається вже після коміту зміни в БД, тож збій кешу не повинен перетворювати успішний
     /// голос чи publish на помилку для клієнта (той би повторив запит і отримав 409 на записаний голос).
-    /// Застарілий запис, якщо він уцілів, зникне за TTL активного опитування (ADR 0027, 0041).
+    /// Застарілий запис, якщо він уцілів (короткий збій без рестарту Redis), зникне за TTL активного опитування;
+    /// після рестарту Redis порожній — збереження на диск вимкнене (ADR 0043).
     /// </summary>
     public async Task InvalidateAsync(long pollId)
     {

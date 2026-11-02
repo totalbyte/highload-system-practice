@@ -1150,7 +1150,55 @@ _П1-6: `scripts/cache-latency.py`, p50 / p95 / p99._
 
 ### Fallback: Redis недоступний
 
-_П1-5: читання прямо з БД з `X-Cache: BYPASS` замість 503 з лаби 2._
+Рішення — ADR 0043 (замінює ADR 0027 з лаби 2). Кеш лише прискорює читання, а джерело правди — PostgreSQL. Тому недоступний Redis — не помилка для клієнта: читання результатів іде прямо в БД і повертає **200 з `X-Cache: BYPASS`** (graceful degradation).
+
+| Що зроблено | Навіщо |
+|---|---|
+| `ResultsCache.GetAsync` перехоплює відмову з'єднання / таймаут Redis і повертає «кеш недоступний»; `ResultsService` читає з БД і **нічого не пише** в Redis | Відповідь клієнту з БД. Запис без покоління, прочитаного до запиту в БД, міг би повернути гонку з лаби 2 (ADR 0041) |
+| Клієнт Redis у режимі fail-fast: `BacklogPolicy.FailFast`, таймаут команди 1 с замість 5 с (`Program.cs`) | Поки з'єднання немає, команда падає одразу, а не чекає в черзі до таймауту. У лабі 2 кожен запит, що торкався Redis, чекав ~5 с |
+| Інвалідація і запис у кеш, як і раніше, best-effort | Голос, publish, close і delete уже закомічені в БД — клієнт отримує свій 201 / 200 / 204 |
+| Redis без збереження на диск: `redis-server --save "" --appendonly no` | Після рестарту Redis порожній, і запис, інвалідацію якого він пропустив, поки лежав, не «воскресне» (див. нижче) |
+| `/health` як і раніше не перевіряє Redis (ADR 0021) | Балансувальник не виключає вузли: без Redis вони повністю працездатні |
+
+**Що з'ясувалося по дорозі.** У лабі 2 ми вважали, що після рестарту Redis порожній, бо в нього немає volume. Це правда лише для `docker compose down` / перестворення контейнера. Образ запускав Redis з налаштуваннями за замовчуванням (`save 3600 1 300 100 60 10000`): при `docker compose stop` він пише `dump.rdb` у файлову систему контейнера, а при `start` завантажує його назад (у лозі: `keys loaded: 24`). Поки збій тривав ~15 с (три очікування по 5 с), записи встигали спливти за TTL. З fail-fast збій може тривати секунду, і після рестарту повертався б застарілий запис. Контрольний прогін це підтвердив: зі збереженням, увімкненим на час тесту, перше читання після `start` було **HIT із `totalVotes=0`**, хоча голос, зроблений під час збою, уже лежав у БД. Для кешу збереження на диск не потрібне, тож його вимкнено.
+
+**Перевірка — [`scripts/redis-outage-check.py`](scripts/redis-outage-check.py)** (переписаний під лабу 4). Скрипт прогріває кеш, сам робить `docker compose stop redis` / `start redis`, через балансувальник, 2026-11-02:
+
+```text
+Redis up: warm the cache
+  OK   GET results -> 200 HIT, totalVotes=0                       HTTP 200 X-Cache=HIT
+  OK   author reads own draft (cached as draft)                   HTTP 200
+
+Redis stopped (docker compose stop redis)
+  OK   GET results -> 200 BYPASS (read from PostgreSQL)           HTTP 200 X-Cache=BYPASS in 68 ms
+  OK     ... without waiting for a Redis timeout                  68 ms
+  OK   POST vote -> 201 (committed vote not reported as failed)   HTTP 201 in 197 ms
+  OK   vote stored in PostgreSQL exactly once                     rows=1
+  OK   next read sees the vote (BYPASS, totalVotes=1)             X-Cache=BYPASS totalVotes=1
+  OK   PATCH publish -> 200 (failed invalidation tolerated)       HTTP 200 in 61 ms
+  OK   just-published poll visible to others (not a stale 404)    HTTP 200
+  OK   /health 200 - nodes stay in the LB pool                    HTTP 200
+  OK   per-option counters consistent                             mismatches=0
+
+Redis started again (docker compose start redis)
+  OK   cache used again, first read MISS (Redis came back empty)  X-Cache=MISS after 1.5s
+  OK   results are fresh (the outage vote is counted)             totalVotes=1
+  OK   no backend restart
+
+ALL CHECKS PASSED
+```
+
+| Redis зупинено | Лаба 2 (ADR 0027) | Лаба 4 (ADR 0043) |
+|---|---|---|
+| `GET /results` | **503** через 5.2 с | **200 `BYPASS`** за 68 мс, дані з БД |
+| `POST /vote` | 201 через 5.9 с | 201 за 197 мс, наступне читання вже його бачить |
+| `PATCH publish` | 200 через 5.4 с | 200 за 61 мс, опитування одразу видно стороннім |
+| Після `start redis` | 200 через 1.6 с | перше читання — MISS через 1.5 с (Redis порожній), дані свіжі, рестарт backend не потрібен |
+
+**Межі деградованого режиму:**
+- Якщо Redis втратив інвалідації, але **не** перезапускався (мережевий збій, завислий процес), запис, зроблений до збою, може віддаватися ще до свого TTL: не довше ≈ 12 с для активного опитування чи чернетки (ADR 0041). Запис закритого опитування застаріти не може. Це єдиний задокументований виняток із вимоги «наступне читання після мутації — свіже».
+- Без кешу **кожне** читання дашборду йде в PostgreSQL і забирає з'єднання з пулу в транзакцій голосів — те, від чого кеш і захищав (bottleneck №2, №3). Деградований режим зберігає коректність і доступність, але не швидкість. Захист БД при тривалому збої (rate limiting, локальний L1-кеш у процесі) — поза межами лаби.
+- Redis, що відповідає, але дуже повільно (завис), коштує до 1 с на запит — це таймаут клієнта, після якого спрацьовує той самий fallback.
 
 ### Архітектура з шаром кешу
 

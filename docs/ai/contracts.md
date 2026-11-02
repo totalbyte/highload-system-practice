@@ -17,7 +17,7 @@ Update this file whenever the API, the schema, or code another participant depen
 | DELETE | `/api/polls/{id}` | author | 204 | 403, 404, 409 | P1 |
 | GET | `/health` | — | 200 / 503 `{status, instance, checks, durationMs}`, answers within 2 s (ADR 0019) | | P1 |
 | POST | `/api/polls/{id}/vote` | JWT | 201 new vote / 200 changed or repeated; `{pollId, optionId, votedAt}` | 401, 404, 409, 422 | P2 |
-| GET | `/api/polls/{id}/results` | optional | 200 `{pollId, title, status, totalVotes, generatedAt, options[]}` + header `X-Cache: HIT \| MISS` (ADR 0042) | 404, 503 (Redis down, ADR 0027) | P2 → P1 (lab 4) |
+| GET | `/api/polls/{id}/results` | optional | 200 `{pollId, title, status, totalVotes, generatedAt, options[]}` + header `X-Cache: HIT \| MISS \| BYPASS` (ADR 0042, 0043) | 404 | P2 → P1 (lab 4) |
 
 - Every response carries `X-Instance-ID` (container hostname or env `INSTANCE_ID`); the balancer passes it through
   unchanged. In compose (lab 3, ADR 0031) clients reach only HAProxy on http://localhost:8080 (`LB_PORT`, stats page
@@ -50,7 +50,7 @@ Update this file whenever the API, the schema, or code another participant depen
 | 404 | Poll doesn't exist, or it's someone else's draft |
 | 409 | Invalid status transition; duplicate email/username; duplicate vote; voting outside `startsAt`…`endsAt` |
 | 422 | Field validation failed |
-| 503 | Transient DB failure that outlived EF's retries (ADR 0016); Redis unavailable on a results read (ADR 0027) — `detail` names the dependency |
+| 503 | Transient DB failure that outlived EF's retries (ADR 0016) — `detail` names the dependency. Since lab 4 a Redis outage no longer produces 503 on results reads: they fall back to the DB (ADR 0043); the Redis → 503 mapping stays only as a safety net |
 
 **Voting rules (ADR 0014, 0015):** `{optionId}` body; the unique index `(poll_id, user_id)` — not the pre-check — is
 what guarantees one vote per user; an option from another poll → 404 `PollOptionNotFoundException`; before
@@ -107,8 +107,11 @@ Defined by EF migrations in `src/PollingPlatform.Api/Data/Migrations` (current: 
   generation's value, one Lua script); value `polling:results:v1:{pollId}:g{generation}` = `CachedPollResults` as JSON
   (camelCase, enum as string); TTL by the status in the entry — active / draft 10 s, closed 1 h, each + 0–20 % jitter.
   E.g. `GET polling:results:gen:1` → `n`, then `TTL polling:results:v1:1:g<n>`; `SCAN 0 MATCH polling:results:*`.
-  Redis down (ADR 0027): `GetAsync` throws → 503; `SetAsync` and `InvalidateAsync` log a warning and return, so a
-  committed vote/publish/close/delete still answers with its success code. Callers need no try/catch.
+  Redis down (ADR 0043, supersedes 0027): `GetAsync` returns `ResultsCacheLookup.Unavailable` (generation `null`) →
+  `ResultsService` reads PostgreSQL, answers 200 with `X-Cache: BYPASS` and does not write to Redis; `SetAsync` and
+  `InvalidateAsync` log a warning and return, so a committed vote/publish/close/delete still answers with its success
+  code. Callers need no try/catch. The Redis client is fail-fast (`BacklogPolicy.FailFast`, 1 s timeouts) and Redis
+  runs without persistence (`--save ""`) — it comes back empty after a restart.
 - New exceptions in `Common/Exceptions/VoteExceptions.cs`: `PollOptionNotFoundException` (404),
   `PollNotStartedException`, `PollVotingEndedException`, `DuplicateVoteException` (409).
 - `GlobalExceptionHandler` maps transient DB failures (ADR 0016) and Redis connection failures/timeouts (ADR 0027)

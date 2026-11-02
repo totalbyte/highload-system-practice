@@ -45,7 +45,14 @@ var redisConnectionString = builder.Configuration.GetConnectionString("Redis")
 // Одне з'єднання на процес (multiplexer потокобезпечний) — його ділять кеш результатів і ключі DataProtection.
 // Підключаємось одразу при старті, а abortConnect=false у рядку підключення не дає застосунку впасти,
 // якщо Redis ще недоступний: клієнт перепідключиться сам.
-var redis = ConnectionMultiplexer.Connect(redisConnectionString);
+var redisOptions = ConfigurationOptions.Parse(redisConnectionString);
+// Fail-fast (лаба 4, ADR 0043): поки з'єднання немає, команда одразу падає, а не чекає в черзі клієнта до таймауту
+// (у лабі 2 це ~5 с на кожен запит, що торкається Redis). Кеш — не джерело правди: читання тоді йде прямо в БД.
+redisOptions.BacklogPolicy = BacklogPolicy.FailFast;
+// Межа для команди, коли з'єднання формально живе, а Redis не відповідає (завис, мережа). Звичайна відповідь —
+// частки мілісекунди, тож 1 с — це вже відмова, і читання переходить на БД замість очікування 5 с за замовчуванням.
+redisOptions.SyncTimeout = redisOptions.AsyncTimeout = 1000;
+var redis = ConnectionMultiplexer.Connect(redisOptions);
 builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
 
 // Ключі DataProtection за замовчуванням лежать у файловій системі контейнера — у кожного інстансу свої, і
