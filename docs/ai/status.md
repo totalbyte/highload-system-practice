@@ -1,11 +1,25 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-11-02 by Participant 1 (labs 2 and 3 rehearsed and defended; status refreshed after PR #9 – #11 — see `log/2026-11-02-p1-status-refresh.md`).
+> Last updated: 2026-11-02 by Participant 1 (lab 4 П1-1 … П1-3 done, not committed — see `log/2026-11-02-p1-lab4-design.md`).
 
-## Current lab: 4 — Distributed caching (not started)
+## Current lab: 4 — Distributed caching
 
-Labs 1–3 are defended. Next: read `docs/labs/Lab4 - Distributed Caching.md` and split the lab 4 tasks.
+**Participant 1 does lab 4 alone** (agreed by both participants), including `Results/`, which Participant 2 owned in
+labs 1–3; Participant 2 reviews the PR. Task list (Ukrainian, ids П1-N):
+[`docs/lab4/participant-1.md`](../lab4/participant-1.md). Branch `lab4/caching` → PR into `main`; ADRs from 0041.
+
+| Task | Status |
+|---|---|
+| П1-1 Choice of the cached endpoint (2.1) | ✅ README «Лабораторна 4 → Вибір об'єкта кешування», ADR 0041 (only `GET /results`) |
+| П1-2 Key schema and TTL (2.4) | ✅ ADR 0041 accepted: `polling:results:v1:{pollId}:g{gen}` + counter `polling:results:gen:{pollId}`, TTL by status (active / draft 10 s, closed 1 h) + 0–20 % jitter |
+| П1-3 Cache-Aside with generations and TTL by status | ✅ `ResultsCache` (Lua lookup / invalidate), README «Cache-Aside…», «Інвалідація»; `scripts/cache-race-check.py`: lab 2 `DEL` 2–5 stale rounds of 60 in each of 5 runs → generations 0 of 60 × 5; smoke, `concurrency-checks`, `cross-instance` 8/8, `redis-outage-check` green |
+| П1-4 `X-Cache` + logging | ⏳ |
+| П1-5 Fallback to the DB when Redis is down (replaces ADR 0027) | ⏳ |
+| П1-6 `cache-demo.py`, `cache-latency.py` | ⏳ |
+| П1-7 Verification on a cold start | ⏳ |
+| П1-8 README / contracts / runbook | ⏳ — **remind about cache-stampede protection first** (deferred on 2026-11-02) |
+| П1-9 Defense guide, lecturer page, theory | ⏳ |
 
 ## Lab 3 — Horizontal scaling (✅ defended)
 
@@ -65,7 +79,7 @@ All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-
 | 1 System Design + MVP | ✅ defended (per Participant 1, 2026-10-28); `labs/lab1-summary.md` was never written |
 | 2 Stateless | ✅ defended; `labs/lab2-summary.md`, `docs/lab2-guide.md`, `docs/about/lab2.md` |
 | 3 Horizontal Scaling | ✅ defended; `labs/lab3-summary.md`, `docs/lab3-guide.md`, `docs/about/lab3.md` |
-| 4 Distributed Caching | ⏳ |
+| 4 Distributed Caching | 🟡 in progress (Participant 1 alone), branch `lab4/caching`: П1-1 … П1-3 done |
 | 5 Load Testing | ⏳ (groundwork: 500 seed users, hot poll #1) |
 
 ## Repository state
@@ -91,7 +105,6 @@ All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-
 
 ## Next steps
 
-- **Lab 4 (both):** read the assignment, write `docs/lab4/participant-1.md` / `participant-2.md` (task split, as for labs 2–3).
-  Carried over from labs 2–3: key schema, TTL rationale, `X-Cache`, DB fallback when Redis is down, cache-stampede
-  protection, the invalidation race (ADR 0026 / 0027).
+- **Lab 4 (Participant 1):** next П1-4 (`X-Cache` + logs), then П1-5 (fallback to the DB, replaces ADR 0027). Cache-stampede protection is deliberately out of scope
+  for now — remind Participant 1 before П1-8 and when preparing the defense (П1-9).
 - Record what the lecturer asked at the lab 2 / 3 defenses in `labs/lab2-summary.md` / `lab3-summary.md` if remembered.

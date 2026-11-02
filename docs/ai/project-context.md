@@ -97,11 +97,9 @@ Every participant is questioned about the **whole** system, not only their own p
   only entry point; `/health` answers within 2 s even when the DB is down and does not check Redis (ADR 0019, 0021)
   — set the LB check timeout above that (e.g. 3 s). 3 instances × 30 = 90 ≤ 97 connections (ADR 0018); more needs a
   smaller pool or a higher `max_connections`.
-- **Lab 4:** Redis is already there (lab 2, ADR 0026: key `results:{pollId}`, TTL 10 s, invalidation on vote,
-  publish, close and delete). Lab 4 adds the key schema (e.g. `polls:results:{pollId}`), TTL rationale, `X-Cache:
-  HIT/MISS`, cold/hot latency and a DB fallback when Redis is down — today a Redis outage costs ~5 s per
-  Redis-touching request and reads return 503 (ADR 0027). Known, accepted gap to discuss there: a `GET /results` computed just before a vote commits can be written to the
-  cache right after that vote's invalidation → stale for up to one TTL (10 s). Typical fixes: versioned keys or
-  delete-after-write with a short delay.
+- **Lab 4 (in progress, Participant 1 alone — `docs/lab4/participant-1.md`):** only `GET /results` is cached;
+  generation-based keys `polling:results:v1:{pollId}:g{gen}` fixed the lab 2 invalidation race, TTL by poll status
+  with jitter (ADR 0041). Still to do: `X-Cache: HIT/MISS`, cold/hot latency, a DB fallback when Redis is down
+  (today a Redis outage costs ~5 s per Redis-touching request and reads return 503, ADR 0027).
 - **Lab 5:** k6 in `/load-tests`; log seed users in during `setup()` and share tokens via `SharedArray` (login is
   deliberately CPU-heavy); write scenario → hot poll #1; read scenario → `GET /results`.

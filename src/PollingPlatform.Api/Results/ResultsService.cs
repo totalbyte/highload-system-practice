@@ -14,8 +14,9 @@ public class ResultsService(AppDbContext db, ResultsCache cache, TimeProvider ti
 {
     public async Task<PollResultsResponse> GetAsync(long pollId, long? currentUserId, CancellationToken ct)
     {
-        // Кеш містить і CreatorId, тому на попадання видимість перевіряється без звернення до БД.
-        var entry = await cache.GetAsync(pollId) ?? await LoadAndCacheAsync(pollId, ct);
+        // Cache-Aside (ADR 0041). Кеш містить і CreatorId, тому на попадання видимість перевіряється без звернення до БД.
+        var lookup = await cache.GetAsync(pollId);
+        var entry = lookup.Entry ?? await LoadAndCacheAsync(pollId, lookup.Generation, ct);
 
         if (entry.Response.Status == PollStatus.Draft && entry.CreatorId != currentUserId)
             throw new PollNotFoundException(pollId);
@@ -23,7 +24,12 @@ public class ResultsService(AppDbContext db, ResultsCache cache, TimeProvider ti
         return entry.Response;
     }
 
-    private async Task<CachedPollResults> LoadAndCacheAsync(long pollId, CancellationToken ct)
+    /// <summary>
+    /// Промах: читання з БД і запис під поколінням <paramref name="generation"/>, прочитаним до цього запиту.
+    /// Якщо поки ми читали, зміна встигла закомітитись і інвалідувати кеш, наш запис ляже під старе покоління і не
+    /// буде прочитаний — наступний читач піде в БД і побачить зміну.
+    /// </summary>
+    private async Task<CachedPollResults> LoadAndCacheAsync(long pollId, long generation, CancellationToken ct)
     {
         var poll = await db.Polls.AsNoTracking()
             .Where(p => p.Id == pollId)
@@ -52,7 +58,7 @@ public class ResultsService(AppDbContext db, ResultsCache cache, TimeProvider ti
             poll.CreatorId,
             new PollResultsResponse(pollId, poll.Title, poll.Status, totalVotes, timeProvider.GetUtcNow(), options));
 
-        await cache.SetAsync(pollId, entry);
+        await cache.SetAsync(pollId, generation, entry);
         return entry;
     }
 }

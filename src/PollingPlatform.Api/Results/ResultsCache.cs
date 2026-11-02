@@ -1,21 +1,48 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using PollingPlatform.Api.Domain;
 using StackExchange.Redis;
 
 namespace PollingPlatform.Api.Results;
 
+/// <summary>Результат пошуку в кеші: запис (null — промах) і покоління, під яким його треба записати після читання з БД.</summary>
+public readonly record struct ResultsCacheLookup(CachedPollResults? Entry, long Generation);
+
 /// <summary>
-/// Кеш результатів у Redis — спільний для всіх інстансів (лаба 2, ADR 0026). Інвалідація, зроблена
-/// одним інстансом, одразу видна іншим; у пам'яті процесу кеш не тримає нічого, лише посилання
-/// на спільне з'єднання, тому singleton тут безпечний.
+/// Кеш результатів у Redis — спільний для всіх інстансів (лаба 2, ADR 0026), Cache-Aside з поколіннями (лаба 4, ADR 0041).
+/// Ключ значення — <c>polling:results:v1:{pollId}:g{покоління}</c>; лічильник покоління — <c>polling:results:gen:{pollId}</c>.
+/// Інвалідація не видаляє ключ, а збільшує покоління: агрегат, прочитаний з БД до коміту зміни, ляже під старе
+/// покоління, яке вже ніхто не читає. Так закрита гонка «прочитали до коміту, записали після DEL» з лаби 2.
+/// У пам'яті процесу кеш не тримає нічого, лише посилання на спільне з'єднання, тому singleton тут безпечний.
 /// </summary>
 public class ResultsCache(IConnectionMultiplexer redis, ILogger<ResultsCache> logger)
 {
     /// <summary>
-    /// Основний механізм актуальності — явна інвалідація при голосі, publish, close і delete.
-    /// TTL лишається страховкою на випадок пропущеної інвалідації; обґрунтування його величини — лаба 4.
+    /// TTL — страховка на випадок втраченої інвалідації, а не механізм актуальності (ADR 0041).
+    /// Активне опитування і чернетка можуть змінитися — застарілість обмежена секундами.
     /// </summary>
-    private static readonly TimeSpan Ttl = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan OpenTtl = TimeSpan.FromSeconds(10);
+
+    /// <summary>Закрите опитування вже не зміниться: голосувати можна лише в активному, а з closed переходів немає.</summary>
+    private static readonly TimeSpan ClosedTtl = TimeSpan.FromHours(1);
+
+    /// <summary>Розкид TTL проти Cache Avalanche: записи, створені в одну секунду, не спливають в одну секунду.</summary>
+    private const double TtlJitter = 0.2;
+
+    // Покоління і значення за один round-trip. Ключ значення будується зі значення лічильника всередині скрипта —
+    // на одному вузлі Redis це коректно; для Redis Cluster знадобився б hash tag (ADR 0041).
+    private const string LookupScript = """
+        local gen = redis.call('GET', KEYS[1]) or '0'
+        return { gen, redis.call('GET', ARGV[1] .. gen) }
+        """;
+
+    // INCR і видалення значення попереднього покоління — атомарно. Значення, записане пізніше під старим
+    // поколінням (читач стартував до інвалідації), ніхто не прочитає, і воно зникне за своїм TTL.
+    private const string InvalidateScript = """
+        local gen = redis.call('INCR', KEYS[1])
+        redis.call('UNLINK', ARGV[1] .. (gen - 1))
+        return gen
+        """;
 
     // Статус рядком, як в API: значення в Redis читабельне з redis-cli і не залежить від порядку членів enum.
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
@@ -23,20 +50,28 @@ public class ResultsCache(IConnectionMultiplexer redis, ILogger<ResultsCache> lo
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
     };
 
-    /// <summary>Недоступний Redis тут не перехоплюється: без fallback на БД (лаба 4) це 503 для клієнта (ADR 0027).</summary>
-    public async Task<CachedPollResults?> GetAsync(long pollId)
+    /// <summary>Недоступний Redis тут не перехоплюється: без fallback на БД (П1-5) це 503 для клієнта (ADR 0027).</summary>
+    public async Task<ResultsCacheLookup> GetAsync(long pollId)
     {
-        var value = await redis.GetDatabase().StringGetAsync(Key(pollId));
-        return value.IsNull ? null : JsonSerializer.Deserialize<CachedPollResults>((byte[])value!, Json);
+        var reply = (RedisResult[])(await redis.GetDatabase().ScriptEvaluateAsync(
+            LookupScript, [GenerationKey(pollId)], [ValueKeyPrefix(pollId)]))!;
+
+        var generation = (long)reply[0];
+        var entry = reply[1].IsNull ? null : JsonSerializer.Deserialize<CachedPollResults>((byte[])reply[1]!, Json);
+        return new ResultsCacheLookup(entry, generation);
     }
 
-    /// <summary>Best-effort: відповідь уже порахована з БД, віддати її краще, ніж 503 через недоступний кеш.</summary>
-    public async Task SetAsync(long pollId, CachedPollResults entry)
+    /// <summary>
+    /// Записує агрегат під поколінням, прочитаним <b>до</b> звернення до БД (<see cref="GetAsync"/>), а не під поточним.
+    /// Best-effort: відповідь уже порахована з БД, віддати її краще, ніж 503 через недоступний кеш.
+    /// </summary>
+    public async Task SetAsync(long pollId, long generation, CachedPollResults entry)
     {
         try
         {
             await redis.GetDatabase().StringSetAsync(
-                Key(pollId), JsonSerializer.SerializeToUtf8Bytes(entry, Json), new Expiration(Ttl));
+                ValueKey(pollId, generation), JsonSerializer.SerializeToUtf8Bytes(entry, Json),
+                new Expiration(TtlFor(entry.Response.Status)));
         }
         catch (Exception ex) when (IsUnavailable(ex))
         {
@@ -47,22 +82,36 @@ public class ResultsCache(IConnectionMultiplexer redis, ILogger<ResultsCache> lo
     /// <summary>
     /// Best-effort: викликається вже після коміту зміни в БД, тож збій кешу не повинен перетворювати успішний
     /// голос чи publish на помилку для клієнта (той би повторив запит і отримав 409 на записаний голос).
-    /// Застарілий запис, якщо він уцілів, зникне за TTL (ADR 0027).
+    /// Застарілий запис, якщо він уцілів, зникне за TTL активного опитування (ADR 0027, 0041).
     /// </summary>
     public async Task InvalidateAsync(long pollId)
     {
         try
         {
-            await redis.GetDatabase().KeyDeleteAsync(Key(pollId));
+            await redis.GetDatabase().ScriptEvaluateAsync(
+                InvalidateScript, [GenerationKey(pollId)], [ValueKeyPrefix(pollId)]);
         }
         catch (Exception ex) when (IsUnavailable(ex))
         {
-            logger.LogWarning("Results cache unavailable, results:{PollId} not invalidated; a stale entry expires within {Ttl} s: {Error}",
-                pollId, Ttl.TotalSeconds, ex.Message);
+            logger.LogWarning("Results cache unavailable, poll {PollId} not invalidated; a stale entry expires within {Ttl} s: {Error}",
+                pollId, OpenTtl.TotalSeconds * (1 + TtlJitter), ex.Message);
         }
     }
 
+    /// <summary>
+    /// TTL за статусом, з яким агрегат порахований: довгий — лише для даних, що вже не зміняться. Запис, зроблений
+    /// поки опитування було активним, лишається з коротким TTL, навіть якщо опитування закрили мить потому.
+    /// </summary>
+    private static TimeSpan TtlFor(PollStatus status) =>
+        (status == PollStatus.Closed ? ClosedTtl : OpenTtl) * (1 + Random.Shared.NextDouble() * TtlJitter);
+
     private static bool IsUnavailable(Exception ex) => ex is RedisConnectionException or RedisTimeoutException;
 
-    private static string Key(long pollId) => $"results:{pollId}";
+    // Схема ключів (ADR 0041): domain:entity:format:id:state. Параметрів у відповіді немає, тому й хешу параметрів немає;
+    // v1 — версія формату значення: змінили CachedPollResults → v2, і інстанси різних версій не читають JSON одне одного.
+    private static string GenerationKey(long pollId) => $"polling:results:gen:{pollId}";
+
+    private static string ValueKeyPrefix(long pollId) => $"polling:results:v1:{pollId}:g";
+
+    private static string ValueKey(long pollId, long generation) => $"{ValueKeyPrefix(pollId)}{generation}";
 }

@@ -159,7 +159,15 @@ via backend-1, an anonymous client reads from both. Since П2-3 (cache in Redis,
 must say **no**, and step 3 of scenario A shows the same `generatedAt` on both instances; a **YES** means the cache is
 per-process again (it was, by design, before П2-3: stale counts until the 10 s TTL and 404 for the just-published
 poll). ~1 s per run; it waits out the TTL only when it sees stale data. Redis side:
-`docker compose exec redis redis-cli TTL results:1` → ≤ 10 after a read, `EXISTS results:1` → 0 after a vote.
+since lab 4 (ADR 0041) `docker compose exec redis redis-cli GET polling:results:gen:1` → the generation `n`, then
+`TTL polling:results:v1:1:g<n>` → ≤ 12 after a read of an active poll (≤ 4320 for a closed one); after a vote the
+generation is `n + 1` and `g<n>` is gone.
+
+**Invalidation race (lab 4, П1-3, ADR 0041):** `python scripts/cache-race-check.py [--rounds 60] [--burst 8]
+[--readers 12]` (stdlib only, via the LB, ~25 s, fresh poll each run, uses seed users 2…481). Each round: 8
+simultaneous votes for one option while 12 readers poll the results; then a control read must show exactly the
+committed number of votes. Expected: `0 of 60`, exit code 0. With the lab 2 `DEL` invalidation it found 2–5 stale
+rounds of 60 in every run.
 
 **Instance loss through the balancer (lab 2 П2-7 → lab 3 П2-4, ADR 0037):** `python scripts/kill-test.py` (from the
 repo root; `--stop` for a graceful stop instead of SIGKILL). 800 votes (400 users × 2 fresh polls, 32 threads) go to
@@ -233,7 +241,7 @@ No automated tests yet (`public partial class Program;` is kept for future `WebA
 |---|---|
 | Cyrillic becomes `????` when sent with curl from Git Bash on Windows | Shell encoding, not the server. Use Swagger, `.http`, Postman, or `curl --data-binary @file.json` with a UTF-8 file |
 | Every request returns 400 when the token comes from a file written by Python on Windows | Python writes CRLF; the `\r` inside the `Authorization` header breaks the request. Pipe tokens through `tr -d '\r'` |
-| `GET /results` still shows an old total | The cache (Redis, shared by all instances, ADR 0026) is invalidated by a vote, publish, close or delete, with a 10 s TTL as a safety net. A stale value for up to 10 s right after a vote is the known invalidation race (aggregate read before the commit, written after the `DEL`) — a lab 4 topic. If instances disagree, run `scripts/results-cache-demo.py`: a **YES** means something went back to a per-process cache |
+| `GET /results` still shows an old total | The cache (Redis, shared by all instances, ADR 0026) is invalidated by a vote, publish, close or delete, with a TTL by status as a safety net (ADR 0041). Since lab 4 invalidation bumps a generation, so a read that started after the vote's response always sees it; `scripts/cache-race-check.py` must report `0 of 60`. A stale value up to ≈ 12 s is possible only if Redis failed during the invalidation (ADR 0027). If instances disagree, run `scripts/results-cache-demo.py`: a **YES** means something went back to a per-process cache |
 | Can't reach the container DB on 5432 / connected to the wrong DB | Participant 1's machine runs a local Windows PostgreSQL service on 5432 — the container is on **5433** (ADR 0011) |
 | `fail: ... SELECT migration_id FROM "__EFMigrationsHistory"` on first start | Expected: the history table doesn't exist yet. Not an error |
 | `fail: ... CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory"` (Postgres: `pg_type_typname_nsp_index`) on a cold start | Both instances created the history table at the same instant; the provider ignores it and the migration still runs once (ADR 0022). Not an error |

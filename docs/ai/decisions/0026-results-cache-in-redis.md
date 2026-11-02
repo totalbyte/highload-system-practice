@@ -1,5 +1,5 @@
 # 0026. Results cache in Redis, shared by all instances (lab 2)
-**Status:** Accepted (supersedes 0013) · **Date:** 2026-10-27 · **Author:** Participant 2
+**Status:** Accepted (supersedes 0013), amended by [0041](0041-results-cache-target-keys-and-ttl.md) (keys, TTL, invalidation by generation) · **Date:** 2026-10-27 · **Author:** Participant 2
 
 ## Context
 ADR 0013 kept the results cache in process memory on purpose, as the lab 2 state-audit target. With two instances
