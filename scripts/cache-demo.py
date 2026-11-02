@@ -111,6 +111,13 @@ def main():
     call("PATCH", f"/api/polls/{pid}/publish", author)
     print(f"Poll {pid} created and published via {API}")
 
+    # Redis щойно перезапускали (попередній прогін, ручний `docker start`)? Клієнти backend перепідключаються ~2 с —
+    # чекаємо, поки кеш доступний на обох інстансах, на опитуванні #1, щоб демо-опитування лишилось «холодним».
+    deadline, in_a_row = time.monotonic() + 30, 0
+    while in_a_row < 4 and time.monotonic() < deadline:
+        in_a_row = in_a_row + 1 if call("GET", "/api/polls/1/results")[2].get("X-Cache") != "BYPASS" else 0
+        time.sleep(0.2 if in_a_row == 0 else 0)
+
     step("1. Cache Hit / Miss")
     read(pid, "first read (cold)")
     read(pid, "second read")

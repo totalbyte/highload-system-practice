@@ -1,7 +1,7 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-11-02 by Participant 1 (lab 4 П1-1 … П1-6 committed up to `d20999a`; П1-7 verification and П1-10 single-flight done, not committed; full re-verification from scratch green — see `log/2026-11-02-p1-lab4-verification.md`).
+> Last updated: 2026-11-02 by Participant 1 (lab 4 П1-1 … П1-6 committed up to `d20999a`; П1-7, П1-10 committed `314d5bc`; full re-verification from scratch green; П1-8 docs done, not committed — see `log/2026-11-02-p1-lab4-verification.md`).
 
 ## Current lab: 4 — Distributed caching
 
@@ -20,8 +20,8 @@ labs 1–3; Participant 2 reviews the PR. Task list (Ukrainian, ids П1-N):
 | П1-7 Verification on a cold start | ✅ @ `d20999a`: healthy in 23 s; smoke 25/25, `cross-instance.sh` 8/8, `concurrency-checks`, `cache-demo` (rc 0), `cache-latency` (MISS 3.83 / HIT 1.99 ms p50), `cache-race-check` 0 of 60, `redis-outage-check`, `kill-test` (800 votes, 0 errors), `lb-failover --kill` (0 of 17 911), `results-cache-demo` no / no |
 | П1-10 Cache-stampede protection (decided before П1-8) | ✅ ADR 0044: single-flight per instance (`ResultsSingleFlight`); `cache-stampede-check.py`: 6.7–14.4 → 2.1–2.4 DB loads per invalidation (2 instances, 100 readers); race check 0 of 60, all regressions green |
 | Re-verification from scratch (after П1-10) | ✅ cold start 22 s; 10/10 checks; load: cache on 2730 read rps / 0 DB loads, mixed 47 % HIT with 209 DB loads/s for 116 votes/s, Redis down 1355 rps (p95 ×2.4), 0 errors; single-flight 3.1 loads on 3 instances |
-| П1-8 README / contracts / runbook | ⏳ — README «Архітектура з шаром кешу», «Підсумок лаби 4» still placeholders; RACI; root `CLAUDE.md` stale lines |
-| П1-9 Defense guide, lecturer page, theory | ⏳ |
+| П1-8 README / contracts / runbook | ✅ README «Архітектура з шаром кешу» (flowchart + sequence diagram, both render), «Підсумок лаби 4» (requirement → evidence, load table, from-scratch check, defense commands), RACI, stack; root `CLAUDE.md` fixed (HAProxy, no :8082, lab 4 rule and task list) |
+| П1-9 Defense guide, lecturer page, theory | ✅ `docs/lab4-guide.md`, `docs/about/lab4.md`; dry run from a cold start ≈ 75 s, two script fixes (wait for Redis reconnect); left: `labs/lab4-summary.md` after the defense |
 
 ## Lab 3 — Horizontal scaling (✅ defended)
 
@@ -81,7 +81,7 @@ All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-
 | 1 System Design + MVP | ✅ defended (per Participant 1, 2026-10-28); `labs/lab1-summary.md` was never written |
 | 2 Stateless | ✅ defended; `labs/lab2-summary.md`, `docs/lab2-guide.md`, `docs/about/lab2.md` |
 | 3 Horizontal Scaling | ✅ defended; `labs/lab3-summary.md`, `docs/lab3-guide.md`, `docs/about/lab3.md` |
-| 4 Distributed Caching | 🟡 in progress (Participant 1 alone), branch `lab4/caching`: П1-1 … П1-7, П1-10 done |
+| 4 Distributed Caching | 🟡 in progress (Participant 1 alone), branch `lab4/caching`: П1-1 … П1-10 done; PR, defense and `labs/lab4-summary.md` left |
 | 5 Load Testing | ⏳ (groundwork: 500 seed users, hot poll #1) |
 
 ## Repository state
@@ -107,6 +107,6 @@ All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-
 
 ## Next steps
 
-- **Lab 4 (Participant 1):** next П1-8 (architecture diagram with Redis, README summary, RACI), then П1-9 (defense
-  guide, lecturer page, theory incl. why distributed lock / stale-while-revalidate / XFetch were not chosen).
+- **Lab 4 (Participant 1):** all tasks done on `lab4/caching`. Next: PR `lab4/caching` → `main` (review by
+  Participant 2), rehearse by `docs/lab4-guide.md`, defend, then `labs/lab4-summary.md` with what was asked.
 - Record what the lecturer asked at the lab 2 / 3 defenses in `labs/lab2-summary.md` / `lab3-summary.md` if remembered.

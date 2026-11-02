@@ -87,6 +87,14 @@ def main():
     draft = new_poll(author, publish=False)
     _, started_before = backend_started_at()
 
+    # Якщо Redis щойно перезапустили, клієнти backend перепідключаються ~2 с і читання ще йдуть BYPASS. Чекаємо,
+    # поки кеш доступний на обох інстансах (кілька читань поспіль через балансувальник), — на гарячому опитуванні #1,
+    # щоб не прогріти опитування, яке перевіряємо далі.
+    deadline, in_a_row = time.monotonic() + 30, 0
+    while in_a_row < 4 and time.monotonic() < deadline:
+        in_a_row = in_a_row + 1 if call(API2, "GET", "/api/polls/1/results")[3].get("X-Cache") != "BYPASS" else 0
+        time.sleep(0.2 if in_a_row == 0 else 0)
+
     print("Redis up: warm the cache")
     call(API2, "GET", f"/api/polls/{pid}/results")
     status, body, _, headers = call(API2, "GET", f"/api/polls/{pid}/results")

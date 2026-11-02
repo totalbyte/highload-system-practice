@@ -6,9 +6,11 @@
 >
 > **Посібник до захисту лаби 2** (stateless, аудит стану, сценарій захисту з командами, питання на захист): [`docs/lab2-guide.md`](docs/lab2-guide.md).
 >
+> **Посібники до захисту лаб 3 і 4** (шпаргалка, сценарій за пунктами процедури, питання на захист): [`docs/lab3-guide.md`](docs/lab3-guide.md), [`docs/lab4-guide.md`](docs/lab4-guide.md); сторінки для викладача — [`docs/about/`](docs/about/lab4.md).
+>
 > Контекст для учасників і AI-агентів: [`CLAUDE.md`](CLAUDE.md) → [`docs/ai/`](docs/ai/status.md) (стан, рішення/ADR, контракти, runbook, журнал сесій).
 
-**Стек:** C# / ASP.NET Core 10 · EF Core 10 + Npgsql · PostgreSQL 17 · JWT · FluentValidation · Docker Compose
+**Стек:** C# / ASP.NET Core 10 · EF Core 10 + Npgsql · PostgreSQL 17 · Redis 8 (розподілений кеш) · HAProxy 3.4 · JWT · FluentValidation · Docker Compose
 
 ## Швидкий старт
 
@@ -237,6 +239,9 @@ R — Responsible, A — Accountable, C — Consulted, I — Informed.
 | Лаба 3: затримка, генератор навантаження, RR vs Least Connections | C | R/A |
 | Лаба 3: відмова вузла під час запису, scale-out, наступний bottleneck | C | R/A |
 | Лаба 3: схема, розгортання, SPOF | R/A | C |
+| Лаба 4 (за домовленістю виконує Учасник 1): вибір об'єкта кешування, ключі, TTL, інвалідація | R/A | C (рев'ю) |
+| Лаба 4: `X-Cache`, fallback на БД, захист від Cache Stampede | R/A | C (рев'ю) |
+| Лаба 4: заміри, демо- і перевірочні скрипти, схема, документація | R/A | C (рев'ю) |
 
 ## High-Load сценарій
 
@@ -1025,7 +1030,7 @@ flowchart LR
 
 ## Лабораторна 4: Розподілене кешування
 
-Методичка — [`docs/labs/Lab4 - Distributed Caching.md`](docs/labs/Lab4%20-%20Distributed%20Caching.md), список задач — [`docs/lab4/participant-1.md`](docs/lab4/participant-1.md). Лабу 4 за домовленістю учасників виконує Учасник 1. Рішення — ADR 0041 і далі в [`docs/ai/decisions/`](docs/ai/decisions/README.md).
+Методичка — [`docs/labs/Lab4 - Distributed Caching.md`](docs/labs/Lab4%20-%20Distributed%20Caching.md), список задач — [`docs/lab4/participant-1.md`](docs/lab4/participant-1.md), посібник до захисту — [`docs/lab4-guide.md`](docs/lab4-guide.md), сторінка для викладача — [`docs/about/lab4.md`](docs/about/lab4.md). Лабу 4 за домовленістю учасників виконує Учасник 1. Рішення — ADR 0041 і далі в [`docs/ai/decisions/`](docs/ai/decisions/README.md).
 
 Відправна точка — кеш результатів у Redis з лаби 2 (ADR 0026, 0027): спільний для всіх інстансів, ключ `results:{pollId}`, TTL 10 с, `DEL` при голосі, publish, close і delete. Лаба 4 доводить його до вимог методички: обґрунтування, схема ключів і TTL, інвалідація без гонки, `X-Cache`, заміри, fallback на БД.
 
@@ -1289,8 +1294,127 @@ ALL CHECKS PASSED
 
 ### Архітектура з шаром кешу
 
-_П1-8: оновлена схема з Redis / Distributed Cache._
+Розподілений кеш — окремий контейнер Redis у тій самій приватній мережі, що й інстанси. Усі інстанси працюють з **одними й тими самими ключами**: запис, покладений одним інстансом, одразу віддає інший, а інвалідація одного інстансу видна всім. PostgreSQL лишається єдиним джерелом правди. Redis — лише кеш: без збереження на диск, і при його недоступності читання йде в БД.
+
+```mermaid
+flowchart TB
+    Client["Клієнт: дашборд / виборець"]
+    LB["HAProxy 3.4 :8080 — be_api / be_vote<br/>у лозі кожного запиту: інстанс, час, X-Cache"]
+
+    subgraph inst ["backend-1 / backend-2 / backend-3 — stateless, один образ; у кожному:"]
+        direction LR
+        WR["VoteService / PollService<br/>vote, publish, close, delete"]
+        RS["ResultsService<br/>Cache-Aside, X-Cache"]
+        SF["ResultsSingleFlight<br/>одне читання з БД на<br/>(опитування, покоління)"]
+        RC["ResultsCache<br/>Lua-скрипти, TTL за статусом,<br/>fail-fast клієнт"]
+    end
+
+    RD[("Redis 8 — Distributed Cache<br/>polling:results:gen:ID — покоління<br/>polling:results:v1:ID:gN — агрегат<br/>TTL 10 с / 1 год, без збереження на диск")]
+    PG[("PostgreSQL 17 — джерело правди<br/>options.vote_count")]
+
+    Client -->|"GET /results"| LB
+    Client -->|"POST /vote"| LB
+    LB --> RS
+    LB --> WR
+    RS -->|"1. lookup"| RC
+    RS -->|"2. MISS"| SF
+    SF -->|"SELECT агрегату"| PG
+    SF -->|"SET … EX під прочитаним поколінням"| RC
+    RC <-->|"спільні ключі для всіх інстансів"| RD
+    RS -.->|"Redis недоступний: BYPASS"| PG
+    WR -->|"транзакція, COMMIT"| PG
+    WR -->|"після коміту: INCR покоління + UNLINK"| RC
+```
+
+Як іде запит — читання результатів і голос, що їх інвалідує:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Клієнт
+    participant LB as HAProxy
+    participant B as backend-N
+    participant R as Redis
+    participant DB as PostgreSQL
+
+    C->>LB: GET /api/polls/1/results
+    LB->>B: roundrobin
+    B->>R: Lua: покоління n і значення polling:results:v1:1:gn
+    alt HIT — значення є
+        R-->>B: агрегат
+        B-->>C: 200, X-Cache: HIT (БД не зачіпається)
+    else MISS — значення немає
+        R-->>B: покоління n, значення немає
+        Note over B: single-flight (1, n): інші промахи цього інстансу чекають це саме читання
+        B->>DB: SELECT опитування + варіанти (vote_count)
+        DB-->>B: агрегат
+        B->>R: SET polling:results:v1:1:gn EX 10 с (active) або 1 год (closed), + 0–20 %
+        B-->>C: 200, X-Cache: MISS
+    else Redis недоступний
+        R--xB: помилка з'єднання одразу (fail-fast)
+        B->>DB: SELECT, у кеш нічого не пишемо
+        B-->>C: 200, X-Cache: BYPASS
+    end
+
+    C->>LB: POST /api/polls/1/vote
+    LB->>B: be_vote
+    B->>DB: BEGIN, INSERT vote, UPDATE vote_count, COMMIT
+    B->>R: Lua: INCR покоління (n стає n+1), UNLINK значення gn
+    B-->>C: 201
+    Note over C,R: наступне читання шукає покоління n+1 — значення немає, MISS зі свіжими даними
+```
+
+| Компонент | Роль у кешуванні | Рішення |
+|---|---|---|
+| Redis | Спільне сховище кешу для всіх інстансів, без збереження на диск | ADR 0021, 0026, 0043 |
+| `ResultsService` | Cache-Aside: HIT з Redis, MISS → БД → запис у кеш, BYPASS при недоступному Redis; ставить `X-Cache` | ADR 0041, 0042, 0043 |
+| `ResultsSingleFlight` | Одночасні промахи інстансу по одному поколінню — одне читання з БД (проти Cache Stampede) | ADR 0044 |
+| `ResultsCache` | Ключі з поколінням, Lua-скрипти пошуку й інвалідації, TTL за статусом із jitter, best-effort запис / інвалідація | ADR 0041, 0043 |
+| `VoteService`, `PollService` | Інвалідують кеш після коміту: голос, publish, close, delete | ADR 0026, 0041 |
+| HAProxy | Записує `X-Cache` у лог кожного запиту; `/health` не залежить від Redis, тож падіння кешу не виключає вузли | ADR 0033, 0042 |
 
 ### Підсумок лаби 4
 
-_П1-8: відповідність вимогам розділу 3 методички._
+**Вимоги методички → що зроблено → чим доведено:**
+
+| Пункт | Що зроблено | Доказ |
+|---|---|---|
+| 2.1 Аналіз і вибір об'єкта кешування | Кешуємо лише `GET /results`; 8 кандидатів оцінено за критеріями методички | «Вибір об'єкта кешування», ADR 0041 |
+| 2.2 Redis окремим контейнером, спільний для всіх інстансів | Один Redis, однакові ключі на всіх інстансах | `cache-demo.py`: запис одного інстансу — HIT на іншому |
+| 2.3 Cache-Aside | Lookup → HIT / MISS → БД → `SET … EX` | «Cache-Aside, схема ключів і TTL» |
+| 2.4.1 Схема ключів | `polling:results:v1:{pollId}:g{generation}` + `polling:results:gen:{pollId}` | ADR 0041, `redis-cli` |
+| 2.4.2 Регламент TTL | `active` / `draft` 10 с, `closed` 1 год, + 0–20 % jitter | виміряно: 10–12 с і 3845–4240 с |
+| 2.5 Інвалідація, наступне читання свіже | Покоління замість `DEL`: закрито гонку з лаби 2 | `cache-race-check.py`: `DEL` — 2–5 застарілих раундів із 60 у кожному прогоні, покоління — 0 |
+| 2.6.1 `X-Cache` / логування | `HIT` / `MISS` / `BYPASS`, той самий заголовок у лозі HAProxy, Debug-лог операцій кешу | «`X-Cache` і логування», ADR 0042 |
+| 2.6.2 Cold vs hot | MISS p50 ≈ 3.8 мс, HIT p50 ≈ 2.0 мс | `cache-latency.py`, «Cold vs Hot» |
+| 2.6.3 `docker stop redis` | 200 `BYPASS` за десятки мс замість 503 через 5 с; голоси працюють; вузли в пулі | `redis-outage-check.py`, ADR 0043 |
+| §3 Обґрунтування ендпоінта, ключі і TTL, cold vs hot, схема з Redis | Підрозділи цього розділу | — |
+| §4 п. 1–3 Демонстрації | Три пункти процедури одним скриптом | `cache-demo.py [--pause]` |
+| §4 п. 4 Теорія | Stampede — ще й на практиці (single-flight), Avalanche — jitter, eviction — при ліміті пам'яті `volatile-lru` (ключі без TTL не витісняються; LRU, а не LFU, бо старі покоління, які раніше часто читали, мають іти першими), Expiration vs Invalidation — TTL як страховка, інвалідація як основний механізм | ADR 0041, 0044, «Захист від Cache Stampede» |
+
+**Під навантаженням** — 24 потоки читання + 8 потоків голосування, по 15 с на фазу, через балансувальник, 2 інстанси, 2026-11-02. Клієнт на тій самій машині, що й стек, тож порівнюємо фази, а не абсолютні числа:
+
+| Фаза | Читань/с | p50 / p95 / p99, мс | `X-Cache` | Звернень до БД за читаннями, /с | Голосів/с | Помилок | Активних сесій PostgreSQL (макс.) |
+|---|---|---|---|---|---|---|---|
+| Лише читання, кеш працює | **2730** | 8.1 / 16.2 / 21.5 | HIT 100 % | **0** | — | 0 | 0 |
+| Читання + голоси, кеш працює | 1769 | 11.7 / 28.4 / 43.7 | HIT 47 %, MISS 53 % | 209 | 116 | 0 | 3 |
+| Лише читання, Redis зупинено | 1355 | 15.0 / 38.8 / 57.5 | BYPASS 100 % | 1355 | — | 0 | 12 |
+| Читання + голоси, Redis зупинено | 1323 | 16.4 / 35.3 / 47.9 | BYPASS 100 % | 1323 | 102 | 0 | 18 |
+
+Що видно:
+- Поки кеш працює, **БД не отримує жодного запиту на читання**.
+- Під голосуванням кожен голос скидає кеш, тож попадань близько половини. Проте ~930 промахів за секунду перетворюються лише на 209 звернень до БД — приблизно 2 на голос, по одному на інстанс (single-flight).
+- Без Redis система працює без жодної помилки, але читань удвічі менше, p95 у 2.4 раза вищий, і читання займають сесії PostgreSQL, потрібні голосам.
+- Після прогону лічильники кожного варіанта дорівнюють кількості голосів, а результати через API — даним у БД.
+
+**Перевірка з нуля** (`docker compose down -v` → `up -d --build`, 2026-11-02): `/health` 200 через 22 с, без ручних кроків. Пройшли smoke-тест з runbook (разом із перевіркою ключів і TTL у Redis), `cross-instance.sh` 8/8, `concurrency-checks.py`, `cache-demo.py`, `cache-latency.py`, `cache-race-check.py`, `cache-stampede-check.py`, `redis-outage-check.py`, `kill-test.py`, `lb-failover.py --kill` (0 помилок із 16 354).
+
+**Захист за процедурою методички:**
+
+```bash
+python scripts/cache-demo.py --pause          # п. 1–3: HIT/MISS, інвалідація, docker compose stop/start redis
+docker compose logs lb | grep results         # те саме в лозі балансувальника: {MISS} / {HIT} / {BYPASS}
+docker compose exec redis redis-cli --scan --pattern 'polling:results:*'   # ключі; TTL <ключ> — регламент TTL
+python scripts/cache-race-check.py            # інвалідація без гонки: 0 of 60
+python scripts/cache-stampede-check.py        # Cache Stampede: ~1 звернення до БД на інстанс
+```

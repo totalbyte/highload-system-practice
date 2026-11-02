@@ -210,7 +210,8 @@ backend-1 again in `finally`. Uses `127.0.0.1`: on Windows a refused connection 
 
 **Redis outage (lab 2 П2-4 → lab 4 П1-5, ADR 0043):** `python scripts/redis-outage-check.py` (from the repo root; it
 runs `docker compose stop/start redis` itself and always starts Redis again in `finally`). Both `API1` / `API2` default
-to the balancer. Expected since lab 4: with Redis down results **200 with `X-Cache: BYPASS` in well under 1 s** (read
+to the balancer. It first waits until the cache is reachable on both instances (right after a Redis restart the
+backends reconnect for ~2 s and serve `BYPASS`; `cache-demo.py` does the same). Expected since lab 4: with Redis down results **200 with `X-Cache: BYPASS` in well under 1 s** (read
 from PostgreSQL; lab 2 answered 503 after ~5 s), vote 201 stored once and visible on the next read, publish 200 and the
 poll visible to others, `/health` 200 (both nodes stay UP), counters consistent; after start — the first read is
 **MISS** (Redis came back empty: it runs with `--save ""`), fresh, no backend restart. ~10 s per run. A **HIT** with
