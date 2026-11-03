@@ -264,6 +264,28 @@ restart is slow anyway (JIT warm-up), measure from the second one.
 Full demo scenario with error cases: `requests/polls.http` (VS Code REST Client / Rider / Visual Studio).
 No automated tests yet (`public partial class Program;` is kept for future `WebApplicationFactory` tests).
 
+## Load testing (lab 5)
+
+Details and file list: `load-tests/README.md`. k6 runs in Docker inside `app-network` (no local k6 needed), on its own
+cores; the stack must be started **with the overlay** so the limits apply (ADR 0045).
+
+```bash
+export MSYS_NO_PATHCONV=1
+C="-f docker-compose.yml -f load-tests/docker-compose.loadtest.yml"
+docker compose down -v && docker compose $C up -d --build      # fresh stack, limits + cpusets
+bash load-tests/run.sh scenario-a-read mytag                  # one scenario + resources; LEVELS=10,50 STEP=20 to shorten
+python load-tests/report.py load-tests/results/scenario-a-read-mytag-*.json
+bash load-tests/series.sh                                     # the whole series, ≈ 55 min, fresh stack per run (ADR 0047)
+```
+
+- Run every measured scenario on a **fresh stack** — scenario C creates thousands of polls and B hundreds of thousands
+  of hot-row updates per run; the next run would measure a different database.
+- Cache off for a comparison: `RESULTS_CACHE_ENABLED=false docker compose $C up -d backend-1 backend-2` →
+  `X-Cache: DISABLED`; back: the same command without the variable.
+- Absolute numbers depend on what else the host is doing (≈ 2× between a night and a morning series) — compare runs of
+  one series only. Raw results: `load-tests/results/` (gitignored).
+- Git Bash: keep `MSYS_NO_PATHCONV=1`, otherwise `/scripts/...` paths inside the k6 container get rewritten.
+
 ## Troubleshooting / known quirks
 
 | Symptom | Cause / fix |

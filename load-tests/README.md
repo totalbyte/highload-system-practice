@@ -21,11 +21,19 @@ docker compose $C run --rm k6 run scenario-c-workflow.js # C — наскріз�
 | [`scenario-b-write.js`](scenario-b-write.js) | **B, Write-Intensive:** голоси й зміни голосу 500 користувачів, 70 % — гаряче опитування #1 |
 | [`scenario-c-workflow.js`](scenario-c-workflow.js) | **C, Complex Workflow:** каталог → деталі → голос → результати; у 20 % — повний цикл опитування автором |
 | [`smoke.js`](smoke.js) | перевірка контуру, 5 VU × 10 с |
+| [`open-model.js`](open-model.js) | голос сценарію B з фіксованою частотою прибуття (`-e RATE=1200`) — coordinated omission |
+| [`run.sh`](run.sh) | один прогін + CPU контейнерів і стан сесій / транзакцій PostgreSQL кожні 5 с |
+| [`series.sh`](series.sh) | уся серія вимірювань (≈ 55 хв), кожен прогін — на чистому стеку (ADR 0047) |
+| [`report.py`](report.py) | таблиці у форматі методички, ресурси по ступенях, графіки Mermaid; `--compare` для серій |
 | [`env-spec.sh`](env-spec.sh) | Baseline Environment Specification |
 
 **Профіль навантаження** (однаковий для всіх сценаріїв): warm-up 20 с на 10 VU, далі плато по 40 с на 10 → 25 → 50 →
 100 → 200 VU з паузою 5 с між ступенями. Кожен ступінь — окремий k6-scenario, тож метрики окремо по кожному.
 Перевизначити: `-e LEVELS=10,50 -e STEP=20 -e WARMUP=10`; позначити серію: `-e RUN_TAG=cache-off`.
+
+**Прогін з ресурсами:** `bash load-tests/run.sh scenario-b-write мітка [LEVELS=10,50 STEP=20]`, звіт —
+`python load-tests/report.py load-tests/results/scenario-b-write-мітка-*.json`. Порівняння серій —
+`python load-tests/report.py --compare "1 інстанс=a.json" "2 інстанси=b.json"`.
 
 **Результати:** підсумок по ступенях — у консолі, повний JSON — у `load-tests/results/` (у `.gitignore`; відібрані
 числа — у README репозиторію, розділ «Лабораторна 5»).

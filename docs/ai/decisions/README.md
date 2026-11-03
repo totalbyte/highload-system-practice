@@ -40,6 +40,7 @@ if a decision changes, add a new ADR and set the old one's status to `Superseded
 | [0044](0044-single-flight-against-cache-stampede.md) | Lab 4: single-flight per instance against Cache Stampede — concurrent misses for one (poll, generation) share one DB load in its own scope; not for BYPASS; 6.7–14.4 → ≈ 2 DB loads per invalidation | Accepted |
 | [0045](0045-load-test-environment.md) | Lab 5: k6 `grafana/k6:1.3.0` in Docker inside `app-network` (targets `lb:8080`), every component pinned to its own cores (`cpuset` + limits), k6 on cores 16–23; overlay `load-tests/docker-compose.loadtest.yml` | Accepted |
 | [0046](0046-results-cache-switch.md) | Lab 5: `ResultsCache:Enabled=false` → results read straight from the DB, `X-Cache: DISABLED`; invalidation keeps running | Accepted |
+| [0047](0047-fresh-stack-per-load-run.md) | Lab 5: every measured run on a fresh stack (`down -v` → `up`, same seed) — the first series drifted (C grew `polls` 50 → 17k, B ≈ 833k hot-row updates) | Accepted |
 
 Template:
 
