@@ -10,7 +10,7 @@
 //   5. у 20 % ітерацій — автор: POST /api/polls → PATCH publish → GET results → PATCH close → GET results (closed).
 // Між кроками — пауза 100–300 мс («людина читає»), тож метрики показують і latency кожного кроку, і тривалість усього
 // сценарію (iteration_duration). Ця пауза не входить у http_req_duration.
-import { check, sleep, group } from 'k6';
+import { check, sleep, group, fail } from 'k6';
 import { steppedScenarios, SUMMARY_TREND_STATS, summaryFor, loginUsers, createVotablePoll, optionIds, jsonPost,
   authGet, authPatch, pick } from './lib.js';
 
@@ -22,8 +22,14 @@ export const options = {
   setupTimeout: '180s',
 };
 
+// Один VU = один користувач, тож користувачів потрібно не менше, ніж VU на найбільшому ступені. Сід за замовчуванням —
+// 500; прогін до 800 VU піднімає стек із SEED_USERS=800 і передає USERS=800 (series.sh).
+const USERS = Number(__ENV.USERS || 500);
+
 export function setup() {
-  const tokens = loginUsers(1, 500);
+  const maxVus = Math.max(...plan.levels);
+  if (maxVus > USERS) fail(`${maxVus} VUs need ${maxVus} distinct users, only ${USERS}: set USERS and SEED_USERS`);
+  const tokens = loginUsers(1, USERS);
   const polls = [1, 2, 3, 4, 5].map((n) => createVotablePoll(tokens[0], `Load C #${n}`, ['A', 'B', 'C']));
   return { tokens, polls: [{ id: 1, options: optionIds(1) }, ...polls], startedAt: Date.now() };
 }

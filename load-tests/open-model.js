@@ -7,7 +7,7 @@
 // затримки запитів, які «мали б» прийти в цей час, у статистику не потрапляють (coordinated omission). Тут k6
 // запускає ітерації за розкладом: якщо вільних VU немає, ітерація пропускається (dropped_iterations), а затримка
 // чергу вже містить — так видно справжню ціну перевантаження.
-import { vote, setup as writeSetup } from './scenario-b-write.js';
+import { vote, setup as writeSetup, SLOTS } from './scenario-b-write.js';
 import { SUMMARY_TREND_STATS } from './lib.js';
 
 const rate = Number(__ENV.RATE || 1000);
@@ -18,7 +18,8 @@ export const options = {
     warmup: { executor: 'constant-vus', exec: 'vote', vus: 10, duration: '15s', gracefulStop: '3s' },
     open: {
       executor: 'constant-arrival-rate', exec: 'vote', rate, timeUnit: '1s', duration, startTime: '20s',
-      preAllocatedVUs: 200, maxVUs: 400, gracefulStop: '5s',
+      // Не більше VU, ніж слотів користувачів у scenario-b-write.js: інакше два VU голосували б тим самим користувачем.
+      preAllocatedVUs: SLOTS, maxVUs: SLOTS, gracefulStop: '5s',
     },
   },
   thresholds: {

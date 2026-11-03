@@ -13,11 +13,11 @@ lab 4 cache). Plan by stages with who explains what at the defense: [`docs/lab5/
 |---|---|
 | 1. Load-test environment | ✅ k6 1.3.0 in Docker inside `app-network`, every component pinned to its own cores with limits, k6 on cores 16–23 (ADR 0045); `env-spec.sh`; `RESULTS_CACHE_ENABLED=false` → `X-Cache: DISABLED` (ADR 0046) |
 | 2. Scenarios A / B / C | ✅ `load-tests/scenario-*.js`: warm-up 20 s → 10 / 25 / 50 / 100 / 200 VUs × 40 s; B users partitioned per VU (no artificial 409) |
-| 3. Runs, tables, saturation point | ✅ `series.sh` (fresh stack per run, ADR 0047 — the first series drifted), `run.sh` (CPU + PG sessions / tx per 5 s), `report.py`; A ≈ 50 VUs / 3.7k RPS, B ≈ 10 VUs / 470 RPS then falling, C ≈ 400 VUs / 1.5k RPS; 0 % errors everywhere |
+| 3. Runs, tables, saturation point | ✅ `series.sh` (fresh stack per run, ADR 0047 — the first series drifted), `run.sh` (CPU + PG sessions / tx per 5 s), `report.py`; A ≈ 50 VUs / 3.7k RPS, B ≈ 10 VUs / 470 RPS then falling, C ≈ 400 VUs / 1.6k RPS; 0 % errors everywhere |
 | 4. Scaling, cache | ✅ read E(2) 0.86, E(3) 0.72; write 365 → 276 → 229 RPS (negative); cache off: PG tx/s +55 %, RPS −28 % |
 | 5. Bottleneck, baseline, docs | ✅ primary bottleneck: row-lock contention on hot `options.vote_count`; README «Лабораторна 5» (tables, Mermaid charts, baseline card), `docs/lab5-guide.md`, `docs/about/lab5.md`, open model (coordinated omission) |
 
-Left: push + PR after PR #13 is merged; real defense rehearsal together; `labs/lab5-summary.md` after the defense.
+PR #14 open (Copilot review: 5 load-script issues fixed — user overlap in B open model / C at 800 VUs, fail-fast `series.sh`, smoke `checks` threshold; C-extended and open model re-measured). Left: real defense rehearsal together; `labs/lab5-summary.md` after the defense.
 
 ## Lab 4 — Distributed caching (PR #13 open, approved)
 

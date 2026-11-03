@@ -40,3 +40,12 @@ test against the overlay stack after the series — see the commit.
 ## Not done / next steps
 Push `lab5/load-tests` and open a PR after PR #13 (lab 4) is merged; rehearse the defense together by
 `docs/lab5-guide.md`; write `docs/ai/labs/lab5-summary.md` after the defense.
+
+## Later: Copilot review of PR #14
+Five valid findings, all fixed: (1) B's 200 user slots vs up to 400 VUs in `open-model.js` — open model capped at
+`SLOTS` = 200; (2) C at 800 VUs reused the 500 tokens — `USERS` / `SEED_USERS=800` for that run, `setup()` refuses to
+run with fewer users than VUs; (3) `series.sh` now `set -eo pipefail`; (4) `wait_state` returns 1 on timeout;
+(5) `smoke.js` thresholds `checks: rate==1`. Re-measured with `ONLY="c-extended open-300 open-1200"`: C 200 / 400 / 800
+VUs → 1256 / 1572 / 1540 RPS, p95 59 / 313 / 1260 ms (same conclusion, saturation ≈ 400 VUs); open model 300 req/s →
+p99 42 ms, 0 dropped; 1200 req/s → 295 req/s, 36 190 dropped (75 %), p50 533 ms; errors 0, counters consistent.
+

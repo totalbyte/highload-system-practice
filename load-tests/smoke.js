@@ -11,6 +11,8 @@ export const options = {
   duration: '10s',
   thresholds: {
     http_req_failed: ['rate==0'],
+    // Без порогу на checks k6 завершується успішно, навіть якщо заголовки X-Instance-ID / X-Cache не прийшли.
+    checks: ['rate==1'],
   },
 };
 

@@ -30,6 +30,9 @@ docker compose $C run --rm k6 run scenario-c-workflow.js # C — наскріз�
 **Профіль навантаження** (однаковий для всіх сценаріїв): warm-up 20 с на 10 VU, далі плато по 40 с на 10 → 25 → 50 →
 100 → 200 VU з паузою 5 с між ступенями. Кожен ступінь — окремий k6-scenario, тож метрики окремо по кожному.
 Перевизначити: `-e LEVELS=10,50 -e STEP=20 -e WARMUP=10`; позначити серію: `-e RUN_TAG=cache-off`.
+Користувачі не діляться між VU: у B — 200 слотів (відкрита модель обмежена 200 VU), у C — один VU = один користувач;
+для C понад 500 VU — `USERS=800` і стек із `SEED_USERS=800` (інакше `setup()` зупиняє прогін). Лише частина серії:
+`ONLY="c-extended open-1200" bash load-tests/series.sh`.
 
 **Прогін з ресурсами:** `bash load-tests/run.sh scenario-b-write мітка [LEVELS=10,50 STEP=20]`, звіт —
 `python load-tests/report.py load-tests/results/scenario-b-write-мітка-*.json`. Порівняння серій —
