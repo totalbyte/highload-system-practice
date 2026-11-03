@@ -159,7 +159,40 @@ via backend-1, an anonymous client reads from both. Since П2-3 (cache in Redis,
 must say **no**, and step 3 of scenario A shows the same `generatedAt` on both instances; a **YES** means the cache is
 per-process again (it was, by design, before П2-3: stale counts until the 10 s TTL and 404 for the just-published
 poll). ~1 s per run; it waits out the TTL only when it sees stale data. Redis side:
-`docker compose exec redis redis-cli TTL results:1` → ≤ 10 after a read, `EXISTS results:1` → 0 after a vote.
+since lab 4 (ADR 0041) `docker compose exec redis redis-cli GET polling:results:gen:1` → the generation `n`, then
+`TTL polling:results:v1:1:g<n>` → ≤ 12 after a read of an active poll (≤ 4320 for a closed one); after a vote the
+generation is `n + 1` and `g<n>` is gone.
+
+**Invalidation race (lab 4, П1-3, ADR 0041):** `python scripts/cache-race-check.py [--rounds 60] [--burst 8]
+[--readers 12]` (stdlib only, via the LB, ~25 s, fresh poll each run, uses seed users 2…481). Each round: 8
+simultaneous votes for one option while 12 readers poll the results; then a control read must show exactly the
+committed number of votes. Expected: `0 of 60`, exit code 0. With the lab 2 `DEL` invalidation it found 2–5 stale
+rounds of 60 in every run.
+
+**Cache demo for the defense (lab 4, П1-6):** `python scripts/cache-demo.py [--pause]` (via the LB, ~15 s, stdlib
+only; reads Redis state directly on `localhost:6379`, env `REDIS`). Runs the three procedure items in a row: MISS →
+HIT → HIT; vote → generation +1 → MISS with the new count → HIT; close → MISS `closed` with TTL ≈ 1 h; then
+`docker compose stop redis` → BYPASS 200, a vote 201 visible on the next read, `/health` 200; `start redis` → a few
+BYPASS reads while the client reconnects (~2.5 s), then MISS (`gen=0`, Redis empty) → HIT. It always starts Redis
+again in `finally`. `--pause` waits for Enter before each step.
+
+**Cache stampede (lab 4, П1-10, ADR 0044):** `python scripts/cache-stampede-check.py [--poll 1] [--readers 100]
+[--rounds 20]` (~5 s). Each round: `INCR` of the poll's generation in Redis, then 100 simultaneous reads through the LB
+(connections opened beforehand); DB loads = distinct `generatedAt` in the answers. Expected with single-flight ≈ one per
+instance (2.1–2.4 on 2 instances, max 3), exit code 0; without it it was 6.7–14.4 on average, up to 98 of 100.
+
+**Cold vs hot latency (lab 4, П1-6):** `python scripts/cache-latency.py [--poll 1] [--pairs 500] [--warmup 50]`
+(~10 s). Each pair: `INCR polling:results:gen:<poll>` straight into Redis (= an invalidation), then a read that must be
+`MISS` and one that must be `HIT`; one keep-alive connection through the LB. Measured 2026-11-02 on poll #1, idle
+stack, 3 runs: MISS p50 ≈ 3.8 ms / p99 6.5–8.2 ms, HIT p50 ≈ 2.0 ms / p99 ≈ 3.7 ms (× 1.9). Numbers several times
+higher usually mean the stack is still warming up or another load is running.
+
+**Cache source (lab 4, П1-4, ADR 0042):** `curl -si localhost:8080/api/polls/1/results | grep -i x-cache` → `MISS`
+on the first read after a cold start or a mutation, `HIT` after that. The LB log shows it for every request:
+`docker compose logs lb | grep results` → `... be_api/backend-2 0/0/0/5/5 200 ... {HIT} "GET /api/polls/1/results ..."`.
+Per-operation backend logs (`HIT` / `MISS` / `STORE` with TTL / `INVALIDATE n -> n+1`) are at Debug:
+`CACHE_LOG_LEVEL=Debug docker compose up -d` (recreates the backends), then `docker compose logs -f backend-1 backend-2
+| grep "Results cache"`; plain `docker compose up -d` switches them off again.
 
 **Instance loss through the balancer (lab 2 П2-7 → lab 3 П2-4, ADR 0037):** `python scripts/kill-test.py` (from the
 repo root; `--stop` for a graceful stop instead of SIGKILL). 800 votes (400 users × 2 fresh polls, 32 threads) go to
@@ -175,11 +208,15 @@ retried a vote that had committed on the killed node. Expected (2026-10-28, 6 ki
 run gave 6 × 502 (П1-3 config) or 52 errors (П1-1 config) — see README «Відмова вузла: запис». Always starts
 backend-1 again in `finally`. Uses `127.0.0.1`: on Windows a refused connection to `localhost` takes ~4 s.
 
-**Redis outage (lab 2, П2-4, ADR 0027):** `python scripts/redis-outage-check.py` (from the repo root; it runs
-`docker compose stop/start redis` itself and always starts Redis again in `finally`). Since lab 3 both `API1` / `API2`
-default to the balancer. Expected: results 503 **ProblemDetails from the API** while Redis is down (not HAProxy's
-HTML page — both nodes stay UP in `be_api` and `be_vote`, the "503 trap" of ADR 0033 / 0037), vote 201 stored once,
-publish 200, counters consistent; after start — results 200 within ~4 s, fresh, no backend restart. ~25 s per run.
+**Redis outage (lab 2 П2-4 → lab 4 П1-5, ADR 0043):** `python scripts/redis-outage-check.py` (from the repo root; it
+runs `docker compose stop/start redis` itself and always starts Redis again in `finally`). Both `API1` / `API2` default
+to the balancer. It first waits until the cache is reachable on both instances (right after a Redis restart the
+backends reconnect for ~2 s and serve `BYPASS`; `cache-demo.py` does the same). Expected since lab 4: with Redis down results **200 with `X-Cache: BYPASS` in well under 1 s** (read
+from PostgreSQL; lab 2 answered 503 after ~5 s), vote 201 stored once and visible on the next read, publish 200 and the
+poll visible to others, `/health` 200 (both nodes stay UP), counters consistent; after start — the first read is
+**MISS** (Redis came back empty: it runs with `--save ""`), fresh, no backend restart. ~10 s per run. A **HIT** with
+an old `totalVotes` after the restart means Redis loaded a `dump.rdb` — check `redis-cli CONFIG GET save` (must be
+empty).
 `concurrency-checks.py` also defaults both addresses to the balancer (HAProxy splits the requests);
 `results-cache-demo.py` needs direct instance access — run it with `docker-compose.debug.yml` and
 `API1=http://127.0.0.1:8091 API2=http://127.0.0.1:8092`.
@@ -233,7 +270,7 @@ No automated tests yet (`public partial class Program;` is kept for future `WebA
 |---|---|
 | Cyrillic becomes `????` when sent with curl from Git Bash on Windows | Shell encoding, not the server. Use Swagger, `.http`, Postman, or `curl --data-binary @file.json` with a UTF-8 file |
 | Every request returns 400 when the token comes from a file written by Python on Windows | Python writes CRLF; the `\r` inside the `Authorization` header breaks the request. Pipe tokens through `tr -d '\r'` |
-| `GET /results` still shows an old total | The cache (Redis, shared by all instances, ADR 0026) is invalidated by a vote, publish, close or delete, with a 10 s TTL as a safety net. A stale value for up to 10 s right after a vote is the known invalidation race (aggregate read before the commit, written after the `DEL`) — a lab 4 topic. If instances disagree, run `scripts/results-cache-demo.py`: a **YES** means something went back to a per-process cache |
+| `GET /results` still shows an old total | The cache (Redis, shared by all instances, ADR 0026) is invalidated by a vote, publish, close or delete, with a TTL by status as a safety net (ADR 0041). Since lab 4 invalidation bumps a generation, so a read that started after the vote's response always sees it; `scripts/cache-race-check.py` must report `0 of 60`. A stale value up to ≈ 12 s is possible only if Redis failed during the invalidation (ADR 0027). If instances disagree, run `scripts/results-cache-demo.py`: a **YES** means something went back to a per-process cache |
 | Can't reach the container DB on 5432 / connected to the wrong DB | Participant 1's machine runs a local Windows PostgreSQL service on 5432 — the container is on **5433** (ADR 0011) |
 | `fail: ... SELECT migration_id FROM "__EFMigrationsHistory"` on first start | Expected: the history table doesn't exist yet. Not an error |
 | `fail: ... CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory"` (Postgres: `pg_type_typname_nsp_index`) on a cold start | Both instances created the history table at the same instant; the provider ignores it and the migration still runs once (ADR 0022). Not an error |
@@ -246,7 +283,7 @@ No automated tests yet (`public partial class Program;` is kept for future `WebA
 | `git status` shows `haproxy/haproxy.cfg` modified after a demo | `scripts/lb-algorithm.sh` edits it: `bash scripts/lb-algorithm.sh roundrobin` (or `git checkout haproxy/haproxy.cfg` + `docker compose kill -s USR2 lb`) |
 | `backend-3` stays `MAINT (resolution)` on the stats page | It is not running (profile `scale`): `docker compose --profile scale up -d` |
 | A killed/stopped backend stays down despite `restart: unless-stopped` | Expected: a manual `docker kill` / `docker stop` disables the restart policy until the next manual start; the policy only covers a process that exits on its own. `docker compose start backend-1` |
-| Requests take ~5 s; `GET /results` returns 503 "The cache is temporarily unavailable"; `warn: …ResultsCache` "not invalidated" in the logs | Redis is down. Expected (ADR 0027): the client waits its 5 s backlog timeout; reads 503, writes still succeed. `docker compose start redis` — recovers by itself, no backend restart |
+| `X-Cache: BYPASS` on `GET /results`; `warn: …ResultsCache` "not invalidated" in the logs | Redis is down. Expected (ADR 0043): reads go straight to PostgreSQL (200, no Redis timeout wait), writes still succeed. `docker compose start redis` — recovers by itself, no backend restart. Requests taking ~1 s each instead means Redis is reachable but not answering (hung / paused): the 1 s client timeout, then the same fallback |
 | `Bind for 127.0.0.1:5433 failed: port is already allocated` on `up` | Another container or service holds the host port (on Participant 2's machine: `kafka-sandbox-db-1` from an unrelated project, auto-started by Docker Desktop). Put `POSTGRES_PORT=5434` in `.env` (gitignored) and `docker compose up -d` again — only host tools (psql, pgAdmin from the host) see the change; the backends talk to `postgres:5432` inside the network |
 | First request after a DB restart fails | Should not happen (EF retry strategy, ADR 0008); if it does, check the retry config |
 | `FATAL: sorry, too many clients already` (psql, Adminer, pgAdmin or the API) | The backend pools together exceed PostgreSQL `max_connections` (100). Check `DB_MAX_POOL_SIZE` × number of instances ≤ 90 (ADR 0018, 0032); with 4+ instances lower `DB_MAX_POOL_SIZE` in `.env` |

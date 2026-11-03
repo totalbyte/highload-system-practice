@@ -22,6 +22,7 @@ Course materials and team documents are in Ukrainian ("Учасник 1/2" = Par
 | [`docs/ai/status.md`](docs/ai/status.md) | Always, at session start |
 | [`docs/lab2/participant-1.md`](docs/lab2/participant-1.md), [`participant-2.md`](docs/lab2/participant-2.md) | Lab 2 task list of the participant you are working with (Ukrainian) |
 | [`docs/lab3/participant-1.md`](docs/lab3/participant-1.md), [`participant-2.md`](docs/lab3/participant-2.md) | Lab 3 task list of the participant you are working with (Ukrainian) |
+| [`docs/lab4/participant-1.md`](docs/lab4/participant-1.md) | Lab 4 task list (Ukrainian) — Participant 1 does lab 4 alone, by agreement |
 | [`docs/ai/project-context.md`](docs/ai/project-context.md) | You need lab requirements, the design-doc summary, the high-load scenario, bottlenecks, defense questions |
 | [`docs/ai/contracts.md`](docs/ai/contracts.md) | You touch the API, DB schema, or code another participant depends on; open questions for Participant 2 |
 | [`docs/ai/runbook.md`](docs/ai/runbook.md) | Running, testing, migrations, seed data, troubleshooting |
@@ -32,22 +33,25 @@ Course materials and team documents are in Ukrainian ("Учасник 1/2" = Par
 | [`docs/lab1-guide.md`](docs/lab1-guide.md) | Long-form guide to lab 1 for the participants (Ukrainian): architecture, data model, voting logic, why each decision was made, defense Q&A |
 | [`docs/lab2-guide.md`](docs/lab2-guide.md) | Lab 2 defense guide (Ukrainian): stateless concepts, audit, removed in-memory state, how to run the lab 2 demos after lab 3, step-by-step defense script, Q&A |
 | [`docs/lab3-guide.md`](docs/lab3-guide.md) | Lab 3 defense guide (Ukrainian): one-minute cheat sheet, step-by-step defense script for the 4 procedure items, Q&A, what to do if a demo breaks |
-| [`docs/about/lab2.md`](docs/about/lab2.md), [`lab3.md`](docs/about/lab3.md) | Pages to show the lecturer at the defense (Ukrainian): requirement → what was done → proof with numbers, diagrams, live-demo commands; no speaker notes |
+| [`docs/lab4-guide.md`](docs/lab4-guide.md) | Lab 4 defense guide (Ukrainian): cheat sheet, defense script for the 4 procedure items, theory (stampede, avalanche, LRU / LFU, expiration vs invalidation) and Q&A, troubleshooting |
+| [`docs/about/lab2.md`](docs/about/lab2.md), [`lab3.md`](docs/about/lab3.md), [`lab4.md`](docs/about/lab4.md) | Pages to show the lecturer at the defense (Ukrainian): requirement → what was done → proof with numbers, diagrams, live-demo commands; no speaker notes |
 | `docs/labs/*.md`, `docs/*.docx` | Original assignments / design docs (Ukrainian); summarized in `project-context.md` |
 
 ## Stack
 
 C# / ASP.NET Core 10 (controllers) · EF Core 10 + Npgsql · PostgreSQL 17 · JWT · FluentValidation · Swashbuckle ·
-Docker Compose. Redis arrives in labs 2/4, Nginx in lab 3, k6 in lab 5.
+Docker Compose. Redis since lab 2 (distributed results cache in lab 4), HAProxy since lab 3 (ADR 0031, instead of the
+Nginx named in lab 1), k6 in lab 5.
 
 ## Quick start
 
 ```bash
-docker compose up -d --build     # backend-1 + backend-2 + postgres + redis; migrations and seed run automatically
+docker compose up -d --build     # lb (HAProxy) + backend-1 + backend-2 + postgres + redis; migrations and seed run automatically
 docker compose down -v           # wipe everything (cold start)
 ```
 
-API `backend-1` http://localhost:8080, `backend-2` http://localhost:8082 · Swagger `/swagger` · health `/health` ·
+API only through HAProxy http://localhost:8080 (backends publish no ports; stats http://localhost:8404/stats; one
+instance directly: `docker-compose.debug.yml` → `127.0.0.1:8091–8093`) · Swagger `/swagger` · health `/health` ·
 Postgres from host `localhost:5433` (`polling`/`polling`) · Redis `localhost:6379`.
 Seed users: `user001@example.com` … `user500@example.com`, password `Password123!`. Details: `docs/ai/runbook.md`.
 
@@ -59,8 +63,8 @@ Seed users: `user001@example.com` … `user500@example.com`, password `Password1
   strategy is on — see ADR 0008). Otherwise EF throws at runtime.
 - Follow the coding conventions in `src/PollingPlatform.Api/CLAUDE.md` so the codebase reads as one system.
 - Don't make stateless/caching "improvements" ahead of the lab that asks for them: e.g. the results cache stayed in
-  process memory until lab 2 moved it to Redis "as is" (ADR 0026); key schema, TTL rationale, `X-Cache` and DB
-  fallback still wait for lab 4.
+  process memory until lab 2 moved it to Redis "as is" (ADR 0026), and its key schema, TTL, `X-Cache`, DB fallback
+  and stampede protection came only with lab 4 (ADR 0041–0044); cache on/off comparisons and k6 wait for lab 5.
 - Don't commit, push or create branches unless the user asks. No branching convention has been agreed yet.
 - Never write personal names in repo files (code, docs, logs, ADRs, README): refer to people only as
   Participant 1 / Participant 2 (Учасник 1 / Учасник 2).

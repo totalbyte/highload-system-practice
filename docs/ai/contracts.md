@@ -17,13 +17,14 @@ Update this file whenever the API, the schema, or code another participant depen
 | DELETE | `/api/polls/{id}` | author | 204 | 403, 404, 409 | P1 |
 | GET | `/health` | — | 200 / 503 `{status, instance, checks, durationMs}`, answers within 2 s (ADR 0019) | | P1 |
 | POST | `/api/polls/{id}/vote` | JWT | 201 new vote / 200 changed or repeated; `{pollId, optionId, votedAt}` | 401, 404, 409, 422 | P2 |
-| GET | `/api/polls/{id}/results` | optional | 200 `{pollId, title, status, totalVotes, generatedAt, options[]}` | 404, 503 (Redis down, ADR 0027) | P2 |
+| GET | `/api/polls/{id}/results` | optional | 200 `{pollId, title, status, totalVotes, generatedAt, options[]}` + header `X-Cache: HIT \| MISS \| BYPASS` (ADR 0042, 0043) | 404 | P2 → P1 (lab 4) |
 
 - Every response carries `X-Instance-ID` (container hostname or env `INSTANCE_ID`); the balancer passes it through
   unchanged. In compose (lab 3, ADR 0031) clients reach only HAProxy on http://localhost:8080 (`LB_PORT`, stats page
   http://localhost:8404/stats); `backend-1`, `backend-2` and `backend-3` (profile `scale`) publish no host ports and
   are reachable only inside `app-network` as `backend-N:8080`. HAProxy logs every request to stdout (`docker compose
-  logs lb`) with the backend/server name, status and timers (`%s`, `%ST`, `%Tr`, `%Ta`).
+  logs lb`) with the backend/server name, status and timers (`%s`, `%ST`, `%Tr`, `%Ta`), and since lab 4 the captured
+  `X-Cache` response header in braces — `{HIT}` / `{MISS}` on results reads, `{}` elsewhere (ADR 0042).
 - Load balancer behaviour other code relies on (ADR 0033, 0034): `/health` is the readiness check (200 = in the pool,
   503 = out; it must stay DB-only and never check Redis, ADR 0021); a node is also taken out on the first connection
   error; failed connects are retried on another node for any method, in-flight failures only for GET. HAProxy never
@@ -49,7 +50,7 @@ Update this file whenever the API, the schema, or code another participant depen
 | 404 | Poll doesn't exist, or it's someone else's draft |
 | 409 | Invalid status transition; duplicate email/username; duplicate vote; voting outside `startsAt`…`endsAt` |
 | 422 | Field validation failed |
-| 503 | Transient DB failure that outlived EF's retries (ADR 0016); Redis unavailable on a results read (ADR 0027) — `detail` names the dependency |
+| 503 | Transient DB failure that outlived EF's retries (ADR 0016) — `detail` names the dependency. Since lab 4 a Redis outage no longer produces 503 on results reads: they fall back to the DB (ADR 0043); the Redis → 503 mapping stays only as a safety net |
 
 **Voting rules (ADR 0014, 0015):** `{optionId}` body; the unique index `(poll_id, user_id)` — not the pre-check — is
 what guarantees one vote per user; an option from another poll → 404 `PollOptionNotFoundException`; before
@@ -94,15 +95,27 @@ Defined by EF migrations in `src/PollingPlatform.Api/Data/Migrations` (current: 
 ## What Participant 2 provides to Participant 1
 
 - `VoteService` (`Votes/`) — voting; `ResultsService` (`Results/`) — aggregated results.
-- `ResultsCache` (`Results/ResultsCache.cs`, singleton, **in Redis since lab 2** — ADR 0026) —
-  `Task<CachedPollResults?> GetAsync(pollId)` / `Task SetAsync(pollId, entry)` / `Task InvalidateAsync(pollId)`.
+- `ResultsCache` (`Results/ResultsCache.cs`, singleton, **in Redis since lab 2** — ADR 0026; generations since lab 4
+  — ADR 0041) — `Task<ResultsCacheLookup> GetAsync(pollId)` (entry or null + the generation read) /
+  `Task SetAsync(pollId, generation, entry)` (write under the generation from `GetAsync`, never the current one) /
+  `Task InvalidateAsync(pollId)` (unchanged signature, so the callers did not change).
+- `ResultsSingleFlight` (`Results/ResultsSingleFlight.cs`, singleton, ADR 0044) — `LoadAsync(pollId, generation, ct)`:
+  concurrent misses of one instance for the same (poll, generation) share one DB load (own DI scope, no shared
+  cancellation), which also writes the entry. Used by `ResultsService` for MISS only, never for BYPASS. Waiters answer
+  `X-Cache: MISS` too — MISS means "not from Redis", not "this request queried the DB".
   **Any code that changes votes or a poll's status must `await InvalidateAsync`** — invalidation is now visible to
   every instance. `PollService` takes `ResultsCache` in its constructor and invalidates in `PublishAsync`,
   `CloseAsync` and `DeleteAsync` (publish/delete were added on 2026-09-30 after the review found stale draft entries).
-- Redis format, for debugging with `docker compose exec redis redis-cli`: key `results:{pollId}`, value
-  `CachedPollResults` as JSON (camelCase, enum as string), TTL 10 s (`TTL results:1`), removed with `DEL`.
-  Redis down (ADR 0027): `GetAsync` throws → 503; `SetAsync` and `InvalidateAsync` log a warning and return, so a
-  committed vote/publish/close/delete still answers with its success code. Callers need no try/catch.
+- Redis format (ADR 0041), for debugging with `docker compose exec redis redis-cli`: generation counter
+  `polling:results:gen:{pollId}` (integer, missing = 0, no TTL; invalidation = `INCR` + `UNLINK` of the previous
+  generation's value, one Lua script); value `polling:results:v1:{pollId}:g{generation}` = `CachedPollResults` as JSON
+  (camelCase, enum as string); TTL by the status in the entry — active / draft 10 s, closed 1 h, each + 0–20 % jitter.
+  E.g. `GET polling:results:gen:1` → `n`, then `TTL polling:results:v1:1:g<n>`; `SCAN 0 MATCH polling:results:*`.
+  Redis down (ADR 0043, supersedes 0027): `GetAsync` returns `ResultsCacheLookup.Unavailable` (generation `null`) →
+  `ResultsService` reads PostgreSQL, answers 200 with `X-Cache: BYPASS` and does not write to Redis; `SetAsync` and
+  `InvalidateAsync` log a warning and return, so a committed vote/publish/close/delete still answers with its success
+  code. Callers need no try/catch. The Redis client is fail-fast (`BacklogPolicy.FailFast`, 1 s timeouts) and Redis
+  runs without persistence (`--save ""`) — it comes back empty after a restart.
 - New exceptions in `Common/Exceptions/VoteExceptions.cs`: `PollOptionNotFoundException` (404),
   `PollNotStartedException`, `PollVotingEndedException`, `DuplicateVoteException` (409).
 - `GlobalExceptionHandler` maps transient DB failures (ADR 0016) and Redis connection failures/timeouts (ADR 0027)

@@ -28,12 +28,16 @@ if a decision changes, add a new ADR and set the old one's status to `Superseded
 | [0021](0021-redis-and-two-backend-instances.md) | Lab 2: Redis + `backend-1`/`backend-2` from one image, ports 8080/8082, one shared `IConnectionMultiplexer` | Accepted, amended by 0031 |
 | [0022](0022-concurrent-startup-verified.md) | Concurrent startup of several instances on an empty DB verified safe; no separate migrator | Accepted |
 | [0023](0023-dataprotection-keys-in-redis.md) | DataProtection keys in Redis with one application name — one key ring for all instances | Accepted |
-| [0026](0026-results-cache-in-redis.md) | Lab 2: results cache in Redis (`results:{pollId}`, JSON, TTL 10 s, `DEL` on invalidation), async `ResultsCache` | Accepted (supersedes 0013) |
-| [0027](0027-redis-unavailable.md) | Lab 2: Redis down → reads 503; invalidation and cache writes best-effort, committed changes still succeed | Accepted |
+| [0026](0026-results-cache-in-redis.md) | Lab 2: results cache in Redis (`results:{pollId}`, JSON, TTL 10 s, `DEL` on invalidation), async `ResultsCache` | Accepted (supersedes 0013), amended by 0041 |
+| [0027](0027-redis-unavailable.md) | Lab 2: Redis down → reads 503; invalidation and cache writes best-effort, committed changes still succeed | Superseded by 0043 |
 | [0033](0033-health-checks-and-retries.md) | Lab 3: active `/health` checks (`inter 2s fastinter 500ms fall 2 rise 2`), passive `observe layer4` mark-down, `retries 2` + `redispatch 1`, L7 retries only for GET; no layer-7 observation / 5xx retries (503 trap) | Accepted |
 | [0034](0034-balancing-algorithms-and-live-switch.md) | Lab 3: `roundrobin` by default; `scripts/lb-algorithm.sh` switches roundrobin / leastconn / weighted / source live (validate + SIGUSR2); `lb-distribution.py` | Accepted |
 | [0037](0037-vote-backend-retries.md) | Lab 3: `be_vote` backend for `POST …/vote` — in-flight retries on another node (safe: one transaction + `UNIQUE`), own `/health` checks + `observe layer4` instead of `track`; 5xx not retried | Accepted (extends 0033) |
 | [0036](0036-artificial-delay-middleware.md) | Lab 3: artificial delay on one instance via middleware (`Diagnostics:ArtificialDelayMs`, `/health` not delayed) | Accepted |
+| [0041](0041-results-cache-target-keys-and-ttl.md) | Lab 4: cache only `GET /results`; keys `polling:results:v1:{pollId}:g{gen}` + generation counter (invalidation = `INCR`, fixes the lab 2 race); TTL by status (active / draft 10 s, closed 1 h) + 0–20 % jitter; verified with `cache-race-check.py` | Accepted (amends 0026) |
+| [0042](0042-x-cache-header-and-cache-logs.md) | Lab 4: `X-Cache: HIT \| MISS` on `GET /results`, captured in the HAProxy log (`{HIT}`); cache operations logged at Debug, switched by `CACHE_LOG_LEVEL` | Accepted |
+| [0043](0043-redis-down-fallback-to-db.md) | Lab 4: Redis down → results from PostgreSQL with `X-Cache: BYPASS` (200, ~70 ms instead of 503 after 5 s); fail-fast client (`BacklogPolicy.FailFast`, 1 s timeouts); Redis without persistence (`--save ""`) | Accepted (supersedes 0027) |
+| [0044](0044-single-flight-against-cache-stampede.md) | Lab 4: single-flight per instance against Cache Stampede — concurrent misses for one (poll, generation) share one DB load in its own scope; not for BYPASS; 6.7–14.4 → ≈ 2 DB loads per invalidation | Accepted |
 
 Template:
 

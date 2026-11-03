@@ -10,20 +10,32 @@ namespace PollingPlatform.Api.Results;
 /// Рахуються з денормалізованого <c>options.vote_count</c>, а не COUNT(*) по <c>votes</c>,
 /// і кешуються, щоб пікове читання не впиралося в БД.
 /// </summary>
-public class ResultsService(AppDbContext db, ResultsCache cache, TimeProvider timeProvider)
+public class ResultsService(AppDbContext db, ResultsCache cache, ResultsSingleFlight singleFlight, TimeProvider timeProvider)
 {
-    public async Task<PollResultsResponse> GetAsync(long pollId, long? currentUserId, CancellationToken ct)
+    public async Task<PollResultsRead> GetAsync(long pollId, long? currentUserId, CancellationToken ct)
     {
-        // Кеш містить і CreatorId, тому на попадання видимість перевіряється без звернення до БД.
-        var entry = await cache.GetAsync(pollId) ?? await LoadAndCacheAsync(pollId, ct);
+        // Cache-Aside (ADR 0041). Кеш містить і CreatorId, тому на попадання видимість перевіряється без звернення до БД.
+        var lookup = await cache.GetAsync(pollId);
+        var (entry, source) = lookup switch
+        {
+            { Entry: { } cached } => (cached, CacheResult.Hit),
+            // Промах: одночасні промахи інстансу по цьому поколінню чекають одне читання з БД (ADR 0044) — воно ж
+            // записує агрегат під поколінням, прочитаним до запиту в БД (ADR 0041).
+            { Generation: { } generation } => (await singleFlight.LoadAsync(pollId, generation, ct), CacheResult.Miss),
+            // Redis недоступний (ADR 0043): читаємо з БД і нічого не пишемо — без покоління запис повернув би гонку з
+            // лаби 2. І не об'єднуємо: без покоління не видно, чи почалося спільне читання вже після мутації.
+            _ => (await LoadAsync(db, pollId, timeProvider, ct), CacheResult.Bypass)
+        };
 
         if (entry.Response.Status == PollStatus.Draft && entry.CreatorId != currentUserId)
             throw new PollNotFoundException(pollId);
 
-        return entry.Response;
+        return new PollResultsRead(entry.Response, source);
     }
 
-    private async Task<CachedPollResults> LoadAndCacheAsync(long pollId, CancellationToken ct)
+    /// <summary>Агрегат з БД, без кешу. <c>GeneratedAt</c> — момент цього читання.</summary>
+    internal static async Task<CachedPollResults> LoadAsync(
+        AppDbContext db, long pollId, TimeProvider timeProvider, CancellationToken ct)
     {
         var poll = await db.Polls.AsNoTracking()
             .Where(p => p.Id == pollId)
@@ -48,11 +60,8 @@ public class ResultsService(AppDbContext db, ResultsCache cache, TimeProvider ti
                 totalVotes == 0 ? 0 : Math.Round(o.VoteCount * 100.0 / totalVotes, 2)))
             .ToList();
 
-        var entry = new CachedPollResults(
+        return new CachedPollResults(
             poll.CreatorId,
             new PollResultsResponse(pollId, poll.Title, poll.Status, totalVotes, timeProvider.GetUtcNow(), options));
-
-        await cache.SetAsync(pollId, entry);
-        return entry;
     }
 }

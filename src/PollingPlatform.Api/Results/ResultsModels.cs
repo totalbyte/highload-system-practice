@@ -18,3 +18,18 @@ public record PollResultsResponse(
 
 /// <summary>Кешований агрегат разом із даними, потрібними для перевірки видимості без звернення до БД.</summary>
 public record CachedPollResults(long CreatorId, PollResultsResponse Response);
+
+/// <summary>Звідки взята відповідь — значення заголовка <c>X-Cache</c> (лаба 4, 2.6.1).</summary>
+public enum CacheResult
+{
+    /// <summary>Знайдено в Redis, БД не зачіпалась.</summary>
+    Hit,
+
+    /// <summary>У Redis не було — прочитано з БД і покладено в кеш.</summary>
+    Miss,
+
+    /// <summary>Redis недоступний — прочитано прямо з БД, у кеш нічого не записано (fallback, ADR 0043).</summary>
+    Bypass
+}
+
+public record PollResultsRead(PollResultsResponse Response, CacheResult Cache);
