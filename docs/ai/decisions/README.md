@@ -38,6 +38,9 @@ if a decision changes, add a new ADR and set the old one's status to `Superseded
 | [0042](0042-x-cache-header-and-cache-logs.md) | Lab 4: `X-Cache: HIT \| MISS` on `GET /results`, captured in the HAProxy log (`{HIT}`); cache operations logged at Debug, switched by `CACHE_LOG_LEVEL` | Accepted |
 | [0043](0043-redis-down-fallback-to-db.md) | Lab 4: Redis down → results from PostgreSQL with `X-Cache: BYPASS` (200, ~70 ms instead of 503 after 5 s); fail-fast client (`BacklogPolicy.FailFast`, 1 s timeouts); Redis without persistence (`--save ""`) | Accepted (supersedes 0027) |
 | [0044](0044-single-flight-against-cache-stampede.md) | Lab 4: single-flight per instance against Cache Stampede — concurrent misses for one (poll, generation) share one DB load in its own scope; not for BYPASS; 6.7–14.4 → ≈ 2 DB loads per invalidation | Accepted |
+| [0045](0045-load-test-environment.md) | Lab 5: k6 `grafana/k6:1.3.0` in Docker inside `app-network` (targets `lb:8080`), every component pinned to its own cores (`cpuset` + limits), k6 on cores 16–23; overlay `load-tests/docker-compose.loadtest.yml` | Accepted |
+| [0046](0046-results-cache-switch.md) | Lab 5: `ResultsCache:Enabled=false` → results read straight from the DB, `X-Cache: DISABLED`; invalidation keeps running | Accepted |
+| [0047](0047-fresh-stack-per-load-run.md) | Lab 5: every measured run on a fresh stack (`down -v` → `up`, same seed) — the first series drifted (C grew `polls` 50 → 17k, B ≈ 833k hot-row updates) | Accepted |
 
 Template:
 

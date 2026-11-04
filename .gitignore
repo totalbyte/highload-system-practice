@@ -20,3 +20,6 @@ Thumbs.db
 
 # Local compose overrides (e.g. the artificial delay on one instance for lab 3 experiments)
 docker-compose.override.yml
+
+# Load-test results (k6 summaries, env specs) — generated, kept out of Git except the curated ones in README
+load-tests/results/

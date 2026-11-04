@@ -23,6 +23,7 @@ Course materials and team documents are in Ukrainian ("Учасник 1/2" = Par
 | [`docs/lab2/participant-1.md`](docs/lab2/participant-1.md), [`participant-2.md`](docs/lab2/participant-2.md) | Lab 2 task list of the participant you are working with (Ukrainian) |
 | [`docs/lab3/participant-1.md`](docs/lab3/participant-1.md), [`participant-2.md`](docs/lab3/participant-2.md) | Lab 3 task list of the participant you are working with (Ukrainian) |
 | [`docs/lab4/participant-1.md`](docs/lab4/participant-1.md) | Lab 4 task list (Ukrainian) — Participant 1 does lab 4 alone, by agreement |
+| [`docs/lab5/plan.md`](docs/lab5/plan.md), [`load-tests/README.md`](load-tests/README.md) | Lab 5 stages (both participants, one branch) and how to run k6 / the full measurement series |
 | [`docs/ai/project-context.md`](docs/ai/project-context.md) | You need lab requirements, the design-doc summary, the high-load scenario, bottlenecks, defense questions |
 | [`docs/ai/contracts.md`](docs/ai/contracts.md) | You touch the API, DB schema, or code another participant depends on; open questions for Participant 2 |
 | [`docs/ai/runbook.md`](docs/ai/runbook.md) | Running, testing, migrations, seed data, troubleshooting |
@@ -34,7 +35,8 @@ Course materials and team documents are in Ukrainian ("Учасник 1/2" = Par
 | [`docs/lab2-guide.md`](docs/lab2-guide.md) | Lab 2 defense guide (Ukrainian): stateless concepts, audit, removed in-memory state, how to run the lab 2 demos after lab 3, step-by-step defense script, Q&A |
 | [`docs/lab3-guide.md`](docs/lab3-guide.md) | Lab 3 defense guide (Ukrainian): one-minute cheat sheet, step-by-step defense script for the 4 procedure items, Q&A, what to do if a demo breaks |
 | [`docs/lab4-guide.md`](docs/lab4-guide.md) | Lab 4 defense guide (Ukrainian): cheat sheet, defense script for the 4 procedure items, theory (stampede, avalanche, LRU / LFU, expiration vs invalidation) and Q&A, troubleshooting |
-| [`docs/about/lab2.md`](docs/about/lab2.md), [`lab3.md`](docs/about/lab3.md), [`lab4.md`](docs/about/lab4.md) | Pages to show the lecturer at the defense (Ukrainian): requirement → what was done → proof with numbers, diagrams, live-demo commands; no speaker notes |
+| [`docs/lab5-guide.md`](docs/lab5-guide.md) | Lab 5 defense guide (Ukrainian): cheat sheet, defense script for the 4 procedure items (k6 runs, analysis, scaling / cache comparison), theory (saturation point, coordinated omission, GC / JIT) and Q&A |
+| [`docs/about/lab2.md`](docs/about/lab2.md), [`lab3.md`](docs/about/lab3.md), [`lab4.md`](docs/about/lab4.md), [`lab5.md`](docs/about/lab5.md) | Pages to show the lecturer at the defense (Ukrainian): requirement → what was done → proof with numbers, diagrams, live-demo commands; no speaker notes |
 | `docs/labs/*.md`, `docs/*.docx` | Original assignments / design docs (Ukrainian); summarized in `project-context.md` |
 
 ## Stack

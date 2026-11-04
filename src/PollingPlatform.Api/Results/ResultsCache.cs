@@ -21,8 +21,14 @@ public readonly record struct ResultsCacheLookup(CachedPollResults? Entry, long?
 /// покоління, яке вже ніхто не читає. Так закрита гонка «прочитали до коміту, записали після DEL» з лаби 2.
 /// У пам'яті процесу кеш не тримає нічого, лише посилання на спільне з'єднання, тому singleton тут безпечний.
 /// </summary>
-public class ResultsCache(IConnectionMultiplexer redis, ILogger<ResultsCache> logger)
+public class ResultsCache(IConnectionMultiplexer redis, IConfiguration configuration, ILogger<ResultsCache> logger)
 {
+    /// <summary>
+    /// <c>ResultsCache:Enabled=false</c> — читання результатів ідуть прямо в БД (лаба 5, порівняння cache off / on, ADR 0046).
+    /// Інвалідація при цьому працює далі: інакше після повторного ввімкнення кеш віддав би записи, зроблені до вимкнення.
+    /// </summary>
+    public bool Enabled { get; } = configuration.GetValue("ResultsCache:Enabled", true);
+
     /// <summary>
     /// TTL — страховка на випадок втраченої інвалідації, а не механізм актуальності (ADR 0041).
     /// Активне опитування і чернетка можуть змінитися — застарілість обмежена секундами.
