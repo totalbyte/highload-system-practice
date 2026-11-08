@@ -53,6 +53,7 @@ if (builder.Configuration.GetValue("ReadReplica:Enabled", true)
     replicaOptions = replicaBuilder.Options;
 }
 builder.Services.AddSingleton(new ReplicaContextOptions(replicaOptions));
+builder.Services.AddSingleton<StickySessions>();
 builder.Services.AddScoped<ReadDb>();
 
 builder.Services.Configure<SeedOptions>(builder.Configuration.GetSection(SeedOptions.SectionName));
@@ -173,6 +174,7 @@ if (app.Configuration.GetValue("Swagger:Enabled", true))
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseStickyAfterWrite();
 
 app.MapControllers();
 app.MapHealthChecks("/health", new HealthCheckOptions

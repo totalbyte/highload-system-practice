@@ -1,7 +1,7 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-11-08 by Participant 1 (lab 6 stages 1–2 — see `log/2026-11-08-p1-lab6-topology.md`).
+> Last updated: 2026-11-08 by Participant 1 (lab 6 stages 1–3 — see `log/2026-11-08-p1-lab6-topology.md`).
 
 ## Current lab: 6 — Database replication
 
@@ -13,9 +13,9 @@ are not comparable.
 | Stage | Status |
 |---|---|
 | 1. Topology (2.1) | ✅ `postgres` (Primary) + `postgres-replica`, async streaming, `pg_basebackup` on an empty volume, slot `replica_1` (ADR 0049); `scripts/replication-check.py`; verified on a cold start (17 s), smoke, Primary restart, replica outage, `concurrency-checks`. Committed `7ea6f27` |
-| 2. Read/Write Separation, classification (2.2, 2.3) | ✅ `ReadDb.Eventual` for catalog and details, everything else on the Primary, results MISS stays on the Primary, `X-DB-Node`, `READ_REPLICA_ENABLED` (ADR 0050); `scripts/rw-routing-check.py`; all regressions green. Participant 1 commits |
-| 3. Stale Read, Read-After-Write (2.3, 2.4) | ⏳ next; an author may briefly get 404 for a poll just created |
-| 4. Failure scenarios (2.5) | ⏳ until then a stopped replica fails catalog and details reads |
+| 2. Read/Write Separation, classification (2.2, 2.3) | ✅ `ReadDb.Eventual` for catalog and details, everything else on the Primary, results MISS stays on the Primary, `X-DB-Node`, `READ_REPLICA_ENABLED` (ADR 0050); `scripts/rw-routing-check.py`; all regressions green. Committed `f19a6bf` |
+| 3. Stale Read, Read-After-Write (2.3, 2.4) | ✅ Session Sticky in Redis, TTL 5 s, set before the response (ADR 0051); `scripts/stale-read-demo.py`; MISS on the replica measured: 6–11 stale rounds of 60 without artificial lag, 0 on the Primary. Participant 1 commits |
+| 4. Failure scenarios (2.5) | ⏳ next; a stopped replica now fails catalog and details reads with 503 after ≈ 10 s, `/health` checks only the Primary |
 | 5. Single Primary vs Primary + Replica (2.6) | ⏳ |
 | 6. README, guide, lecturer page (§3, §4) | ⏳ |
 
@@ -121,7 +121,7 @@ All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-
 | 3 Horizontal Scaling | ✅ defended; `labs/lab3-summary.md`, `docs/lab3-guide.md`, `docs/about/lab3.md` |
 | 4 Distributed Caching | ✅ defended (per Participant 1, 2026-11-08); `docs/lab4-guide.md`, `docs/about/lab4.md`; `labs/lab4-summary.md` was never written |
 | 5 Load Testing | ✅ defended (per Participant 1, 2026-11-08); `docs/lab5-guide.md`, `docs/about/lab5.md`; `labs/lab5-summary.md` was never written |
-| 6 Database Replication | 🟡 in progress (Participant 1 alone), branch `lab6/replication`: stages 1–2 of 6 done |
+| 6 Database Replication | 🟡 in progress (Participant 1 alone), branch `lab6/replication`: stages 1–3 of 6 done |
 
 ## Repository state
 
@@ -146,6 +146,8 @@ All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-
 
 ## Next steps
 
-- **Lab 6 (Participant 1):** stage 3 — controlled lag, Stale Read demo, Session Sticky in Redis, see
+- **Lab 6 (Participant 1):** stage 4 — failure scenarios: `/health`, Primary Fallback, Read-Only 503, see
   [`docs/lab6/plan.md`](../lab6/plan.md).
+- Known bug outside lab 6: `POST /api/polls` with a valid token and no `options` answers 500 instead of 422 (NullReferenceException in
+  `PollValidators.cs:17`, in the code since lab 1). Not fixed.
 - Record what the lecturer asked at the lab 2–5 defenses in the lab summaries if remembered.

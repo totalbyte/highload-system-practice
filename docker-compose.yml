@@ -12,6 +12,8 @@ x-backend: &backend
     ConnectionStrings__PostgresReplica: "Host=postgres-replica;Port=5432;Database=${POSTGRES_DB:-polling};Username=${POSTGRES_USER:-polling};Password=${POSTGRES_PASSWORD:-polling};Gss Encryption Mode=Disable;Maximum Pool Size=${DB_MAX_POOL_SIZE:-30}"
     # false — усі читання на Primary: конфігурація Single Primary для порівняння (лаба 6, 2.6).
     ReadReplica__Enabled: ${READ_REPLICA_ENABLED:-true}
+    # Скільки секунд після запису користувач читає з Primary (Read-After-Write, ADR 0051); 0 — вимкнено, для демо.
+    ReadAfterWrite__StickyTtlSeconds: ${STICKY_TTL_SECONDS:-5}
     ConnectionStrings__Redis: "redis:6379,abortConnect=false"
     Jwt__Secret: ${JWT_SECRET:-local-dev-secret-change-me-0123456789abcdef}
     Jwt__LifetimeMinutes: ${JWT_LIFETIME_MINUTES:-60}

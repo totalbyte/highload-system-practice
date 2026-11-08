@@ -1,5 +1,5 @@
 # 0050. Lab 6: read/write separation in the application, Primary by default
-**Status:** Accepted · **Date:** 2026-11-08 · **Author:** Participant 1
+**Status:** Accepted, amended by 0051 (`ReadDb.Eventual` → `ForEventualReadAsync(userId)`; cache poisoning measured there) · **Date:** 2026-11-08 · **Author:** Participant 1
 
 ## Context
 Lab 6 (2.2, 2.3) needs mutations on the Primary and eventually consistent reads on the Replica, either in the application

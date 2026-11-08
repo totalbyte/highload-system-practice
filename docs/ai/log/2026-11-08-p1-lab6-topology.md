@@ -1,8 +1,21 @@
-# 2026-11-08 — Participant 1 — lab 6: plan, stage 1 (topology), stage 2 (read/write separation)
-**Lab:** 6 · **Commits:** `7ea6f27` (stage 1); stage 2 not committed yet (branch `lab6/replication`; Participant 1 commits each stage personally)
+# 2026-11-08 — Participant 1 — lab 6: plan, stages 1–3 (topology, read/write separation, read-after-write)
+**Lab:** 6 · **Commits:** `7ea6f27` (stage 1), `f19a6bf` (stage 2); stage 3 not committed yet (branch `lab6/replication`; Participant 1 commits each stage personally)
 ## Goal
-Read the lab 6 assignment, agree on a plan (Participant 1 does this lab alone), implement the replication topology and
-read/write separation.
+Read the lab 6 assignment, agree on a plan (Participant 1 does this lab alone), implement the replication topology,
+read/write separation and Read-After-Write.
+## Done: stage 3
+- `Data/StickySessions.cs` (mark in Redis, middleware `UseStickyAfterWrite`), `ReadDb.ForEventualReadAsync(userId)` instead of
+  `Eventual`, compose `STICKY_TTL_SECONDS`. `scripts/stale-read-demo.py`. Docs: [ADR 0051](../decisions/0051-read-after-write-sticky-routing.md),
+  ADR 0050 amended, contracts, runbook, backend `CLAUDE.md`, plan, status.
+- Experiment, reverted: results MISS on the replica. `cache-race-check.py`: 11 and 6 of 60 stale rounds without artificial lag, 60 of
+  60 at 200 ms; real code 0 of 60 without lag, at 200 ms and at 1 s.
+- Verified on the default stack: the demo passes 2 of 2 runs and restores its state. Mark only after a 2xx write. Under a 3 s lag:
+  `concurrency-checks` passed, `cache-race-check` 0 of 60, `cross-instance.sh` 7 of 8 (step 5 is anonymous, its stale 404 is correct).
+  No lag: `cross-instance.sh` 8/8, `rw-routing-check`, `replication-check`, `cache-stampede-check`, `redis-outage-check`,
+  `kill-test`, smoke, counters 0 on both nodes. Redis stopped: authenticated → primary, anonymous → replica, write 201 in 25 ms.
+- Problems: the demo crashed reading HAProxy's HTML 503 as JSON while the backends were recreated (fixed). Found, not fixed: `POST
+  /api/polls` with a valid token and no `options` gives 500 instead of 422 (`PollValidators.cs:17`, since lab 1).
+- Not checked: stage 3 on a cold start; the web UI in a browser.
 ## Done: stage 2
 - `Data/ReadDb.cs` (`Eventual`, the only way to the replica), `Data/DbNodeTracking.cs` (EF connection interceptor, `X-DB-Node`),
   `Program.cs`; catalog and details moved in `PollService`, results with the cache off in `ResultsService`; compose

@@ -44,7 +44,8 @@ public class PollService(AppDbContext db, ReadDb readDb, ResultsCache resultsCac
 
     public async Task<PagedResponse<PollSummaryResponse>> ListAsync(PollListQuery query, long? currentUserId, CancellationToken ct)
     {
-        var polls = readDb.Eventual.Polls.AsNoTracking()
+        var source = await readDb.ForEventualReadAsync(currentUserId);
+        var polls = source.Polls.AsNoTracking()
             .Where(p => (p.IsPublic && p.Status != PollStatus.Draft) || p.CreatorId == currentUserId);
 
         if (query.Status is { } status)
@@ -65,8 +66,8 @@ public class PollService(AppDbContext db, ReadDb readDb, ResultsCache resultsCac
         return new PagedResponse<PollSummaryResponse>(items, query.Page, query.PageSize, totalCount);
     }
 
-    public Task<PollDetailsResponse> GetAsync(long pollId, long? currentUserId, CancellationToken ct) =>
-        LoadDetailsAsync(readDb.Eventual, pollId, currentUserId, ct);
+    public async Task<PollDetailsResponse> GetAsync(long pollId, long? currentUserId, CancellationToken ct) =>
+        await LoadDetailsAsync(await readDb.ForEventualReadAsync(currentUserId), pollId, currentUserId, ct);
 
     private static async Task<PollDetailsResponse> LoadDetailsAsync(
         AppDbContext source, long pollId, long? currentUserId, CancellationToken ct)

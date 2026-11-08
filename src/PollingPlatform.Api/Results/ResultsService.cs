@@ -19,7 +19,7 @@ public class ResultsService(
         // можна читати з репліки (ADR 0050): відповідь застаріє на затримку реплікації, але нікуди не збережеться.
         if (!cache.Enabled)
         {
-            var direct = await LoadAsync(readDb.Eventual, pollId, timeProvider, ct);
+            var direct = await LoadAsync(await readDb.ForEventualReadAsync(currentUserId), pollId, timeProvider, ct);
             if (direct.Response.Status == PollStatus.Draft && direct.CreatorId != currentUserId)
                 throw new PollNotFoundException(pollId);
             return new PollResultsRead(direct.Response, CacheResult.Disabled);
