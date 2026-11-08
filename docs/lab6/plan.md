@@ -12,13 +12,14 @@
 - [`scripts/replication-check.py`](../../scripts/replication-check.py): топологія, міграції й сід на обох вузлах,
   INSERT / UPDATE / DELETE через API доходять до Replica, запис у Replica відхиляється. ADR 0049.
 
-## Етап 2. Read/Write Separation і класифікація (2.2, 2.3) — ⏳
+## Етап 2. Read/Write Separation і класифікація (2.2, 2.3) — ✅
 
-- Два пули й контексти: Primary за замовчуванням, на Replica лише явно вибрані читання; заголовок `X-DB-Node`.
+- Два пули: Primary за замовчуванням, на Replica лише читання через `ReadDb.Eventual`; заголовок `X-DB-Node`; перемикач
+  `READ_REPLICA_ENABLED` для конфігурації Single Primary. ADR 0050.
 - Replica: каталог, деталі опитування, результати при вимкненому кеші.
 - Primary: логін, реєстрація, `/me`, «мій голос», перевірки перед записом, відповідь після запису, промах кешу результатів.
 - Промах кешу результатів читається з Primary: інакше старий агрегат потрапить у кеш під новим поколінням (ADR 0041).
-- Перевірка: smoke, `concurrency-checks.py`, `cache-race-check.py`.
+- Перевірка: [`scripts/rw-routing-check.py`](../../scripts/rw-routing-check.py) і всі регресії кешу та голосування.
 
 ## Етап 3. Stale Read і Read-After-Write (2.3, 2.4) — ⏳
 

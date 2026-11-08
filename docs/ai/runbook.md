@@ -102,6 +102,14 @@ Expected (2026-11-08): one row `streaming | async`, slot `replica_1` active, `re
 empty when nothing was written recently). After `docker compose restart postgres` the replica reconnects in ≈ 2 s; after
 `stop` / `start` of the replica it catches up through the slot without a new base backup.
 
+**Read/write routing (ADR 0050):** `python scripts/rw-routing-check.py [--pause] [--reads 300]` checks every operation against
+its expected node by `X-DB-Node`, then compares PostgreSQL's own transaction counters during catalog reads (measured: replica
+≈ 4 per read, primary only background; the script waits 11 s because idle sessions publish statistics with a delay of up to 10 s). `curl -si localhost:8080/api/polls/1 | grep -i x-db-node` → `replica`; results: MISS →
+`primary`, HIT → no header. All reads on the Primary (Single Primary): `READ_REPLICA_ENABLED=false docker compose up -d
+backend-1 backend-2`; the same command without the variable switches back. Until stage 4 a stopped replica fails catalog
+and details reads. Until stage 3 an author may briefly get 404 for a poll just created. `dotnet run` has no replica
+connection string and uses only the Primary.
+
 To verify a cold start without wiping the local data, use a separate project: `COMPOSE_PROJECT_NAME=polling-lab6 docker
 compose up -d --build` (the scripts call `docker compose`, so they follow the variable); remove it with the same variable
 and `down -v`. The default project's containers must be stopped first: the host ports are the same.

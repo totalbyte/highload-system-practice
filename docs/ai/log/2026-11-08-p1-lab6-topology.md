@@ -1,8 +1,24 @@
-# 2026-11-08 — Participant 1 — lab 6: plan and stage 1, Primary / Replica topology
-**Lab:** 6 · **Commits:** not committed (branch `lab6/replication`; Participant 1 commits each stage personally)
+# 2026-11-08 — Participant 1 — lab 6: plan, stage 1 (topology), stage 2 (read/write separation)
+**Lab:** 6 · **Commits:** `7ea6f27` (stage 1); stage 2 not committed yet (branch `lab6/replication`; Participant 1 commits each stage personally)
 ## Goal
-Read the lab 6 assignment, agree on a plan (Participant 1 does this lab alone), implement stage 1: the replication topology.
-## Done
+Read the lab 6 assignment, agree on a plan (Participant 1 does this lab alone), implement the replication topology and
+read/write separation.
+## Done: stage 2
+- `Data/ReadDb.cs` (`Eventual`, the only way to the replica), `Data/DbNodeTracking.cs` (EF connection interceptor, `X-DB-Node`),
+  `Program.cs`; catalog and details moved in `PollService`, results with the cache off in `ResultsService`; compose
+  `ConnectionStrings__PostgresReplica`, `READ_REPLICA_ENABLED`.
+- `scripts/rw-routing-check.py`. Docs: [ADR 0050](../decisions/0050-read-write-separation.md), contracts, runbook, backend
+  `CLAUDE.md`, plan, status.
+- `rw-routing-check.py` was fixed after Participant 1's own run failed with `ConnectionAbortedError`: `--pause` left the
+  keep-alive connection idle past HAProxy's 10 s `timeout http-request` (reproduced with a 15 s pause; the connection is now
+  closed after a pause). The counter check was timing-dependent too: idle sessions publish statistics up to 10 s late (measured),
+  so the wait went from 1.5 s to 11 s.
+- Verified on the default stack: routing check passes 3 of 3 runs (≈ +1206 replica / ≈ +30 primary transactions for 300 catalog
+  reads), also with a 15 s pause;
+  `replication-check`, `concurrency-checks`, `cache-race-check` 0 of 60, `cache-stampede-check` 2.1 loads, `redis-outage-check`,
+  `cache-demo`, `kill-test`, `cross-instance.sh` 8/8, counter mismatches 0; switches: `READ_REPLICA_ENABLED=false` → `primary`,
+  `RESULTS_CACHE_ENABLED=false` → `DISABLED` + `replica`.
+## Done: stage 1
 - `docs/labs/Lab6 - Database Replication.md` (assignment moved from the `.docx`), `docs/lab6/plan.md` (6 stages).
 - `postgres/primary-init.sh` (role `replicator`, slot `replica_1`, `pg_hba` line), `postgres/replica-entrypoint.sh`
   (`pg_basebackup` on an empty volume), `docker-compose.yml` (WAL settings on `postgres`, new `postgres-replica`, volume

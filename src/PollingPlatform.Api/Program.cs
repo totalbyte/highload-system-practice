@@ -27,13 +27,33 @@ var builder = WebApplication.CreateBuilder(args);
 var postgresConnectionString = builder.Configuration.GetConnectionString("Postgres")
     ?? throw new InvalidOperationException("Connection string 'Postgres' is not configured.");
 
-builder.Services.AddDbContext<AppDbContext>(options => options
+// Accessor лише читає статичний AsyncLocal, тому один екземпляр можна створити ще до побудови DI.
+var httpContextAccessor = new HttpContextAccessor();
+builder.Services.AddSingleton<IHttpContextAccessor>(httpContextAccessor);
+
+void ConfigureDatabase(DbContextOptionsBuilder options, string connectionString, DbNodes node) => options
     .UseNpgsql(
-        postgresConnectionString,
+        connectionString,
         // Повтор при транзієнтних збоях (напр. «мертві» з'єднання в пулі після рестарту Postgres).
         // Наслідок: явні транзакції треба загортати в db.Database.CreateExecutionStrategy().ExecuteAsync(...).
         npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(2), errorCodesToAdd: null))
-    .UseSnakeCaseNamingConvention());
+    .UseSnakeCaseNamingConvention()
+    .AddInterceptors(new DbNodeInterceptor(httpContextAccessor, node));
+
+builder.Services.AddDbContext<AppDbContext>(options => ConfigureDatabase(options, postgresConnectionString, DbNodes.Primary));
+
+// Репліка для читань, що допускають відставання (лаба 6, ADR 0050). Без рядка підключення або з Enabled=false усі
+// читання лишаються на Primary — це конфігурація Single Primary для порівняння в 2.6.
+DbContextOptions<AppDbContext>? replicaOptions = null;
+if (builder.Configuration.GetValue("ReadReplica:Enabled", true)
+    && builder.Configuration.GetConnectionString("PostgresReplica") is { Length: > 0 } replicaConnectionString)
+{
+    var replicaBuilder = new DbContextOptionsBuilder<AppDbContext>();
+    ConfigureDatabase(replicaBuilder, replicaConnectionString, DbNodes.Replica);
+    replicaOptions = replicaBuilder.Options;
+}
+builder.Services.AddSingleton(new ReplicaContextOptions(replicaOptions));
+builder.Services.AddScoped<ReadDb>();
 
 builder.Services.Configure<SeedOptions>(builder.Configuration.GetSection(SeedOptions.SectionName));
 builder.Services.AddScoped<DataSeeder>();
@@ -142,6 +162,7 @@ var app = builder.Build();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseInstanceIdHeader();
+app.UseDbNodeHeader();
 app.UseArtificialDelay();
 
 if (app.Configuration.GetValue("Swagger:Enabled", true))

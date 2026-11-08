@@ -10,14 +10,16 @@ namespace PollingPlatform.Api.Results;
 /// Рахуються з денормалізованого <c>options.vote_count</c>, а не COUNT(*) по <c>votes</c>,
 /// і кешуються, щоб пікове читання не впиралося в БД.
 /// </summary>
-public class ResultsService(AppDbContext db, ResultsCache cache, ResultsSingleFlight singleFlight, TimeProvider timeProvider)
+public class ResultsService(
+    AppDbContext db, ReadDb readDb, ResultsCache cache, ResultsSingleFlight singleFlight, TimeProvider timeProvider)
 {
     public async Task<PollResultsRead> GetAsync(long pollId, long? currentUserId, CancellationToken ct)
     {
-        // Кеш вимкнено для порівняльного прогону лаби 5 (ADR 0046): кожне читання — запит до БД.
+        // Кеш вимкнено для порівняльного прогону лаби 5 (ADR 0046): кожне читання — запит до БД. Лише тут результати
+        // можна читати з репліки (ADR 0050): відповідь застаріє на затримку реплікації, але нікуди не збережеться.
         if (!cache.Enabled)
         {
-            var direct = await LoadAsync(db, pollId, timeProvider, ct);
+            var direct = await LoadAsync(readDb.Eventual, pollId, timeProvider, ct);
             if (direct.Response.Status == PollStatus.Draft && direct.CreatorId != currentUserId)
                 throw new PollNotFoundException(pollId);
             return new PollResultsRead(direct.Response, CacheResult.Disabled);
@@ -28,8 +30,9 @@ public class ResultsService(AppDbContext db, ResultsCache cache, ResultsSingleFl
         var (entry, source) = lookup switch
         {
             { Entry: { } cached } => (cached, CacheResult.Hit),
-            // Промах: одночасні промахи інстансу по цьому поколінню чекають одне читання з БД (ADR 0044) — воно ж
-            // записує агрегат під поколінням, прочитаним до запиту в БД (ADR 0041).
+            // Промах: одночасні промахи інстансу по цьому поколінню чекають одне читання з Primary (ADR 0044) — воно ж
+            // записує агрегат під поколінням, прочитаним до запиту в БД (ADR 0041). Не з репліки (ADR 0050): вона ще може
+            // не мати голосу, що підняв покоління, і старий агрегат потрапив би в спільний кеш під новим поколінням.
             { Generation: { } generation } => (await singleFlight.LoadAsync(pollId, generation, ct), CacheResult.Miss),
             // Redis недоступний (ADR 0043): читаємо з БД і нічого не пишемо — без покоління запис повернув би гонку з
             // лаби 2. І не об'єднуємо: без покоління не видно, чи почалося спільне читання вже після мутації.

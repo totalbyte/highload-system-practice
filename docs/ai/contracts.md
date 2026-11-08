@@ -26,6 +26,9 @@ Update this file whenever the API, the schema, or code another participant depen
   are reachable only inside `app-network` as `backend-N:8080`. HAProxy logs every request to stdout (`docker compose
   logs lb`) with the backend/server name, status and timers (`%s`, `%ST`, `%Tr`, `%Ta`), and since lab 4 the captured
   `X-Cache` response header in braces — `{HIT}` / `{MISS}` on results reads, `{}` elsewhere (ADR 0042).
+- Since lab 6 (ADR 0050) responses carry `X-DB-Node: primary | replica | primary,replica`: the nodes the request really
+  connected to; absent when no database was touched (results HIT). Catalog and details are eventually consistent (replica);
+  everything else reads the Primary.
 - Load balancer behaviour other code relies on (ADR 0033, 0034): `/health` is the readiness check (200 = in the pool,
   503 = out; it must stay DB-only and never check Redis, ADR 0021); a node is also taken out on the first connection
   error; failed connects are retried on another node for any method, in-flight failures only for GET. HAProxy never

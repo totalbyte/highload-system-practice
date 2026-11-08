@@ -16,6 +16,8 @@ Data/
   Configurations/*.cs       Fluent API: tables, indexes, check constraints, FK/cascade
   Migrations/               EF migrations (InitialSchema, ...)
   DatabaseInitializer.cs    MigrateAsync + seed on startup
+  ReadDb.cs                 lab 6: ReadDb.Eventual — the only way to the replica (ADR 0050)
+  DbNodeTracking.cs         lab 6: EF connection interceptor and the X-DB-Node header
   Seeding/                  DataSeeder (deterministic, under a Postgres advisory lock), SeedOptions
 Auth/                       AuthController (/api/auth/register, /login, /me), AuthService, JwtTokenService,
                             JwtOptions, AuthModels (DTOs + validators), ClaimsPrincipalExtensions
@@ -78,4 +80,7 @@ Common/
   calls, and don't make invalidation throw. The client is fail-fast (`Program.cs`) — don't put the backlog back.
 - Misses go through `ResultsSingleFlight` keyed by (poll, generation) — never key it by poll alone and never use it for
   BYPASS: either would let a read that started after a mutation's response join an older DB load (ADR 0044).
+- Inject `AppDbContext` (the Primary) by default. Use `ReadDb.Eventual` only for a read that may lag and is not stored
+  anywhere: never for a check before a write, a response after a write, authentication, or a results MISS / BYPASS, which
+  would put a stale aggregate into the shared cache (ADR 0050).
 - `/health` must not go through the DbContext / EF retry strategy and must answer within 2 s (ADR 0019).

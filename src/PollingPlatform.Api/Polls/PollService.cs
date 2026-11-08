@@ -11,8 +11,10 @@ namespace PollingPlatform.Api.Polls;
 /// Життєвий цикл опитування: створення, перегляд, публікація, закриття, видалення.
 /// Правила видимості: чернетку бачить лише автор; непублічні (IsPublic = false) опитування
 /// не показуються в загальному списку, але доступні за прямим id.
+/// Каталог і деталі читаються через <see cref="ReadDb"/> (eventual consistency, ADR 0050); усе, що приймає рішення перед
+/// записом або повертає результат запису, — лише з Primary.
 /// </summary>
-public class PollService(AppDbContext db, ResultsCache resultsCache, TimeProvider timeProvider)
+public class PollService(AppDbContext db, ReadDb readDb, ResultsCache resultsCache, TimeProvider timeProvider)
 {
     public async Task<PollDetailsResponse> CreateAsync(long userId, CreatePollRequest request, CancellationToken ct)
     {
@@ -37,12 +39,12 @@ public class PollService(AppDbContext db, ResultsCache resultsCache, TimeProvide
         db.Polls.Add(poll);
         await db.SaveChangesAsync(ct);
 
-        return await GetAsync(poll.Id, userId, ct);
+        return await LoadDetailsAsync(db, poll.Id, userId, ct);
     }
 
     public async Task<PagedResponse<PollSummaryResponse>> ListAsync(PollListQuery query, long? currentUserId, CancellationToken ct)
     {
-        var polls = db.Polls.AsNoTracking()
+        var polls = readDb.Eventual.Polls.AsNoTracking()
             .Where(p => (p.IsPublic && p.Status != PollStatus.Draft) || p.CreatorId == currentUserId);
 
         if (query.Status is { } status)
@@ -63,9 +65,13 @@ public class PollService(AppDbContext db, ResultsCache resultsCache, TimeProvide
         return new PagedResponse<PollSummaryResponse>(items, query.Page, query.PageSize, totalCount);
     }
 
-    public async Task<PollDetailsResponse> GetAsync(long pollId, long? currentUserId, CancellationToken ct)
+    public Task<PollDetailsResponse> GetAsync(long pollId, long? currentUserId, CancellationToken ct) =>
+        LoadDetailsAsync(readDb.Eventual, pollId, currentUserId, ct);
+
+    private static async Task<PollDetailsResponse> LoadDetailsAsync(
+        AppDbContext source, long pollId, long? currentUserId, CancellationToken ct)
     {
-        var poll = await db.Polls.AsNoTracking()
+        var poll = await source.Polls.AsNoTracking()
             .Where(p => p.Id == pollId)
             .Select(p => new PollDetailsResponse(
                 p.Id, p.Title, p.Description, p.Status, p.IsPublic, p.AllowVoteChange,
@@ -94,7 +100,7 @@ public class PollService(AppDbContext db, ResultsCache resultsCache, TimeProvide
             s => s.SetProperty(p => p.StartsAt, p => p.StartsAt ?? now));
         await resultsCache.InvalidateAsync(pollId);
 
-        return await GetAsync(pollId, userId, ct);
+        return await LoadDetailsAsync(db, pollId, userId, ct);
     }
 
     /// <summary>Active → Closed: дострокове закриття, лише автор.</summary>
@@ -108,7 +114,7 @@ public class PollService(AppDbContext db, ResultsCache resultsCache, TimeProvide
         // Кешована відповідь містить статус опитування, тож після закриття вона застаріла.
         await resultsCache.InvalidateAsync(pollId);
 
-        return await GetAsync(pollId, userId, ct);
+        return await LoadDetailsAsync(db, pollId, userId, ct);
     }
 
     /// <summary>Видалення дозволене лише для чернеток — у них ще немає голосів.</summary>

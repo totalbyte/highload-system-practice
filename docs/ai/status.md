@@ -1,7 +1,7 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-11-08 by Participant 1 (lab 6 stage 1 — see `log/2026-11-08-p1-lab6-topology.md`).
+> Last updated: 2026-11-08 by Participant 1 (lab 6 stages 1–2 — see `log/2026-11-08-p1-lab6-topology.md`).
 
 ## Current lab: 6 — Database replication
 
@@ -12,10 +12,10 @@ are not comparable.
 
 | Stage | Status |
 |---|---|
-| 1. Topology (2.1) | ✅ `postgres` (Primary) + `postgres-replica`, async streaming, `pg_basebackup` on an empty volume, slot `replica_1` (ADR 0049); `scripts/replication-check.py`; verified on a cold start (17 s), smoke, Primary restart, replica outage, `concurrency-checks`. Participant 1 commits |
-| 2. Read/Write Separation, classification (2.2, 2.3) | ⏳ next; the application still uses only the Primary |
-| 3. Stale Read, Read-After-Write (2.3, 2.4) | ⏳ |
-| 4. Failure scenarios (2.5) | ⏳ |
+| 1. Topology (2.1) | ✅ `postgres` (Primary) + `postgres-replica`, async streaming, `pg_basebackup` on an empty volume, slot `replica_1` (ADR 0049); `scripts/replication-check.py`; verified on a cold start (17 s), smoke, Primary restart, replica outage, `concurrency-checks`. Committed `7ea6f27` |
+| 2. Read/Write Separation, classification (2.2, 2.3) | ✅ `ReadDb.Eventual` for catalog and details, everything else on the Primary, results MISS stays on the Primary, `X-DB-Node`, `READ_REPLICA_ENABLED` (ADR 0050); `scripts/rw-routing-check.py`; all regressions green. Participant 1 commits |
+| 3. Stale Read, Read-After-Write (2.3, 2.4) | ⏳ next; an author may briefly get 404 for a poll just created |
+| 4. Failure scenarios (2.5) | ⏳ until then a stopped replica fails catalog and details reads |
 | 5. Single Primary vs Primary + Replica (2.6) | ⏳ |
 | 6. README, guide, lecturer page (§3, §4) | ⏳ |
 
@@ -121,7 +121,7 @@ All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-
 | 3 Horizontal Scaling | ✅ defended; `labs/lab3-summary.md`, `docs/lab3-guide.md`, `docs/about/lab3.md` |
 | 4 Distributed Caching | ✅ defended (per Participant 1, 2026-11-08); `docs/lab4-guide.md`, `docs/about/lab4.md`; `labs/lab4-summary.md` was never written |
 | 5 Load Testing | ✅ defended (per Participant 1, 2026-11-08); `docs/lab5-guide.md`, `docs/about/lab5.md`; `labs/lab5-summary.md` was never written |
-| 6 Database Replication | 🟡 in progress (Participant 1 alone), branch `lab6/replication`: stage 1 of 6 done |
+| 6 Database Replication | 🟡 in progress (Participant 1 alone), branch `lab6/replication`: stages 1–2 of 6 done |
 
 ## Repository state
 
@@ -146,6 +146,6 @@ All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-
 
 ## Next steps
 
-- **Lab 6 (Participant 1):** stage 2 — read/write separation (two pools and contexts, Primary by default, `X-DB-Node`,
-  classification; a results-cache miss stays on the Primary), see [`docs/lab6/plan.md`](../lab6/plan.md).
+- **Lab 6 (Participant 1):** stage 3 — controlled lag, Stale Read demo, Session Sticky in Redis, see
+  [`docs/lab6/plan.md`](../lab6/plan.md).
 - Record what the lecturer asked at the lab 2–5 defenses in the lab summaries if remembered.

@@ -53,3 +53,4 @@ Template:
 ```
 | [0048](0048-web-ui.md) | Web UI: React + Vite + TS in an nginx container behind HAProxy (same origin, no CORS); favorites in localStorage; `GET /api/polls/{id}/vote` | Accepted |
 | [0049](0049-primary-replica-topology.md) | Lab 6: `postgres` (Primary) + `postgres-replica`, asynchronous physical streaming, `pg_basebackup` on an empty volume, slot `replica_1` with a 1 GB WAL limit, no automatic failover | Accepted |
+| [0050](0050-read-write-separation.md) | Lab 6: read/write separation in the application: Primary by default, `ReadDb.Eventual` for catalog and details; results MISS stays on the Primary (no stale aggregate in the shared cache); `X-DB-Node` from an EF connection interceptor; `READ_REPLICA_ENABLED` switch | Accepted |
