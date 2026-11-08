@@ -187,6 +187,10 @@ def primary_loss(token):
         check(status == 200, f"results: HTTP {status}, X-Cache={headers.get('X-Cache')}, X-DB-Node={headers.get('X-DB-Node', '-')} in {took:.0f} ms")
 
         print("  -- writes and strictly consistent reads")
+        # Прогрів на обох backend-ах: перша така відмова на інстансі повільніша (до ~470 мс), і поріг FAST_MS спрацьовував би
+        # не через систему, а через холодний шлях коду.
+        for _ in range(4):
+            new_poll(token, "Must not be written")
         for label, (status, body, _, took) in (
             ("create poll", new_poll(token, "Must not be written")),
             ("vote", call("POST", "/api/polls/1/vote", token, {"optionId": 1})),

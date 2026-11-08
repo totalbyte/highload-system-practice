@@ -1,8 +1,14 @@
-# 2026-11-08 — Participant 1 — lab 6: plan, stages 1–4 (topology, read/write separation, read-after-write, failures)
-**Lab:** 6 · **Commits:** `7ea6f27` (stage 1), `f19a6bf` (stage 2), `31d3353` (stage 3); stage 4 not committed yet (branch `lab6/replication`; Participant 1 commits each stage personally)
+# 2026-11-08 — Participant 1 — lab 6: plan, stages 1–5 (topology, read/write separation, read-after-write, failures, load comparison)
+**Lab:** 6 · **Commits:** `7ea6f27` (stage 1), `f19a6bf` (stage 2), `31d3353` (stage 3), `3e68213` (stage 4); stage 5 not committed yet (branch `lab6/replication`; Participant 1 commits each stage personally)
 ## Goal
 Read the lab 6 assignment, agree on a plan (Participant 1 does this lab alone), implement the replication topology,
-read/write separation, Read-After-Write and failure behaviour.
+read/write separation, Read-After-Write, failure behaviour and the load comparison.
+## Done: stage 5
+- `load-tests/docker-compose.loadtest-8cpu.yml`, `series-lab6.sh`, replica metrics in `run.sh` / `report.py` / `env-spec.sh`, warm-up in `db-failure-check.py`. Report [`docs/lab6/load-comparison.md`](../../lab6/load-comparison.md), [ADR 0053](../decisions/0053-replica-load-comparison.md).
+- Problems: (1) the series stopped at run 5: HAProxy shows `UP` right after DNS, before the first check, so added `wait_ready`. (2) **A stale replication slot in the Single Primary stand** slowed writes 1.6 times and inflated the first mixed results (reads +40 % RPS, writes 2.1 times; real: no RPS gain, writes +40 %). Scenario B
+  contradicting expectations exposed it; repeats, then a run without the slot, confirmed it; affected runs re-measured, old files in `load-tests/results/with-stale-slot/`. (3) A file rename ate a date prefix (fixed; no data lost). (4) `down -v` was run on the default stack for the pilot without warning first; disclosed to Participant 1.
+- Open: why lag jumps to seconds above saturation (2 diagnostic runs: 0 conflicts, no jump). Participant 1 decided: TTL stays 5 s, recorded as a limit.
+- Verified: 17 runs at 0 % errors, counters 0, no node state changes; `db-failure-check` passed with the warm-up; default stack restored without limits. The final `series-lab6.sh` tag list was edited after the runs and not re-run as a whole.
 ## Done: stage 4
 - `Data/DbNodeMonitor.cs` (monitor, `DbNodeGuardInterceptor`, `DbNodesHealthCheck`), `ReadDb.EventualAsync` / `PrimaryPreferredAsync` with fallback,
   `ReadOnlyModeException`, single-flight caches only Primary data, `PostgresHealthCheck.cs` removed, `haproxy.cfg` comment.

@@ -1,7 +1,7 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-11-08 by Participant 1 (lab 6 stages 1–4 — see `log/2026-11-08-p1-lab6-topology.md`).
+> Last updated: 2026-11-08 by Participant 1 (lab 6 stages 1–5 — see `log/2026-11-08-p1-lab6-topology.md`).
 
 ## Current lab: 6 — Database replication
 
@@ -15,9 +15,9 @@ are not comparable.
 | 1. Topology (2.1) | ✅ `postgres` (Primary) + `postgres-replica`, async streaming, `pg_basebackup` on an empty volume, slot `replica_1` (ADR 0049); `scripts/replication-check.py`; verified on a cold start (17 s), smoke, Primary restart, replica outage, `concurrency-checks`. Committed `7ea6f27` |
 | 2. Read/Write Separation, classification (2.2, 2.3) | ✅ `ReadDb.Eventual` for catalog and details, everything else on the Primary, results MISS stays on the Primary, `X-DB-Node`, `READ_REPLICA_ENABLED` (ADR 0050); `scripts/rw-routing-check.py`; all regressions green. Committed `f19a6bf` |
 | 3. Stale Read, Read-After-Write (2.3, 2.4) | ✅ Session Sticky in Redis, TTL 5 s, set before the response (ADR 0051); `scripts/stale-read-demo.py`; MISS on the replica measured: 6–11 stale rounds of 60 without artificial lag, 0 on the Primary. Committed `31d3353` |
-| 4. Failure scenarios (2.5) | ✅ `DbNodeMonitor`, Primary Fallback, 503 `Read-Only Mode`, `/health` 503 only when both are down (ADR 0052); `scripts/db-failure-check.py`: 0 reader errors in both failures, writes refused in milliseconds; no false failover under `load.py`. Participant 1 commits |
-| 5. Single Primary vs Primary + Replica (2.6) | ⏳ next |
-| 6. README, guide, lecturer page (§3, §4) | ⏳ |
+| 4. Failure scenarios (2.5) | ✅ `DbNodeMonitor`, Primary Fallback, 503 `Read-Only Mode`, `/health` 503 only when both are down (ADR 0052); `scripts/db-failure-check.py`: 0 reader errors in both failures, writes refused in milliseconds; no false failover under `load.py`. Committed `3e68213` |
+| 5. Single Primary vs Primary + Replica (2.6) | ✅ `docs/lab6/load-comparison.md`, ADR 0053, 17 runs on 8 threads, 0 % errors: no throughput gain, read p95 about half under writes up to saturation, writes −25 % at 10 VU; lag up to 29.5 s above saturation, TTL stays 5 s. Participant 1 commits |
+| 6. README, guide, lecturer page (§3, §4) | ⏳ next |
 
 ## Web UI (outside the labs, merged via PR #15)
 
@@ -121,7 +121,7 @@ All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-
 | 3 Horizontal Scaling | ✅ defended; `labs/lab3-summary.md`, `docs/lab3-guide.md`, `docs/about/lab3.md` |
 | 4 Distributed Caching | ✅ defended (per Participant 1, 2026-11-08); `docs/lab4-guide.md`, `docs/about/lab4.md`; `labs/lab4-summary.md` was never written |
 | 5 Load Testing | ✅ defended (per Participant 1, 2026-11-08); `docs/lab5-guide.md`, `docs/about/lab5.md`; `labs/lab5-summary.md` was never written |
-| 6 Database Replication | 🟡 in progress (Participant 1 alone), branch `lab6/replication`: stages 1–4 of 6 done |
+| 6 Database Replication | 🟡 in progress (Participant 1 alone), branch `lab6/replication`: stages 1–5 of 6 done |
 
 ## Repository state
 
@@ -146,7 +146,7 @@ All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-
 
 ## Next steps
 
-- **Lab 6 (Participant 1):** stage 5 — load comparison on 8 threads (new overlay, replica metrics), see
+- **Lab 6 (Participant 1):** stage 6 — README «Лабораторна 6» with the architecture diagram, `docs/lab6-guide.md`, `docs/about/lab6.md`, rehearsal, see
   [`docs/lab6/plan.md`](../lab6/plan.md).
 - Known bug outside lab 6: `POST /api/polls` with a valid token and no `options` answers 500 instead of 422 (NullReferenceException in
   `PollValidators.cs:17`, in the code since lab 1). Not fixed.

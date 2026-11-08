@@ -24,7 +24,7 @@ Course materials and team documents are in Ukrainian ("Учасник 1/2" = Par
 | [`docs/lab3/participant-1.md`](docs/lab3/participant-1.md), [`participant-2.md`](docs/lab3/participant-2.md) | Lab 3 task list of the participant you are working with (Ukrainian) |
 | [`docs/lab4/participant-1.md`](docs/lab4/participant-1.md) | Lab 4 task list (Ukrainian) — Participant 1 does lab 4 alone, by agreement |
 | [`docs/lab5/plan.md`](docs/lab5/plan.md), [`load-tests/README.md`](load-tests/README.md) | Lab 5 stages (both participants, one branch) and how to run k6 / the full measurement series |
-| [`docs/lab6/plan.md`](docs/lab6/plan.md) | Lab 6 stages (Ukrainian) — Participant 1 does lab 6 alone, by agreement |
+| [`docs/lab6/plan.md`](docs/lab6/plan.md), [`load-comparison.md`](docs/lab6/load-comparison.md) | Lab 6 stages and load comparison (Ukrainian) — Participant 1 does lab 6 alone, by agreement |
 | [`docs/ai/project-context.md`](docs/ai/project-context.md) | You need lab requirements, the design-doc summary, the high-load scenario, bottlenecks, defense questions |
 | [`docs/ai/contracts.md`](docs/ai/contracts.md) | You touch the API, DB schema, or code another participant depends on; open questions for Participant 2 |
 | [`docs/ai/runbook.md`](docs/ai/runbook.md) | Running, testing, migrations, seed data, troubleshooting |

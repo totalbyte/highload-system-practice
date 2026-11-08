@@ -343,6 +343,11 @@ bash load-tests/series.sh                                     # the whole series
   one series only. Raw results: `load-tests/results/` (gitignored).
 - Git Bash: keep `MSYS_NO_PATHCONV=1`, otherwise `/scripts/...` paths inside the k6 container get rewritten.
 
+**Lab 6 comparison (ADR 0053):** on Participant 1's 8-thread machine the overlay above does not start. Use `bash load-tests/series-lab6.sh` (17 runs, ≈ 95 min, keep the laptop on mains with the lid open; `ONLY="tag tag"` for a part,
+`LEVELS=10,50 STEP=10 WARMUP=5 MIXED_STEP=70 MIXED_DELAY=25 ONLY=...` for a dry run), or one run with `OVERLAY=load-tests/docker-compose.loadtest-8cpu.yml bash load-tests/run.sh ...`. It wipes the stack (`down -v`) before every run. Tables:
+`python load-tests/report.py --compare "Single=a.json" "Replica=b.json"`; the report also shows replica transactions and lag from `<run>-replica.tsv`. **To measure without a replica, drop its slot too**: a stopped replica's slot pins WAL and made writes
+1.6 times slower. After a series run `docker compose up -d` to bring the stack back without limits. Report: `docs/lab6/load-comparison.md`.
+
 ## Troubleshooting / known quirks
 
 | Symptom | Cause / fix |
