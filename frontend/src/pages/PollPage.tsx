@@ -9,6 +9,18 @@ import { formatDateTime, formatTime, phaseOf, plural, pollNumber, timeLeft, vote
 
 export function PollPage() {
   const id = Number(useParams().id);
+  if (!Number.isInteger(id)) {
+    return (
+      <div className="container section">
+        <Breadcrumbs items={[{ label: 'Опитування' }]} />
+        <div className="card narrow center">
+          <h1>Опитування не знайдено</h1>
+          <p className="muted">Можливо, його видалили або це чужа чернетка.</p>
+          <Link to="/" className="btn btn-primary">До списку опитувань</Link>
+        </div>
+      </div>
+    );
+  }
   const poll = useQuery({ queryKey: ['poll', id], queryFn: () => api.getPoll(id), enabled: Number.isInteger(id) });
 
   if (poll.isPending) return <div className="container section"><Spinner /></div>;
