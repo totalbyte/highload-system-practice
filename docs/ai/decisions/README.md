@@ -51,3 +51,4 @@ Template:
 ## Decision
 ## Consequences
 ```
+| [0048](0048-web-ui.md) | Web UI: React + Vite + TS in an nginx container behind HAProxy (same origin, no CORS); favorites in localStorage; `GET /api/polls/{id}/vote` | Accepted |

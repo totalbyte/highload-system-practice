@@ -40,6 +40,17 @@ services:
     depends_on:
       - backend-1
       - backend-2
+      - web
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Веб-інтерфейс: nginx зі зібраним React-застосунком. Портів назовні немає — сторінки віддає той самий HAProxy
+  # на :8080 (усе, крім /api, /swagger, /health), тож браузер ходить до API з того самого origin, без CORS.
+  web:
+    build:
+      context: ./frontend
+    image: polling-platform/web:latest
     restart: unless-stopped
     networks:
       - app-network

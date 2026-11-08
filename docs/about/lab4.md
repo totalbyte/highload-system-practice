@@ -188,3 +188,57 @@ docker compose down -v && docker compose up -d --build     # холодний с
 | Stampede | `python scripts/cache-stampede-check.py` | ≈ 1 запит до БД на інстанс |
 
 **Де в репозиторії:** [`scripts/cache-demo.py`](../../scripts/cache-demo.py).
+
+**Записаний прогін** `python scripts/cache-demo.py` через балансувальник, 2 інстанси, 2026-11-02. Біля кожного
+читання — інстанс, `X-Cache`, кількість голосів, час відповіді, а праворуч — покоління і TTL ключа, прочитані прямо з
+Redis.
+
+**Пункт 1 процедури — Cache Hit / Miss.** Перше читання — промах, і запит іде в БД. Друге і третє — попадання, причому
+на іншому інстансі: запис, покладений у Redis одним інстансом, віддає інший.
+
+```text
+  first read (cold)    backend-1  HTTP 200  X-Cache=MISS   totalVotes=0 status=active    6.6 ms   redis: gen=1 TTL(g1)=10s
+  second read          backend-2  HTTP 200  X-Cache=HIT    totalVotes=0 status=active   21.8 ms   redis: gen=1 TTL(g1)=10s
+  third read           backend-1  HTTP 200  X-Cache=HIT    totalVotes=0 status=active    5.0 ms   redis: gen=1 TTL(g1)=10s
+```
+
+**Пункт 2 процедури — інвалідація.** Голос збільшує покоління (1 → 2), і для нового покоління запису ще немає
+(`no entry`). Тому наступне читання — промах зі свіжою кількістю голосів, далі знову попадання. Закриття опитування
+теж інвалідує кеш, а новий запис отримує довгий TTL, бо закрите опитування вже не зміниться.
+
+```text
+  POST vote            backend-1  HTTP 201   25.4 ms                                               redis: gen=2 TTL(g2)=no entry
+  read after the vote  backend-2  HTTP 200  X-Cache=MISS   totalVotes=1 status=active    8.2 ms   redis: gen=2 TTL(g2)=11s
+  read again           backend-1  HTTP 200  X-Cache=HIT    totalVotes=1 status=active    5.7 ms   redis: gen=2 TTL(g2)=11s
+  PATCH close          backend-2  HTTP 200                                                         redis: gen=3 TTL(g3)=no entry
+  read after close     backend-1  HTTP 200  X-Cache=MISS   totalVotes=1 status=closed    8.4 ms   redis: gen=3 TTL(g3)=3845s
+  read again           backend-2  HTTP 200  X-Cache=HIT    totalVotes=1 status=closed    5.5 ms   redis: gen=3 TTL(g3)=3845s
+```
+
+**Пункт 3 процедури — Fallback.** Redis зупинено (`docker compose stop redis`). Читання відповідають 200 з
+`X-Cache: BYPASS` — дані прямо з PostgreSQL. Голос проходить, і наступне читання вже його бачить. `/health` відповідає
+200, тож балансувальник не виключає вузли. Після запуску Redis кілька читань ще йдуть з `BYPASS`, поки клієнт
+перепідключається (~2.5 с). Далі — промах і попадання: Redis повернувся порожнім (`gen=0`), застарілі записи не
+«воскресли».
+
+```text
+  read, Redis down     backend-1  HTTP 200  X-Cache=BYPASS totalVotes=0 status=active    6.5 ms   redis: unavailable
+  POST vote, Redis down backend-2 HTTP 201   11.5 ms
+  read after the vote  backend-2  HTTP 200  X-Cache=BYPASS totalVotes=1 status=active   23.8 ms   redis: unavailable
+  GET /health                     HTTP 200  Healthy - nodes stay in the LB pool
+  --- docker compose start redis ---
+  read, Redis back     backend-2  HTTP 200  X-Cache=BYPASS totalVotes=1 status=active   14.1 ms   redis: gen=0 TTL(g0)=no entry
+  ... (ще 4 такі рядки, поки клієнт Redis перепідключається)
+  read, Redis back     backend-1  HTTP 200  X-Cache=MISS   totalVotes=1 status=active   19.1 ms   redis: gen=0 TTL(g0)=10s
+  read again           backend-2  HTTP 200  X-Cache=HIT    totalVotes=1 status=active   14.0 ms   redis: gen=0 TTL(g0)=10s
+```
+
+Час одиничних запитів у демо «шумний». Числа для порівняння холодного і гарячого запиту — у §7.
+
+## 12. Критерії оцінювання
+
+| Критерій | Чим доведено | Розділ |
+|---|---|---|
+| **Обґрунтованість кешування** — лише відповідні read-intensive операції | Кешуємо лише результати опитування: найчастіше читання, однакова відповідь для всіх, секунди застарілості прийнятні. Решту ендпоінтів оцінено за критеріями методички і свідомо не кешуємо — зокрема список (видимість залежить від користувача) і читання всередині голосування (застарілий статус порушив би бізнес-правило) | §3 |
+| **Узгодженість даних** — коректна інвалідація при мутаціях | Голос, publish, close і delete після коміту збільшують покоління; наступне читання гарантовано йде в БД (пункт 2 у §11). Перевірка на гонку — 60 раундів одночасних голосів і читань: проста інвалідація `DEL` давала застарілі дані в кожному з 5 прогонів, покоління — 0 | §6, §11 |
+| **Відмовостійкість** — робота при відмові кешувального шару | Без Redis читання йдуть у PostgreSQL: 200 з `BYPASS` за мілісекунди замість 503 через 5 с, голоси записуються, вузли лишаються в пулі (пункт 3 у §11). Під навантаженням без Redis — 0 помилок, ціна — удвічі менше читань за секунду | §8, §11 |

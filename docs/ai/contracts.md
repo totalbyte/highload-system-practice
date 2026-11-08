@@ -17,6 +17,7 @@ Update this file whenever the API, the schema, or code another participant depen
 | DELETE | `/api/polls/{id}` | author | 204 | 403, 404, 409 | P1 |
 | GET | `/health` | — | 200 / 503 `{status, instance, checks, durationMs}`, answers within 2 s (ADR 0019) | | P1 |
 | POST | `/api/polls/{id}/vote` | JWT | 201 new vote / 200 changed or repeated; `{pollId, optionId, votedAt}` | 401, 404, 409, 422 | P2 |
+| GET | `/api/polls/{id}/vote` | JWT | 200 `{pollId, optionId, votedAt}` — the caller's own vote (web UI, ADR 0048) | 401, 404 (not voted) | P1 (web UI) |
 | GET | `/api/polls/{id}/results` | optional | 200 `{pollId, title, status, totalVotes, generatedAt, options[]}` + header `X-Cache: HIT \| MISS \| BYPASS` (ADR 0042, 0043) | 404 | P2 → P1 (lab 4) |
 
 - Every response carries `X-Instance-ID` (container hostname or env `INSTANCE_ID`); the balancer passes it through
@@ -33,6 +34,9 @@ Update this file whenever the API, the schema, or code another participant depen
   and `observe layer4` (not `track` — measured slower failover), and in-flight retries on another node (a committed
   vote retried → 409, never a double vote). When every node is out (DB down) clients get HAProxy's own
   `503 text/html`, not ProblemDetails. Default algorithm `roundrobin`, switched by `scripts/lb-algorithm.sh`.
+- Web UI (ADR 0048): HAProxy sends everything except `/api/`, `/swagger`, `/health` to backend `be_web` (container
+  `web`, nginx with the React build, SPA fallback to `index.html`). It has no `balance` line and its server is named
+  `web`, so `lb-algorithm.sh` and the scripts reading `be_api` / `be_vote` stats ignore it.
 - `docker-compose.debug.yml` (debug only, never in the standard stack) publishes `backend-1/2/3` on
   `127.0.0.1:8091/8092/8093`.
 - Errors are RFC 7807 `application/problem+json` with `traceId`; 422 adds `errors: {field: [messages]}`.
