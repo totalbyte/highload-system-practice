@@ -1,7 +1,15 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-11-03 by Participant 2 (lab 5 stages 1–5 on `lab5/load-tests`, committed, not pushed — see `log/2026-11-03-p2-lab5-load-tests.md`).
+> Last updated: 2026-11-04 by Participant 1 (web UI on `feature/web-ui`, not committed — see `log/2026-11-04-p1-web-ui.md`).
+
+## Web UI (outside the labs, branch `feature/web-ui`, not committed)
+
+React + Vite + TS in `frontend/`, container `web` (nginx) behind HAProxy on :8080 — ADR 0048. Pages: list with tabs
+(active / closed / all) and live counters, poll page (vote / change vote, results refreshed every 5 s, node and
+`X-Cache` badge, author actions publish / close / delete), create form, login / register, my polls, favorites
+(localStorage). New endpoint `GET /api/polls/{id}/vote`. Verified in a browser (desktop + mobile width) and smoke via
+:8080. Left: review by Participant 2, commit / PR.
 
 ## Current lab: 5 — Load testing & performance baseline
 

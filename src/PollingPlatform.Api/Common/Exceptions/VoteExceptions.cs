@@ -18,3 +18,7 @@ public class PollVotingEndedException(long pollId, DateTimeOffset endsAt)
 /// <summary>Користувач уже голосував, а зміна голосу для цього опитування заборонена.</summary>
 public class DuplicateVoteException(long pollId)
     : ConflictException($"You have already voted in poll {pollId}.");
+
+/// <summary>Користувач ще не голосував у цьому опитуванні (GET /api/polls/{id}/vote).</summary>
+public class VoteNotFoundException(long pollId)
+    : NotFoundException($"You have not voted in poll {pollId}.");

@@ -33,6 +33,17 @@ public class VoteService(AppDbContext db, ResultsCache resultsCache, TimeProvide
     }
 
     /// <summary>
+    /// Голос поточного користувача — для веб-інтерфейсу («Ви обрали …»). Один пошук за UNIQUE(poll_id, user_id),
+    /// без кешу і без перевірки видимості: голос може існувати лише в опитуванні, яке користувач бачив.
+    /// </summary>
+    public async Task<CastVoteResponse> GetMyVoteAsync(long pollId, long userId, CancellationToken ct) =>
+        await db.Votes.AsNoTracking()
+            .Where(v => v.PollId == pollId && v.UserId == userId)
+            .Select(v => new CastVoteResponse(v.PollId, v.OptionId, v.CreatedAt))
+            .FirstOrDefaultAsync(ct)
+        ?? throw new VoteNotFoundException(pollId);
+
+    /// <summary>
     /// Перевіряє, що опитування існує, видиме користувачу, активне і в межах часового вікна.
     /// Повертає <c>AllowVoteChange</c> — єдине, що потрібно далі.
     /// </summary>

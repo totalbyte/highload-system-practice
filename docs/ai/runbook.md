@@ -46,6 +46,21 @@ I1=http://localhost:8091 I2=http://localhost:8092 bash scripts/cross-instance.sh
 docker compose up -d                                                     # back to the standard stack, ports gone
 ```
 
+## Web UI (ADR 0048)
+
+The standard `docker compose up -d --build` also builds `web` (React + Vite build served by nginx); open
+http://localhost:8080 — pages from `web`, `/api` from the backends through the same HAProxy. Log in with a seed user
+(`user001@example.com` / `Password123!`). The poll page shows which backend answered the results read and its
+`X-Cache` (HIT / MISS / BYPASS) — handy at lab 3–4 demos. Favorites live in the browser's localStorage only.
+
+Frontend development with hot reload (needs Node 20.19+; the Docker stack must be up for the API):
+
+```bash
+cd frontend && npm install && npm run dev   # http://localhost:5173, proxies /api and /health to :8080 (API_URL to override)
+npm run build                               # type-check + production build into frontend/dist
+docker compose up -d --build web            # rebuild only the web container after changes
+```
+
 ## Load balancer (lab 3)
 
 Config `haproxy/haproxy.cfg` (ADR 0031, 0033, 0034). Health checks: `GET /health` every 2 s (`fastinter 500ms` while a

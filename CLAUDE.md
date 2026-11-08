@@ -52,7 +52,7 @@ docker compose up -d --build     # lb (HAProxy) + backend-1 + backend-2 + postgr
 docker compose down -v           # wipe everything (cold start)
 ```
 
-API only through HAProxy http://localhost:8080 (backends publish no ports; stats http://localhost:8404/stats; one
+Web UI (React, `frontend/`) and API both through HAProxy http://localhost:8080 (backends publish no ports; stats http://localhost:8404/stats; one
 instance directly: `docker-compose.debug.yml` → `127.0.0.1:8091–8093`) · Swagger `/swagger` · health `/health` ·
 Postgres from host `localhost:5433` (`polling`/`polling`) · Redis `localhost:6379`.
 Seed users: `user001@example.com` … `user500@example.com`, password `Password123!`. Details: `docs/ai/runbook.md`.

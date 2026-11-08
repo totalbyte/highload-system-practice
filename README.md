@@ -197,7 +197,8 @@ src/PollingPlatform.Api/
   Domain/        сутності User, Poll, PollOption, Vote
   Data/          DbContext, конфігурації EF, міграції, сід
   Common/        бізнес-винятки → HTTP-коди, обробник помилок, X-Instance-ID
-docker-compose.yml        стек: lb (HAProxy), backend-1/2 (+ backend-3 у профілі scale), postgres, redis, pgAdmin
+frontend/       веб-інтерфейс (React + Vite + TypeScript), у стеку — контейнер web (nginx) за HAProxy, http://localhost:8080
+docker-compose.yml        стек: lb (HAProxy), web, backend-1/2 (+ backend-3 у профілі scale), postgres, redis, pgAdmin
 docker-compose.debug.yml  лише для налагодження: порти 8091–8093 до окремих інстансів
 haproxy/         конфіг балансувальника (haproxy.cfg)
 requests/        колекції запитів для демо (polls.http, cross-instance.http)
