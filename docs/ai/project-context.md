@@ -8,7 +8,7 @@ the Ukrainian `.docx` files.
 - **Course:** High-Load Systems Engineering (4th year, 1st semester).
 - **Domain:** real-time polling platform.
 - **Repository:** https://github.com/totalbyte/highload-system-practice
-- All 5 labs build on **the same project**:
+- All 6 labs build on **the same project**:
 
 | Lab | Topic | Requirements (short) |
 |---|---|---|
@@ -17,8 +17,9 @@ the Ukrainian `.docx` files.
 | 3 | Horizontal Scaling | Nginx/HAProxy as the single entry point, Round Robin vs Least Connections (+ asymmetric latency experiment), `/health`, node failure without 5xx, 1/2/3 instance throughput |
 | 4 | Distributed Caching | Redis, Cache-Aside for a read-intensive endpoint, key schema, TTL, invalidation on writes, fallback when Redis is down, `X-Cache: HIT/MISS`, cold vs hot latency |
 | 5 | Load Testing | k6/Locust in `/load-tests`, 3 scenarios (read / write / complex workflow), warm-up, ramp-up 10→200 VUs, p50/p95/p99, saturation point, 1 vs N instances, cache on/off, performance baseline card |
+| 6 | Database Replication | Primary + Replica, read/write separation in the app or a proxy, eventual vs strict read classification, replication lag and stale read demo, Read-After-Write mechanism (sticky / LSN / explicit primary), replica loss → primary fallback, primary loss → read-only mode, single primary vs primary + replica under the lab 5 scripts, updated architecture diagram |
 
-Full assignments: `docs/labs/Lab1..Lab5 *.md` (Ukrainian).
+Full assignments: `docs/labs/Lab1..Lab6 *.md` (Ukrainian).
 
 ## Team documents in `docs/`
 
@@ -87,6 +88,7 @@ Every participant is questioned about the **whole** system, not only their own p
 - **Lab 3:** the load balancer as a single point of failure (Keepalived/VRRP, DNS round robin).
 - **Lab 4:** cache stampede / thundering herd, cache avalanche, LRU vs LFU, expiration vs invalidation.
 - **Lab 5:** saturation point, coordinated omission, GC/JIT impact on latency percentiles.
+- **Lab 6:** synchronous vs asynchronous vs semi-synchronous replication, Split-Brain, CAP, PACELC, leader election (consensus, Raft).
 
 ## Groundwork for later labs
 

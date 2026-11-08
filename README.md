@@ -26,7 +26,7 @@ docker compose up -d --build
 | Swagger UI | http://localhost:8080/swagger |
 | Health check | http://localhost:8080/health |
 | Статистика балансувальника | http://localhost:8404/stats |
-| PostgreSQL (з хоста) | `localhost:5433`, БД/користувач/пароль `polling` |
+| PostgreSQL (з хоста) | Primary `localhost:5433`, Replica `localhost:5435` (лише читання), БД/користувач/пароль `polling` |
 | Redis (з хоста) | `localhost:6379`; консоль — `docker compose exec redis redis-cli` |
 | Adminer (опційно) | `docker compose --profile tools up -d` → http://localhost:8081 |
 | pgAdmin 4 | http://localhost:5050 (піднімається разом зі стеком, ~40 с), сервер `polling (docker)` уже додано, пароль БД `polling` |
@@ -198,9 +198,10 @@ src/PollingPlatform.Api/
   Data/          DbContext, конфігурації EF, міграції, сід
   Common/        бізнес-винятки → HTTP-коди, обробник помилок, X-Instance-ID
 frontend/       веб-інтерфейс (React + Vite + TypeScript), у стеку — контейнер web (nginx) за HAProxy, http://localhost:8080
-docker-compose.yml        стек: lb (HAProxy), web, backend-1/2 (+ backend-3 у профілі scale), postgres, redis, pgAdmin
+docker-compose.yml        стек: lb (HAProxy), web, backend-1/2 (+ backend-3 у профілі scale), postgres, postgres-replica, redis, pgAdmin
 docker-compose.debug.yml  лише для налагодження: порти 8091–8093 до окремих інстансів
 haproxy/         конфіг балансувальника (haproxy.cfg)
+postgres/        налаштування реплікації (лаба 6): роль і слот на Primary, pg_basebackup на Replica
 requests/        колекції запитів для демо (polls.http, cross-instance.http)
 scripts/         перевірки й експерименти лаб 2–4 (lb-algorithm.sh, lb-distribution.py, lb-failover.py, cross-instance.sh,
                  load.py, cache-demo.py, cache-latency.py, cache-race-check.py, cache-stampede-check.py та ін.; Python — лише стандартна
@@ -208,6 +209,7 @@ scripts/         перевірки й експерименти лаб 2–4 (lb
 docs/            методички та дизайн-документи
 docs/lab2/, docs/lab3/  розподіл задач лаб 2 і 3 між учасниками
 docs/lab4/       задачі лаби 4 (виконує Учасник 1)
+docs/lab6/       план лаби 6 за етапами (виконує Учасник 1)
 docs/ai/         контекст для AI-агентів: стан, ADR, контракти, runbook, журнал сесій
 CLAUDE.md        точка входу для Claude Code
 ```

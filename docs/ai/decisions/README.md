@@ -52,3 +52,4 @@ Template:
 ## Consequences
 ```
 | [0048](0048-web-ui.md) | Web UI: React + Vite + TS in an nginx container behind HAProxy (same origin, no CORS); favorites in localStorage; `GET /api/polls/{id}/vote` | Accepted |
+| [0049](0049-primary-replica-topology.md) | Lab 6: `postgres` (Primary) + `postgres-replica`, asynchronous physical streaming, `pg_basebackup` on an empty volume, slot `replica_1` with a 1 GB WAL limit, no automatic failover | Accepted |

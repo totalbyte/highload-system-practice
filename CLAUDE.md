@@ -1,8 +1,8 @@
 # Polling Platform — High-Load Systems course project
 
 Two-person university project for "High-Load Systems Engineering" (4th year). A real-time polling platform
-(User, Poll, Option, Vote) that grows over 5 labs: MVP → stateless → horizontal scaling → distributed caching →
-load testing. **Participant 1** ("platform": infra, DB, auth, poll lifecycle);
+(User, Poll, Option, Vote) that grows over 6 labs: MVP → stateless → horizontal scaling → distributed caching →
+load testing → database replication. **Participant 1** ("platform": infra, DB, auth, poll lifecycle);
 **Participant 2** — teammate ("voting core": votes, results, caching, error handling, bottleneck analysis).
 Both are questioned about the *whole* system at every lab defense.
 
@@ -24,6 +24,7 @@ Course materials and team documents are in Ukrainian ("Учасник 1/2" = Par
 | [`docs/lab3/participant-1.md`](docs/lab3/participant-1.md), [`participant-2.md`](docs/lab3/participant-2.md) | Lab 3 task list of the participant you are working with (Ukrainian) |
 | [`docs/lab4/participant-1.md`](docs/lab4/participant-1.md) | Lab 4 task list (Ukrainian) — Participant 1 does lab 4 alone, by agreement |
 | [`docs/lab5/plan.md`](docs/lab5/plan.md), [`load-tests/README.md`](load-tests/README.md) | Lab 5 stages (both participants, one branch) and how to run k6 / the full measurement series |
+| [`docs/lab6/plan.md`](docs/lab6/plan.md) | Lab 6 stages (Ukrainian) — Participant 1 does lab 6 alone, by agreement |
 | [`docs/ai/project-context.md`](docs/ai/project-context.md) | You need lab requirements, the design-doc summary, the high-load scenario, bottlenecks, defense questions |
 | [`docs/ai/contracts.md`](docs/ai/contracts.md) | You touch the API, DB schema, or code another participant depends on; open questions for Participant 2 |
 | [`docs/ai/runbook.md`](docs/ai/runbook.md) | Running, testing, migrations, seed data, troubleshooting |
@@ -43,18 +44,18 @@ Course materials and team documents are in Ukrainian ("Учасник 1/2" = Par
 
 C# / ASP.NET Core 10 (controllers) · EF Core 10 + Npgsql · PostgreSQL 17 · JWT · FluentValidation · Swashbuckle ·
 Docker Compose. Redis since lab 2 (distributed results cache in lab 4), HAProxy since lab 3 (ADR 0031, instead of the
-Nginx named in lab 1), k6 in lab 5.
+Nginx named in lab 1), k6 in lab 5, PostgreSQL streaming replica in lab 6 (ADR 0049).
 
 ## Quick start
 
 ```bash
-docker compose up -d --build     # lb (HAProxy) + backend-1 + backend-2 + postgres + redis; migrations and seed run automatically
+docker compose up -d --build     # lb (HAProxy) + backend-1 + backend-2 + postgres + postgres-replica + redis; migrations and seed run automatically
 docker compose down -v           # wipe everything (cold start)
 ```
 
 Web UI (React, `frontend/`) and API both through HAProxy http://localhost:8080 (backends publish no ports; stats http://localhost:8404/stats; one
 instance directly: `docker-compose.debug.yml` → `127.0.0.1:8091–8093`) · Swagger `/swagger` · health `/health` ·
-Postgres from host `localhost:5433` (`polling`/`polling`) · Redis `localhost:6379`.
+Postgres from host: Primary `localhost:5433`, Replica `localhost:5435` (`polling`/`polling`) · Redis `localhost:6379`.
 Seed users: `user001@example.com` … `user500@example.com`, password `Password123!`. Details: `docs/ai/runbook.md`.
 
 ## Rules that must not be broken
