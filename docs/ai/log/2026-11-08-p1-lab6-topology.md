@@ -1,8 +1,17 @@
-# 2026-11-08 — Participant 1 — lab 6: plan, stages 1–3 (topology, read/write separation, read-after-write)
-**Lab:** 6 · **Commits:** `7ea6f27` (stage 1), `f19a6bf` (stage 2); stage 3 not committed yet (branch `lab6/replication`; Participant 1 commits each stage personally)
+# 2026-11-08 — Participant 1 — lab 6: plan, stages 1–4 (topology, read/write separation, read-after-write, failures)
+**Lab:** 6 · **Commits:** `7ea6f27` (stage 1), `f19a6bf` (stage 2), `31d3353` (stage 3); stage 4 not committed yet (branch `lab6/replication`; Participant 1 commits each stage personally)
 ## Goal
 Read the lab 6 assignment, agree on a plan (Participant 1 does this lab alone), implement the replication topology,
-read/write separation and Read-After-Write.
+read/write separation, Read-After-Write and failure behaviour.
+## Done: stage 4
+- `Data/DbNodeMonitor.cs` (monitor, `DbNodeGuardInterceptor`, `DbNodesHealthCheck`), `ReadDb.EventualAsync` / `PrimaryPreferredAsync` with fallback,
+  `ReadOnlyModeException`, single-flight caches only Primary data, `PostgresHealthCheck.cs` removed, `haproxy.cfg` comment.
+  `scripts/db-failure-check.py`. Docs: [ADR 0052](../decisions/0052-db-node-failures.md), ADRs 0019 / 0033 / 0051 amended, contracts, runbook, backend guide, plan, status.
+- Problem: the first version left a ≈ 5 s window after a replica stop with 42 reads in 6 s, each waiting ≈ 2.3 s. Added the passive signal: 768–807 reads, slowest 39–152 ms.
+- Verified on the default stack: `db-failure-check` 2 of 2; `load.py` write and read with 0 node state changes; `rw-routing-check`, `replication-check`,
+  `stale-read-demo`, `concurrency-checks`, `cache-race-check` 0 of 60, `cache-stampede-check` 2.1 loads, `redis-outage-check`, `cache-demo`, `kill-test`,
+  `lb-failover` (0 errors of 15 227), `cross-instance.sh` 8/8, smoke, counters 0 on both nodes, Single Primary switch.
+- Not checked: stage 4 on a cold start; the web UI during an outage. `POST /api/polls` without `options` still gives 500 (see status).
 ## Done: stage 3
 - `Data/StickySessions.cs` (mark in Redis, middleware `UseStickyAfterWrite`), `ReadDb.ForEventualReadAsync(userId)` instead of
   `Eventual`, compose `STICKY_TTL_SECONDS`. `scripts/stale-read-demo.py`. Docs: [ADR 0051](../decisions/0051-read-after-write-sticky-routing.md),

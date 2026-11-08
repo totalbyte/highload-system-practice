@@ -1,5 +1,5 @@
 # 0051. Lab 6: Read-After-Write through Session Sticky Routing in Redis
-**Status:** Accepted · **Date:** 2026-11-08 · **Author:** Participant 1
+**Status:** Accepted, amended by 0052 (`ForEventualReadAsync` → `EventualAsync`) · **Date:** 2026-11-08 · **Author:** Participant 1
 
 ## Context
 With reads on the replica (ADR 0050) a user can miss their own write: the web UI opens a poll right after creating it, and

@@ -106,8 +106,13 @@ empty when nothing was written recently). After `docker compose restart postgres
 its expected node by `X-DB-Node`, then compares PostgreSQL's own transaction counters during catalog reads (measured: replica
 ≈ 4 per read, primary only background; the script waits 11 s because idle sessions publish statistics with a delay of up to 10 s). `curl -si localhost:8080/api/polls/1 | grep -i x-db-node` → `replica`; results: MISS →
 `primary`, HIT → no header. All reads on the Primary (Single Primary): `READ_REPLICA_ENABLED=false docker compose up -d
-backend-1 backend-2`; the same command without the variable switches back. Until stage 4 a stopped replica fails catalog
-and details reads with 503 after ≈ 10 s. `dotnet run` has no replica connection string and uses only the Primary.
+backend-1 backend-2`; the same command without the variable switches back. `dotnet run` has no replica connection string and
+uses only the Primary.
+
+**Node failures (ADR 0052):** `python scripts/db-failure-check.py [--pause]` (≈ 1 min) stops the replica, the Primary, then both, with 4 catalog readers
+in the background, and always starts them again in `finally`. Expected: 0 reader errors; replica down → reads on the Primary; Primary down → reads on
+the replica, create / vote / login / `/me` 503 `Read-Only Mode` in milliseconds (the very first write takes 4–8 s); both down → `/health` 503. State:
+`curl -s localhost:8080/health` and `docker compose logs backend-1 | grep "Database node"`. EF's own `fail:` lines during an outage are expected.
 
 **Stale Read and Read-After-Write (ADR 0051):** `python scripts/stale-read-demo.py [--pause] [--lag 3]` (≈ 1 min, restores the
 lag and the backends in `finally`). Expected: anonymous reader 404 from the replica, author 200 from the Primary on both
@@ -364,9 +369,10 @@ bash load-tests/series.sh                                     # the whole series
 | First request after a DB restart fails | Should not happen (EF retry strategy, ADR 0008); if it does, check the retry config |
 | `FATAL: sorry, too many clients already` (psql, Adminer, pgAdmin or the API) | The backend pools together exceed PostgreSQL `max_connections` (100). Check `DB_MAX_POOL_SIZE` × number of instances ≤ 90 (ADR 0018, 0032); with 4+ instances lower `DB_MAX_POOL_SIZE` in `.env` |
 | How many connections each instance holds | `docker compose exec -T postgres psql -U polling -d polling -tAc "SELECT client_addr, count(*) FROM pg_stat_activity WHERE client_addr IS NOT NULL GROUP BY 1"` — one row per backend container, ≤ `DB_MAX_POOL_SIZE` each |
-| API requests take ~13–19 s and then return 503 while the DB is down | Expected for the first ~4.6 s: EF retries (ADR 0008) plus ~3.3 s Docker DNS lookups for the stopped `postgres` container. `/health` answers 503 within 2 s (ADR 0019) |
-| `503 text/html` "No server is available to handle this request" from HAProxy while the DB is down | Expected (ADR 0033): every `/health` is 503, so ~4.6 s after the DB goes down the whole pool is out and HAProxy answers in ~3 ms instead of the API's 503 ProblemDetails. Back ~2.3 s after `docker compose start postgres` |
-| `/health` says "PostgreSQL did not respond within the timeout" | The probe hit its 2 s timeout (`HealthChecks:DbTimeoutSeconds`) — typically the DB container is stopped (its DNS name no longer resolves). Start it; `/health` returns 200 within a second |
+| 503 `Read-Only Mode` on writes, login, `/me` | The Primary is down (ADR 0052). Expected: catalog and details keep working from the replica. `docker compose start postgres`; writes return in ≈ 2 s, no backend restart. The first write right after the stop takes 4–8 s (EF retry and DNS) |
+| `503 text/html` "No server is available to handle this request" from HAProxy while the database is down | Expected only when **both** nodes are down (ADR 0033, 0052): every `/health` is 503, so the pool goes out seconds later and HAProxy answers instead of the API. Back shortly after `docker compose start postgres postgres-replica` |
+| `/health` 200 with `"status":"Degraded"` | One database node is down; `detail` says which. The backends stay in the pool (ADR 0052) |
+| Backend restarts in a loop while the Primary is down | Expected: it applies migrations on startup and cannot start without the Primary (ADR 0052). Instances already running keep serving |
 | `~$...docx` files appear in `docs/` | Word lock files while a document is open; ignored by `.gitignore` |
 
 ## Environment on Participant 2's machine

@@ -1,3 +1,4 @@
+using PollingPlatform.Api.Data;
 using PollingPlatform.Api.Domain;
 
 namespace PollingPlatform.Api.Results;
@@ -35,4 +36,8 @@ public enum CacheResult
     Disabled
 }
 
-public record PollResultsRead(PollResultsResponse Response, CacheResult Cache);
+/// <summary><paramref name="Node"/> — вузол БД, що дав дані, якщо читання йшло в обхід кешу чи об'єднувалося з чужим.</summary>
+public record PollResultsRead(PollResultsResponse Response, CacheResult Cache, DbNodes Node = DbNodes.None);
+
+/// <summary>Результат спільного читання при промаху кешу: дані й вузол, з якого їх прочитано.</summary>
+public record ResultsLoad(CachedPollResults Entry, DbNodes Node);

@@ -23,14 +23,14 @@ if a decision changes, add a new ADR and set the old one's status to `Superseded
 | [0016](0016-transient-db-errors-503.md) | Transient database errors map to 503 | Accepted, extended by 0027 |
 | [0017](0017-serialize-vote-changes.md) | Vote changes serialized with `FOR UPDATE`; option rows locked in id order | Accepted |
 | [0018](0018-connection-pool-budget.md) | `Maximum Pool Size` 30 per instance; instances × pool ≤ `max_connections` | Accepted, amended by 0032 |
-| [0019](0019-health-check-timeout.md) | `/health` uses its own PostgreSQL probe with a 2 s timeout | Accepted |
+| [0019](0019-health-check-timeout.md) | `/health` uses its own PostgreSQL probe with a 2 s timeout | Accepted, amended by 0052 |
 | [0020](0020-pgadmin-pinned.md) | pgAdmin 4 pinned to `9.17.0`, server pre-registered (starts with the stack since the amendment) | Accepted, amended |
 | [0021](0021-redis-and-two-backend-instances.md) | Lab 2: Redis + `backend-1`/`backend-2` from one image, ports 8080/8082, one shared `IConnectionMultiplexer` | Accepted, amended by 0031 |
 | [0022](0022-concurrent-startup-verified.md) | Concurrent startup of several instances on an empty DB verified safe; no separate migrator | Accepted |
 | [0023](0023-dataprotection-keys-in-redis.md) | DataProtection keys in Redis with one application name — one key ring for all instances | Accepted |
 | [0026](0026-results-cache-in-redis.md) | Lab 2: results cache in Redis (`results:{pollId}`, JSON, TTL 10 s, `DEL` on invalidation), async `ResultsCache` | Accepted (supersedes 0013), amended by 0041 |
 | [0027](0027-redis-unavailable.md) | Lab 2: Redis down → reads 503; invalidation and cache writes best-effort, committed changes still succeed | Superseded by 0043 |
-| [0033](0033-health-checks-and-retries.md) | Lab 3: active `/health` checks (`inter 2s fastinter 500ms fall 2 rise 2`), passive `observe layer4` mark-down, `retries 2` + `redispatch 1`, L7 retries only for GET; no layer-7 observation / 5xx retries (503 trap) | Accepted |
+| [0033](0033-health-checks-and-retries.md) | Lab 3: active `/health` checks (`inter 2s fastinter 500ms fall 2 rise 2`), passive `observe layer4` mark-down, `retries 2` + `redispatch 1`, L7 retries only for GET; no layer-7 observation / 5xx retries (503 trap) | Accepted, amended by 0052 |
 | [0034](0034-balancing-algorithms-and-live-switch.md) | Lab 3: `roundrobin` by default; `scripts/lb-algorithm.sh` switches roundrobin / leastconn / weighted / source live (validate + SIGUSR2); `lb-distribution.py` | Accepted |
 | [0037](0037-vote-backend-retries.md) | Lab 3: `be_vote` backend for `POST …/vote` — in-flight retries on another node (safe: one transaction + `UNIQUE`), own `/health` checks + `observe layer4` instead of `track`; 5xx not retried | Accepted (extends 0033) |
 | [0036](0036-artificial-delay-middleware.md) | Lab 3: artificial delay on one instance via middleware (`Diagnostics:ArtificialDelayMs`, `/health` not delayed) | Accepted |
@@ -54,4 +54,5 @@ Template:
 | [0048](0048-web-ui.md) | Web UI: React + Vite + TS in an nginx container behind HAProxy (same origin, no CORS); favorites in localStorage; `GET /api/polls/{id}/vote` | Accepted |
 | [0049](0049-primary-replica-topology.md) | Lab 6: `postgres` (Primary) + `postgres-replica`, asynchronous physical streaming, `pg_basebackup` on an empty volume, slot `replica_1` with a 1 GB WAL limit, no automatic failover | Accepted |
 | [0050](0050-read-write-separation.md) | Lab 6: read/write separation in the application: Primary by default, `ReadDb.Eventual` for catalog and details; results MISS stays on the Primary (no stale aggregate in the shared cache); `X-DB-Node` from an EF connection interceptor; `READ_REPLICA_ENABLED` switch | Accepted, amended by 0051 |
-| [0051](0051-read-after-write-sticky-routing.md) | Lab 6: Read-After-Write through Session Sticky Routing: mark in Redis per user with a 5 s TTL, set before the response, checked only for authenticated database reads; Redis down → Primary; lag above the TTL is the known limit | Accepted |
+| [0051](0051-read-after-write-sticky-routing.md) | Lab 6: Read-After-Write through Session Sticky Routing: mark in Redis per user with a 5 s TTL, set before the response, checked only for authenticated database reads; Redis down → Primary; lag above the TTL is the known limit | Accepted, amended by 0052 |
+| [0052](0052-db-node-failures.md) | Lab 6: `DbNodeMonitor` (unpooled probe every 1 s + passive signal), replica lost → Primary Fallback, Primary lost → 503 `Read-Only Mode` in one interceptor; only Primary data goes into the results cache; `/health` 503 only when both nodes are down | Accepted (amends 0019, 0033, 0051) |

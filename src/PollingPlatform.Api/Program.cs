@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -31,30 +30,43 @@ var postgresConnectionString = builder.Configuration.GetConnectionString("Postgr
 var httpContextAccessor = new HttpContextAccessor();
 builder.Services.AddSingleton<IHttpContextAccessor>(httpContextAccessor);
 
-void ConfigureDatabase(DbContextOptionsBuilder options, string connectionString, DbNodes node) => options
+builder.Services.AddDbContext<AppDbContext>((services, options) => options
     .UseNpgsql(
-        connectionString,
+        postgresConnectionString,
         // Повтор при транзієнтних збоях (напр. «мертві» з'єднання в пулі після рестарту Postgres).
         // Наслідок: явні транзакції треба загортати в db.Database.CreateExecutionStrategy().ExecuteAsync(...).
         npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(2), errorCodesToAdd: null))
     .UseSnakeCaseNamingConvention()
-    .AddInterceptors(new DbNodeInterceptor(httpContextAccessor, node));
-
-builder.Services.AddDbContext<AppDbContext>(options => ConfigureDatabase(options, postgresConnectionString, DbNodes.Primary));
+    .AddInterceptors(
+        new DbNodeInterceptor(httpContextAccessor, DbNodes.Primary),
+        new DbNodeGuardInterceptor(services.GetRequiredService<DbNodeMonitor>(), DbNodes.Primary)));
 
 // Репліка для читань, що допускають відставання (лаба 6, ADR 0050). Без рядка підключення або з Enabled=false усі
 // читання лишаються на Primary — це конфігурація Single Primary для порівняння в 2.6.
-DbContextOptions<AppDbContext>? replicaOptions = null;
-if (builder.Configuration.GetValue("ReadReplica:Enabled", true)
-    && builder.Configuration.GetConnectionString("PostgresReplica") is { Length: > 0 } replicaConnectionString)
-{
-    var replicaBuilder = new DbContextOptionsBuilder<AppDbContext>();
-    ConfigureDatabase(replicaBuilder, replicaConnectionString, DbNodes.Replica);
-    replicaOptions = replicaBuilder.Options;
-}
-builder.Services.AddSingleton(new ReplicaContextOptions(replicaOptions));
+var replicaConnectionString = builder.Configuration.GetValue("ReadReplica:Enabled", true)
+    && builder.Configuration.GetConnectionString("PostgresReplica") is { Length: > 0 } configuredReplica
+        ? configuredReplica
+        : null;
+
+// Без повторів EF, на відміну від Primary: для читання є інший вузол (ADR 0052), тож 13–19 с очікування нічого не дають.
+builder.Services.AddSingleton(services => new ReplicaContextOptions(replicaConnectionString is null
+    ? null
+    : new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(replicaConnectionString)
+        .UseSnakeCaseNamingConvention()
+        .AddInterceptors(
+            new DbNodeInterceptor(httpContextAccessor, DbNodes.Replica),
+            new DbNodeGuardInterceptor(services.GetRequiredService<DbNodeMonitor>(), DbNodes.Replica))
+        .Options));
 builder.Services.AddSingleton<StickySessions>();
 builder.Services.AddScoped<ReadDb>();
+
+builder.Services.AddSingleton(services => new DbNodeMonitor(
+    postgresConnectionString,
+    replicaConnectionString,
+    TimeSpan.FromSeconds(builder.Configuration.GetValue("HealthChecks:DbTimeoutSeconds", 2)),
+    services.GetRequiredService<ILogger<DbNodeMonitor>>()));
+builder.Services.AddHostedService(services => services.GetRequiredService<DbNodeMonitor>());
 
 builder.Services.Configure<SeedOptions>(builder.Configuration.GetSection(SeedOptions.SectionName));
 builder.Services.AddScoped<DataSeeder>();
@@ -133,12 +145,7 @@ builder.Services.AddProblemDetails(options =>
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddSingleton<InstanceIdentity>();
-builder.Services.AddHealthChecks().Add(new HealthCheckRegistration(
-    "postgres",
-    _ => new PostgresHealthCheck(postgresConnectionString),
-    failureStatus: HealthStatus.Unhealthy,
-    tags: null,
-    timeout: TimeSpan.FromSeconds(builder.Configuration.GetValue("HealthChecks:DbTimeoutSeconds", 2))));
+builder.Services.AddHealthChecks().AddCheck<DbNodesHealthCheck>("database");
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -184,6 +191,7 @@ app.MapHealthChecks("/health", new HealthCheckOptions
         status = report.Status.ToString(),
         instance = context.RequestServices.GetRequiredService<InstanceIdentity>().Id,
         checks = report.Entries.ToDictionary(e => e.Key, e => e.Value.Status.ToString()),
+        detail = report.Entries.Values.Select(e => e.Description).FirstOrDefault(d => d is not null),
         durationMs = report.TotalDuration.TotalMilliseconds
     })
 });

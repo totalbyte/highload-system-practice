@@ -19,9 +19,9 @@ public class ResultsController(ResultsService resultsService) : ControllerBase
         var read = await resultsService.GetAsync(id, User.FindUserId(), ct);
         // Джерело даних видно клієнту і в лозі балансувальника (лаба 4, 2.6.1).
         Response.Headers["X-Cache"] = read.Cache.ToString().ToUpperInvariant();
-        // Той, хто приєднався до чужого читання (ADR 0044), сам з'єднання не відкривав, але дані теж отримав з Primary.
-        if (read.Cache == CacheResult.Miss)
-            HttpContext.MarkDbNode(DbNodes.Primary);
+        // Той, хто приєднався до чужого читання (ADR 0044), сам з'єднання не відкривав, але дані теж отримав із цього вузла.
+        if (read.Node != DbNodes.None)
+            HttpContext.MarkDbNode(read.Node);
         return read.Response;
     }
 }

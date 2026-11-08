@@ -14,17 +14,17 @@ namespace PollingPlatform.Api.Results;
 public class ResultsSingleFlight(
     IServiceScopeFactory scopes, ResultsCache cache, TimeProvider timeProvider, ILogger<ResultsSingleFlight> logger)
 {
-    private readonly ConcurrentDictionary<(long PollId, long Generation), Lazy<Task<CachedPollResults>>> inFlight = new();
+    private readonly ConcurrentDictionary<(long PollId, long Generation), Lazy<Task<ResultsLoad>>> inFlight = new();
 
     /// <summary>
     /// Агрегат для промаху: спільне читання з БД із записом у кеш під поколінням <paramref name="generation"/>.
     /// Скасування запиту <paramref name="ct"/> перериває лише очікування цього клієнта, а не спільне читання.
     /// </summary>
-    public Task<CachedPollResults> LoadAsync(long pollId, long generation, CancellationToken ct)
+    public Task<ResultsLoad> LoadAsync(long pollId, long generation, CancellationToken ct)
     {
         var key = (pollId, generation);
         // Lazy: GetOrAdd може викликати фабрику кількох потоків, але виконається лише Value того, хто потрапив у словник.
-        var flight = new Lazy<Task<CachedPollResults>>(() => LoadAndCacheAsync(key));
+        var flight = new Lazy<Task<ResultsLoad>>(() => LoadAndCacheAsync(key));
         var current = inFlight.GetOrAdd(key, flight);
         if (!ReferenceEquals(current, flight))
             logger.LogDebug("Results cache MISS joined an in-flight load: poll {PollId}, generation {Generation}",
@@ -36,16 +36,20 @@ public class ResultsSingleFlight(
     /// Власний scope, а не DbContext запиту, що почав читання: якщо той клієнт відключиться, ASP.NET звільнить його
     /// scope, а на результат чекають інші. З тієї ж причини — без його CancellationToken.
     /// </summary>
-    private async Task<CachedPollResults> LoadAndCacheAsync((long PollId, long Generation) key)
+    private async Task<ResultsLoad> LoadAndCacheAsync((long PollId, long Generation) key)
     {
         try
         {
             await using var scope = scopes.CreateAsyncScope();
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var entry = await ResultsService.LoadAsync(db, key.PollId, timeProvider, CancellationToken.None);
+            var readDb = scope.ServiceProvider.GetRequiredService<ReadDb>();
+            // Читання з Primary (ADR 0050). Репліка — лише коли він лежить (ADR 0052): старі результати кращі за помилку.
+            var (entry, node) = await readDb.PrimaryPreferredAsync(
+                db => ResultsService.LoadAsync(db, key.PollId, timeProvider, CancellationToken.None));
             // Запис у кеш — до виходу з польоту: хто прочитає кеш після цього, отримає HIT, а не почне новий політ.
-            await cache.SetAsync(key.PollId, key.Generation, entry);
-            return entry;
+            // У кеш лише дані Primary: якщо монітор помилився і голоси ще йдуть, агрегат із репліки отруїв би кеш (ADR 0051).
+            if (node == DbNodes.Primary)
+                await cache.SetAsync(key.PollId, key.Generation, entry);
+            return new ResultsLoad(entry, node);
         }
         finally
         {
