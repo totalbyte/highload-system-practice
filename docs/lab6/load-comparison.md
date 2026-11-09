@@ -86,8 +86,9 @@ i5-9300H (4 ядра / 8 потоків), 16 ГБ, Docker Desktop: 8 CPU, 7.7 Г
 | Запис, p99, мс | 972 | 1071 | 425 | 398 | 386 |
 
 ```mermaid
+%%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#dc2626, #2563eb"}}}}%%
 xychart-beta
-    title "A + запис: p95 читання, мс (середнє прогонів). Лінії: Single, Replica"
+    title "p95 читання, мс. Червона — Single, синя — Replica"
     x-axis "VUs" [10, 25, 50, 100, 200]
     y-axis "ms"
     line [32, 68, 146, 237, 492]

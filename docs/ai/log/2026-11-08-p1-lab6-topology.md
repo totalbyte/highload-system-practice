@@ -1,8 +1,13 @@
-# 2026-11-08 — Participant 1 — lab 6: plan, stages 1–5 (topology, read/write separation, read-after-write, failures, load comparison)
-**Lab:** 6 · **Commits:** `7ea6f27` (stage 1), `f19a6bf` (stage 2), `31d3353` (stage 3), `3e68213` (stage 4); stage 5 not committed yet (branch `lab6/replication`; Participant 1 commits each stage personally)
+# 2026-11-08 — Participant 1 — lab 6: all 6 stages (topology, read/write separation, read-after-write, failures, load comparison, documents)
+**Lab:** 6 · **Commits:** `7ea6f27` (stage 1), `f19a6bf` (stage 2), `31d3353` (stage 3), `3e68213` (stage 4), `d97fb7c` (stage 5); stage 6 not committed yet (branch `lab6/replication`; Participant 1 commits each stage personally)
 ## Goal
-Read the lab 6 assignment, agree on a plan (Participant 1 does this lab alone), implement the replication topology,
-read/write separation, Read-After-Write, failure behaviour and the load comparison.
+Read the lab 6 assignment, agree on a plan (Participant 1 does this lab alone), implement the whole lab and prepare the defense.
+## Done: stage 6
+- README «Лабораторна 6» with the topology / R-W flowchart and the read-after-write sequence, `docs/lab6-guide.md`, `docs/about/lab6.md`, plan, status.
+- Verified: cold start 18 s; `replication-check`, `rw-routing-check`, `stale-read-demo`, `db-failure-check` all passed (11 + 15 + 36 + 39 s without pauses). Browser: with a 3 s lag the author sees a new poll at once (no 404). With the Primary stopped the catalog works and voting shows the read-only
+  message; after a reload the user looks logged out because `/me` answers 503, and is logged in again once the Primary returns. Recorded, not fixed.
+- Mermaid: all 4 diagrams rendered in a browser with a local mermaid 11.4.0 installed outside the repo. The first flowchart was tangled and the chart's Single line nearly invisible: flowchart simplified, chart colours set. GitHub's own rendering not checked.
+- Not checked: the guide's short live k6 run with the overlay was not rehearsed as written.
 ## Done: stage 5
 - `load-tests/docker-compose.loadtest-8cpu.yml`, `series-lab6.sh`, replica metrics in `run.sh` / `report.py` / `env-spec.sh`, warm-up in `db-failure-check.py`. Report [`docs/lab6/load-comparison.md`](../../lab6/load-comparison.md), [ADR 0053](../decisions/0053-replica-load-comparison.md).
 - Problems: (1) the series stopped at run 5: HAProxy shows `UP` right after DNS, before the first check, so added `wait_ready`. (2) **A stale replication slot in the Single Primary stand** slowed writes 1.6 times and inflated the first mixed results (reads +40 % RPS, writes 2.1 times; real: no RPS gain, writes +40 %). Scenario B
