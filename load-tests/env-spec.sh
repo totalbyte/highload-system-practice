@@ -25,6 +25,9 @@ echo
 echo "=== Backend config (backend-1) ==="
 docker compose exec -T backend-1 printenv ConnectionStrings__Postgres | grep -o 'Maximum Pool Size=[0-9]*'
 echo "ResultsCache__Enabled=$(docker compose exec -T backend-1 printenv ResultsCache__Enabled)"
+echo "ReadReplica__Enabled=$(docker compose exec -T backend-1 printenv ReadReplica__Enabled)"
+echo "ReadAfterWrite__StickyTtlSeconds=$(docker compose exec -T backend-1 printenv ReadAfterWrite__StickyTtlSeconds)"
+echo "postgres-replica running: $(docker compose ps --status running --services | grep -c '^postgres-replica$')"
 echo "Diagnostics__ArtificialDelayMs=$(docker compose exec -T backend-1 printenv Diagnostics__ArtificialDelayMs || echo unset)"
 
 echo

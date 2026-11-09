@@ -16,6 +16,10 @@ Data/
   Configurations/*.cs       Fluent API: tables, indexes, check constraints, FK/cascade
   Migrations/               EF migrations (InitialSchema, ...)
   DatabaseInitializer.cs    MigrateAsync + seed on startup
+  ReadDb.cs                 lab 6: EventualAsync(userId, read) — the only way to the replica (ADR 0050); fallback to the other node
+  DbNodeTracking.cs         lab 6: EF connection interceptor and the X-DB-Node header
+  StickySessions.cs         lab 6: Read-After-Write mark in Redis and its middleware (ADR 0051)
+  DbNodeMonitor.cs          lab 6: node state, Read-Only guard interceptor, /health check (ADR 0052)
   Seeding/                  DataSeeder (deterministic, under a Postgres advisory lock), SeedOptions
 Auth/                       AuthController (/api/auth/register, /login, /me), AuthService, JwtTokenService,
                             JwtOptions, AuthModels (DTOs + validators), ClaimsPrincipalExtensions
@@ -35,7 +39,6 @@ Common/
                             transient DB failures → 503 (ADR 0016)
   Validation/               validator.ValidateOrThrowAsync() → 422
   InstanceIdentity.cs       X-Instance-ID response header
-  PostgresHealthCheck.cs    /health DB probe: own NpgsqlConnection, 2 s timeout, no EF retries (ADR 0019)
   Diagnostics/              ArtificialDelay: UseArtificialDelay() — lab 3 slow-node experiment, off unless
                             Diagnostics:ArtificialDelayMs > 0; /health is never delayed (ADR 0036)
 ```
@@ -78,4 +81,10 @@ Common/
   calls, and don't make invalidation throw. The client is fail-fast (`Program.cs`) — don't put the backlog back.
 - Misses go through `ResultsSingleFlight` keyed by (poll, generation) — never key it by poll alone and never use it for
   BYPASS: either would let a read that started after a mutation's response join an older DB load (ADR 0044).
-- `/health` must not go through the DbContext / EF retry strategy and must answer within 2 s (ADR 0019).
+- Inject `AppDbContext` (the Primary) by default. Use `ReadDb.EventualAsync(userId, read)` only for a read that may lag and
+  is not stored anywhere: never for a check before a write, a response after a write, authentication, or a results MISS /
+  BYPASS, which puts stale aggregates into the shared cache (ADR 0050; measured in 0051). Pass the current user: that is what
+  makes Read-After-Write work. The sticky mark must stay in `OnStarting`, before the response leaves (ADR 0051).
+- `/health` answers from `DbNodeMonitor`, never through the DbContext / EF retry strategy; 503 only when both database nodes are
+  down (ADR 0019, 0052). The monitor's probe must stay unpooled: on the shared pool, load would look like a dead Primary and
+  block writes. Only data read from the Primary goes into the results cache (ADR 0052).

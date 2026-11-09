@@ -1,5 +1,5 @@
 # 0033. Active `/health` checks, passive layer-4 checks, retries to another node (lab 3)
-**Status:** Accepted · **Date:** 2026-10-28 · **Author:** Participant 1
+**Status:** Accepted, amended by 0052 (503 only when both database nodes are down) · **Date:** 2026-10-28 · **Author:** Participant 1
 
 ## Context
 Lab 3 (2.4) requires a readiness endpoint, automatic exclusion of unavailable or degraded nodes by active and/or

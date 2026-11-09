@@ -26,6 +26,8 @@ docker compose $C run --rm k6 run scenario-c-workflow.js # C — наскріз�
 | [`series.sh`](series.sh) | уся серія вимірювань (≈ 55 хв), кожен прогін — на чистому стеку (ADR 0047) |
 | [`report.py`](report.py) | таблиці у форматі методички, ресурси по ступенях, графіки Mermaid; `--compare` для серій |
 | [`env-spec.sh`](env-spec.sh) | Baseline Environment Specification |
+| [`docker-compose.loadtest-8cpu.yml`](docker-compose.loadtest-8cpu.yml) | лаба 6: те саме для машини з 8 логічними потоками ([ADR 0053](../docs/ai/decisions/0053-replica-load-comparison.md)); `OVERLAY=...` для `run.sh` |
+| [`series-lab6.sh`](series-lab6.sh) | лаба 6: Single Primary проти Primary + Replica, 17 прогонів, ≈ 95 хв; `mixed` — сценарій A під фоновим записом; результат — [`docs/lab6/load-comparison.md`](../docs/lab6/load-comparison.md) |
 
 **Профіль навантаження** (однаковий для всіх сценаріїв): warm-up 20 с на 10 VU, далі плато по 40 с на 10 → 25 → 50 →
 100 → 200 VU з паузою 5 с між ступенями. Кожен ступінь — окремий k6-scenario, тож метрики окремо по кожному.

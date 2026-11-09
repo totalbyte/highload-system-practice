@@ -43,7 +43,8 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
             }
         };
 
-        if (problem.Status >= 500)
+        // Read-Only Mode — очікувана відмова: сам збій монітор логує один раз, а тут був би стек на кожен запис під час простою.
+        if (problem.Status >= 500 && exception is not ReadOnlyModeException)
             logger.LogError(exception, "Unhandled exception while processing {Method} {Path}", httpContext.Request.Method, httpContext.Request.Path);
 
         httpContext.Response.StatusCode = problem.Status!.Value;

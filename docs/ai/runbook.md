@@ -5,7 +5,7 @@
 Docker Desktop must be running (on Participant 1's machine it does not start automatically).
 
 ```bash
-docker compose up -d --build          # lb (HAProxy) + backend-1 + backend-2 + postgres + redis; migrations + seed on backend startup
+docker compose up -d --build          # lb (HAProxy) + backend-1 + backend-2 + postgres + postgres-replica + redis; migrations + seed on backend startup
 docker compose --profile scale up -d  # + backend-3; HAProxy picks it up by itself (~9 s), no lb restart
 docker compose logs -f backend-1 backend-2
 docker compose logs -f lb             # HAProxy: one line per request with the server that served it, status, timers
@@ -22,7 +22,7 @@ docker compose --profile tools up -d  # + Adminer on :8081 (pgAdmin 4 on :5050 s
 | Swagger UI | http://localhost:8080/swagger (spec: `/swagger/v1/swagger.json`) |
 | Health | http://localhost:8080/health (answered by whichever instance the balancer picks) |
 | A backend instance directly | not exposed (lab 3, ADR 0031); `docker compose exec`/logs only |
-| Postgres from the host | `localhost:5433`, db/user/password `polling` (container-internal port is 5432) |
+| Postgres from the host | Primary `localhost:5433`, Replica `localhost:5435` (`POSTGRES_REPLICA_PORT`, read-only), db/user/password `polling` (container-internal port is 5432) |
 | Redis | `localhost:6379` (`REDIS_PORT`); `docker compose exec redis redis-cli` |
 | Adminer | http://localhost:8081 (server `postgres`) |
 | pgAdmin 4 | http://localhost:5050 — no login (desktop mode); server "polling (docker)" is pre-registered from the inline `configs.pgadmin_servers` in `docker-compose.yml`; enter DB password `polling` once and tick "Save password". Starts in ~40 s (ADR 0020) |
@@ -84,6 +84,48 @@ comes from one Docker gateway address). `lb-failover.py`: 0 non-2xx in 4 runs (2
 0.3–0.5 s, back ~6–8 s after `start` (mostly ASP.NET startup).
 
 After a reload the stats page shows `UP 1/3`-style states until the new worker's first check (≤ 2 s) — cosmetic.
+
+## Replication (lab 6)
+
+`postgres` is the Primary, `postgres-replica` a read-only asynchronous streaming replica (ADR 0049). The replica makes
+its own `pg_basebackup` on an empty volume, so a normal `up` needs no manual steps. **A volume created before lab 6 needs
+`docker compose down -v` once** (the role and the slot are created only on an empty data directory).
+
+```bash
+python scripts/replication-check.py [--pause]   # topology, seed on both nodes, INSERT / UPDATE / DELETE reach the replica, writes rejected; exit code 0 = passed
+docker compose exec -T postgres psql -U polling -d polling -c "SELECT state, sync_state, sent_lsn, replay_lsn, replay_lag FROM pg_stat_replication"
+docker compose exec -T postgres psql -U polling -d polling -c "SELECT slot_name, active, pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn) AS retained_bytes FROM pg_replication_slots"
+docker compose exec -T postgres-replica psql -U polling -d polling -c "SELECT pg_is_in_recovery(), pg_last_wal_replay_lsn()"
+```
+
+Expected (2026-11-08): one row `streaming | async`, slot `replica_1` active, `replay_lag` ≈ 12 ms on an idle stack (it is
+empty when nothing was written recently). After `docker compose restart postgres` the replica reconnects in ≈ 2 s; after
+`stop` / `start` of the replica it catches up through the slot without a new base backup.
+
+**Read/write routing (ADR 0050):** `python scripts/rw-routing-check.py [--pause] [--reads 300]` checks every operation against
+its expected node by `X-DB-Node`, then compares PostgreSQL's own transaction counters during catalog reads (measured: replica
+≈ 4 per read, primary only background; the script waits 11 s because idle sessions publish statistics with a delay of up to 10 s). `curl -si localhost:8080/api/polls/1 | grep -i x-db-node` → `replica`; results: MISS →
+`primary`, HIT → no header. All reads on the Primary (Single Primary): `READ_REPLICA_ENABLED=false docker compose up -d
+backend-1 backend-2`; the same command without the variable switches back. `dotnet run` has no replica connection string and
+uses only the Primary.
+
+**Node failures (ADR 0052):** `python scripts/db-failure-check.py [--pause]` (≈ 1 min) stops the replica, the Primary, then both, with 4 catalog readers
+in the background, and always starts them again in `finally`. Expected: 0 reader errors; replica down → reads on the Primary; Primary down → reads on
+the replica, create / vote / login / `/me` 503 `Read-Only Mode` in milliseconds (the very first write takes 4–8 s); both down → `/health` 503. State:
+`curl -s localhost:8080/health` and `docker compose logs backend-1 | grep "Database node"`. EF's own `fail:` lines during an outage are expected.
+
+**Stale Read and Read-After-Write (ADR 0051):** `python scripts/stale-read-demo.py [--pause] [--lag 3]` (≈ 1 min, restores the
+lag and the backends in `finally`). Expected: anonymous reader 404 from the replica, author 200 from the Primary on both
+instances, then the same without protection and with lag over the TTL; `ALL PASSED`. By hand:
+`docker compose exec -T postgres-replica psql -U polling -d polling -c "ALTER SYSTEM SET recovery_min_apply_delay = '3s'"`, then
+`-c "SELECT pg_reload_conf()"` as a separate call (`ALTER SYSTEM` cannot share a transaction); back: `ALTER SYSTEM RESET
+recovery_min_apply_delay` and reload. **Always reset it**: with the delay left on, any later check of fresh data fails. Under
+artificial lag `cross-instance.sh` shows 7 of 8: step 5 reads anonymously, so its stale 404 is correct. Sticky state:
+`docker compose exec redis redis-cli PTTL polling:sticky:<userId>`.
+
+To verify a cold start without wiping the local data, use a separate project: `COMPOSE_PROJECT_NAME=polling-lab6 docker
+compose up -d --build` (the scripts call `docker compose`, so they follow the variable); remove it with the same variable
+and `down -v`. The default project's containers must be stopped first: the host ports are the same.
 
 ## Run the backend locally (without Docker for the backend)
 
@@ -301,6 +343,11 @@ bash load-tests/series.sh                                     # the whole series
   one series only. Raw results: `load-tests/results/` (gitignored).
 - Git Bash: keep `MSYS_NO_PATHCONV=1`, otherwise `/scripts/...` paths inside the k6 container get rewritten.
 
+**Lab 6 comparison (ADR 0053):** on Participant 1's 8-thread machine the overlay above does not start. Use `bash load-tests/series-lab6.sh` (17 runs, ≈ 95 min, keep the laptop on mains with the lid open; `ONLY="tag tag"` for a part,
+`LEVELS=10,50 STEP=10 WARMUP=5 MIXED_STEP=70 MIXED_DELAY=25 ONLY=...` for a dry run), or one run with `OVERLAY=load-tests/docker-compose.loadtest-8cpu.yml bash load-tests/run.sh ...`. It wipes the stack (`down -v`) before every run. Tables:
+`python load-tests/report.py --compare "Single=a.json" "Replica=b.json"`; the report also shows replica transactions and lag from `<run>-replica.tsv`. **To measure without a replica, drop its slot too**: a stopped replica's slot pins WAL and made writes
+1.6 times slower. After a series run `docker compose up -d` to bring the stack back without limits. Report: `docs/lab6/load-comparison.md`.
+
 ## Troubleshooting / known quirks
 
 | Symptom | Cause / fix |
@@ -308,6 +355,8 @@ bash load-tests/series.sh                                     # the whole series
 | Cyrillic becomes `????` when sent with curl from Git Bash on Windows | Shell encoding, not the server. Use Swagger, `.http`, Postman, or `curl --data-binary @file.json` with a UTF-8 file |
 | Every request returns 400 when the token comes from a file written by Python on Windows | Python writes CRLF; the `\r` inside the `Authorization` header breaks the request. Pipe tokens through `tr -d '\r'` |
 | `GET /results` still shows an old total | The cache (Redis, shared by all instances, ADR 0026) is invalidated by a vote, publish, close or delete, with a TTL by status as a safety net (ADR 0041). Since lab 4 invalidation bumps a generation, so a read that started after the vote's response always sees it; `scripts/cache-race-check.py` must report `0 of 60`. A stale value up to ≈ 12 s is possible only if Redis failed during the invalidation (ADR 0027). If instances disagree, run `scripts/results-cache-demo.py`: a **YES** means something went back to a per-process cache |
+| `postgres-replica` keeps restarting; its log has `pg_basebackup: error` about `pg_hba.conf`, the role or the slot | The Primary's volume was created before lab 6, so `primary-init.sh` never ran. `docker compose down -v` once (ADR 0049); the rest of the stack works meanwhile |
+| Replica log: `requested WAL segment ... has already been removed` / the slot's `wal_status` is `lost` | The replica was down longer than `max_slot_wal_keep_size` (1 GB) allows and needs a new base backup: `docker compose down -v` (ADR 0049) |
 | Can't reach the container DB on 5432 / connected to the wrong DB | Participant 1's machine runs a local Windows PostgreSQL service on 5432 — the container is on **5433** (ADR 0011) |
 | `fail: ... SELECT migration_id FROM "__EFMigrationsHistory"` on first start | Expected: the history table doesn't exist yet. Not an error |
 | `fail: ... CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory"` (Postgres: `pg_type_typname_nsp_index`) on a cold start | Both instances created the history table at the same instant; the provider ignores it and the migration still runs once (ADR 0022). Not an error |
@@ -325,9 +374,10 @@ bash load-tests/series.sh                                     # the whole series
 | First request after a DB restart fails | Should not happen (EF retry strategy, ADR 0008); if it does, check the retry config |
 | `FATAL: sorry, too many clients already` (psql, Adminer, pgAdmin or the API) | The backend pools together exceed PostgreSQL `max_connections` (100). Check `DB_MAX_POOL_SIZE` × number of instances ≤ 90 (ADR 0018, 0032); with 4+ instances lower `DB_MAX_POOL_SIZE` in `.env` |
 | How many connections each instance holds | `docker compose exec -T postgres psql -U polling -d polling -tAc "SELECT client_addr, count(*) FROM pg_stat_activity WHERE client_addr IS NOT NULL GROUP BY 1"` — one row per backend container, ≤ `DB_MAX_POOL_SIZE` each |
-| API requests take ~13–19 s and then return 503 while the DB is down | Expected for the first ~4.6 s: EF retries (ADR 0008) plus ~3.3 s Docker DNS lookups for the stopped `postgres` container. `/health` answers 503 within 2 s (ADR 0019) |
-| `503 text/html` "No server is available to handle this request" from HAProxy while the DB is down | Expected (ADR 0033): every `/health` is 503, so ~4.6 s after the DB goes down the whole pool is out and HAProxy answers in ~3 ms instead of the API's 503 ProblemDetails. Back ~2.3 s after `docker compose start postgres` |
-| `/health` says "PostgreSQL did not respond within the timeout" | The probe hit its 2 s timeout (`HealthChecks:DbTimeoutSeconds`) — typically the DB container is stopped (its DNS name no longer resolves). Start it; `/health` returns 200 within a second |
+| 503 `Read-Only Mode` on writes, login, `/me` | The Primary is down (ADR 0052). Expected: catalog and details keep working from the replica. `docker compose start postgres`; writes return in ≈ 2 s, no backend restart. The first write right after the stop takes 4–8 s (EF retry and DNS) |
+| `503 text/html` "No server is available to handle this request" from HAProxy while the database is down | Expected only when **both** nodes are down (ADR 0033, 0052): every `/health` is 503, so the pool goes out seconds later and HAProxy answers instead of the API. Back shortly after `docker compose start postgres postgres-replica` |
+| `/health` 200 with `"status":"Degraded"` | One database node is down; `detail` says which. The backends stay in the pool (ADR 0052) |
+| Backend restarts in a loop while the Primary is down | Expected: it applies migrations on startup and cannot start without the Primary (ADR 0052). Instances already running keep serving |
 | `~$...docx` files appear in `docs/` | Word lock files while a document is open; ignored by `.gitignore` |
 
 ## Environment on Participant 2's machine
@@ -340,5 +390,7 @@ unrelated project, so a local `.env` sets `POSTGRES_PORT=5434` (from 2026-10-27)
 
 ## Environment on Participant 1's machine
 
-Windows 10, .NET SDK 8.0 / 10.0.201 / 10.0.301, global `dotnet-ef` 10.0.5, Docker 29.3.1, Compose v5.1.1, Go, Node,
-Python 3.13 (no `python-docx`, no `pandoc`, no `zip` in Git Bash), k6.
+Windows 10, i5-9300H (4 cores / 8 threads), 16 GB RAM; Docker Desktop's VM sees 8 CPUs and 7.7 GB, so the 24-core cpuset
+layout of `load-tests/docker-compose.loadtest.yml` (lab 5, measured on Participant 2's machine) does not fit here.
+.NET SDK 8.0 / 10.0.201 / 10.0.401, global `dotnet-ef` 10.0.5, Docker 29.3.1, Compose v5.1.1, Go, Node, Python 3.13 (no
+`python-docx`, no `pandoc`, no `zip` in Git Bash), k6.

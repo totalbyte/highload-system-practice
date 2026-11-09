@@ -8,6 +8,12 @@ x-backend: &backend
   environment: &backend-environment
     ASPNETCORE_ENVIRONMENT: Production
     ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-polling};Username=${POSTGRES_USER:-polling};Password=${POSTGRES_PASSWORD:-polling};Gss Encryption Mode=Disable;Maximum Pool Size=${DB_MAX_POOL_SIZE:-30}"
+    # Читання, що допускають відставання (лаба 6, ADR 0050). У репліки свій пул і той самий бюджет: instances × pool ≤ 90.
+    ConnectionStrings__PostgresReplica: "Host=postgres-replica;Port=5432;Database=${POSTGRES_DB:-polling};Username=${POSTGRES_USER:-polling};Password=${POSTGRES_PASSWORD:-polling};Gss Encryption Mode=Disable;Maximum Pool Size=${DB_MAX_POOL_SIZE:-30}"
+    # false — усі читання на Primary: конфігурація Single Primary для порівняння (лаба 6, 2.6).
+    ReadReplica__Enabled: ${READ_REPLICA_ENABLED:-true}
+    # Скільки секунд після запису користувач читає з Primary (Read-After-Write, ADR 0051); 0 — вимкнено, для демо.
+    ReadAfterWrite__StickyTtlSeconds: ${STICKY_TTL_SECONDS:-5}
     ConnectionStrings__Redis: "redis:6379,abortConnect=false"
     Jwt__Secret: ${JWT_SECRET:-local-dev-secret-change-me-0123456789abcdef}
     Jwt__LifetimeMinutes: ${JWT_LIFETIME_MINUTES:-60}
@@ -75,16 +81,64 @@ services:
       <<: *backend-environment
       INSTANCE_ID: backend-3
 
+  # Primary: приймає всі записи (лаба 6, ADR 0049). Реплікація асинхронна: synchronous_standby_names порожній, тож
+  # COMMIT не чекає репліку. max_slot_wal_keep_size — межа WAL для слота: якщо репліка довго лежить, вона втратить
+  # слот і потребуватиме нового pg_basebackup, зате диск Primary не заповниться.
   postgres:
     image: postgres:17-alpine
+    command:
+      - postgres
+      - -c
+      - wal_level=replica
+      - -c
+      - max_wal_senders=10
+      - -c
+      - max_replication_slots=10
+      - -c
+      - max_slot_wal_keep_size=1GB
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-polling}
       POSTGRES_USER: ${POSTGRES_USER:-polling}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-polling}
+      REPLICATION_PASSWORD: ${REPLICATION_PASSWORD:-replicator}
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./postgres/primary-init.sh:/docker-entrypoint-initdb.d/10-replication.sh:ro
     ports:
       - "${POSTGRES_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Replica: read-only копія, яка відтворює WAL Primary (лаба 6, ADR 0049). На порожньому томі сама робить
+  # pg_basebackup. hot_standby_feedback: Primary не прибирає рядки, які ще читає репліка, — інакше довгі читання
+  # скасовувалися б через конфлікт із відтворенням WAL.
+  postgres-replica:
+    image: postgres:17-alpine
+    entrypoint: ["sh", "/usr/local/bin/replica-entrypoint.sh"]
+    command:
+      - postgres
+      - -c
+      - hot_standby=on
+      - -c
+      - hot_standby_feedback=on
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-polling}
+      POSTGRES_USER: ${POSTGRES_USER:-polling}
+      REPLICATION_PASSWORD: ${REPLICATION_PASSWORD:-replicator}
+    volumes:
+      - pgdata-replica:/var/lib/postgresql/data
+      - ./postgres/replica-entrypoint.sh:/usr/local/bin/replica-entrypoint.sh:ro
+    ports:
+      - "${POSTGRES_REPLICA_PORT:-5435}:5432"
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -148,6 +202,7 @@ networks:
 
 volumes:
   pgdata:
+  pgdata-replica:
   pgadmin-data:
 
 configs:

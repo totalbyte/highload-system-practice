@@ -1,21 +1,35 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-11-04 by Participant 1 (web UI on `feature/web-ui`, not committed — see `log/2026-11-04-p1-web-ui.md`).
+> Last updated: 2026-11-08 by Participant 1 (lab 6 stages 1–6 — see `log/2026-11-08-p1-lab6-topology.md`).
 
-## Web UI (outside the labs, branch `feature/web-ui`, not committed)
+## Current lab: 6 — Database replication
+
+**Participant 1 does lab 6 alone** (agreed by both participants). Branch `lab6/replication`, ADRs from 0049. Plan by
+stages: [`docs/lab6/plan.md`](../lab6/plan.md). Measurements (stage 5) run on Participant 1's machine (8 threads), so a
+single-primary baseline is measured again in the same series; lab 5's absolute numbers (Participant 2's 24 vCPU machine)
+are not comparable.
+
+| Stage | Status |
+|---|---|
+| 1. Topology (2.1) | ✅ `postgres` (Primary) + `postgres-replica`, async streaming, `pg_basebackup` on an empty volume, slot `replica_1` (ADR 0049); `scripts/replication-check.py`; verified on a cold start (17 s), smoke, Primary restart, replica outage, `concurrency-checks`. Committed `7ea6f27` |
+| 2. Read/Write Separation, classification (2.2, 2.3) | ✅ `ReadDb.Eventual` for catalog and details, everything else on the Primary, results MISS stays on the Primary, `X-DB-Node`, `READ_REPLICA_ENABLED` (ADR 0050); `scripts/rw-routing-check.py`; all regressions green. Committed `f19a6bf` |
+| 3. Stale Read, Read-After-Write (2.3, 2.4) | ✅ Session Sticky in Redis, TTL 5 s, set before the response (ADR 0051); `scripts/stale-read-demo.py`; MISS on the replica measured: 6–11 stale rounds of 60 without artificial lag, 0 on the Primary. Committed `31d3353` |
+| 4. Failure scenarios (2.5) | ✅ `DbNodeMonitor`, Primary Fallback, 503 `Read-Only Mode`, `/health` 503 only when both are down (ADR 0052); `scripts/db-failure-check.py`: 0 reader errors in both failures, writes refused in milliseconds; no false failover under `load.py`. Committed `3e68213` |
+| 5. Single Primary vs Primary + Replica (2.6) | ✅ `docs/lab6/load-comparison.md`, ADR 0053, 17 runs on 8 threads, 0 % errors: no throughput gain, read p95 about half under writes up to saturation, writes −25 % at 10 VU; lag up to 29.5 s above saturation, TTL stays 5 s. Committed `d97fb7c` |
+| 6. README, guide, lecturer page (§3, §4) | ✅ README «Лабораторна 6», `docs/lab6-guide.md`, `docs/about/lab6.md`; cold start 18 s, 4 demo scripts passed, web UI checked in a browser (lag, no Primary). Mermaid diagrams checked in a browser with a local mermaid 11.4.0 (GitHub itself not checked). Participant 1 commits |
+
+## Web UI (outside the labs, merged via PR #15)
 
 React + Vite + TS in `frontend/`, container `web` (nginx) behind HAProxy on :8080 — ADR 0048. Pages: list with tabs
 (active / closed / all) and live counters, poll page (vote / change vote, results refreshed every 5 s, node and
 `X-Cache` badge, author actions publish / close / delete), create form, login / register, my polls, favorites
-(localStorage). New endpoint `GET /api/polls/{id}/vote`. Verified in a browser (desktop + mobile width) and smoke via
-:8080. Left: review by Participant 2, commit / PR.
+(localStorage). New endpoint `GET /api/polls/{id}/vote`.
 
-## Current lab: 5 — Load testing & performance baseline
+## Lab 5 — Load testing & performance baseline (✅ defended)
 
-Both participants' tasks are done in one branch `lab5/load-tests` (from `lab4/caching`: it needs `X-Cache` and the
-lab 4 cache). Plan by stages with who explains what at the defense: [`docs/lab5/plan.md`](../lab5/plan.md); ADRs 0045–0047.
-**Merge order:** PR #13 (`lab4/caching`) first, then a PR for `lab5/load-tests`.
+Both participants' tasks were done in one branch `lab5/load-tests`, merged via PR #14. Plan by stages with who explains
+what at the defense: [`docs/lab5/plan.md`](../lab5/plan.md); ADRs 0045–0047.
 
 | Stage | Status |
 |---|---|
@@ -25,9 +39,9 @@ lab 4 cache). Plan by stages with who explains what at the defense: [`docs/lab5/
 | 4. Scaling, cache | ✅ read E(2) 0.86, E(3) 0.72; write 365 → 276 → 229 RPS (negative); cache off: PG tx/s +55 %, RPS −28 % |
 | 5. Bottleneck, baseline, docs | ✅ primary bottleneck: row-lock contention on hot `options.vote_count`; README «Лабораторна 5» (tables, Mermaid charts, baseline card), `docs/lab5-guide.md`, `docs/about/lab5.md`, open model (coordinated omission) |
 
-PR #14 open (Copilot review: 5 load-script issues fixed — user overlap in B open model / C at 800 VUs, fail-fast `series.sh`, smoke `checks` threshold; C-extended and open model re-measured). Left: real defense rehearsal together; `labs/lab5-summary.md` after the defense.
+Copilot review of PR #14: 5 load-script issues fixed (user overlap in B open model / C at 800 VUs, fail-fast `series.sh`, smoke `checks` threshold; C-extended and open model re-measured). `labs/lab5-summary.md` was never written.
 
-## Lab 4 — Distributed caching (PR #13 open, approved)
+## Lab 4 — Distributed caching (✅ defended, merged via PR #13)
 
 **Participant 1 does lab 4 alone** (agreed by both participants), including `Results/`, which Participant 2 owned in
 labs 1–3; Participant 2 reviews the PR. Task list (Ukrainian, ids П1-N):
@@ -45,7 +59,7 @@ labs 1–3; Participant 2 reviews the PR. Task list (Ukrainian, ids П1-N):
 | П1-10 Cache-stampede protection (decided before П1-8) | ✅ ADR 0044: single-flight per instance (`ResultsSingleFlight`); `cache-stampede-check.py`: 6.7–14.4 → 2.1–2.4 DB loads per invalidation (2 instances, 100 readers); race check 0 of 60, all regressions green |
 | Re-verification from scratch (after П1-10) | ✅ cold start 22 s; 10/10 checks; load: cache on 2730 read rps / 0 DB loads, mixed 47 % HIT with 209 DB loads/s for 116 votes/s, Redis down 1355 rps (p95 ×2.4), 0 errors; single-flight 3.1 loads on 3 instances |
 | П1-8 README / contracts / runbook | ✅ README «Архітектура з шаром кешу» (flowchart + sequence diagram, both render), «Підсумок лаби 4» (requirement → evidence, load table, from-scratch check, defense commands), RACI, stack; root `CLAUDE.md` fixed (HAProxy, no :8082, lab 4 rule and task list) |
-| П1-9 Defense guide, lecturer page, theory | ✅ `docs/lab4-guide.md`, `docs/about/lab4.md`; dry run from a cold start ≈ 75 s, two script fixes (wait for Redis reconnect); left: `labs/lab4-summary.md` after the defense |
+| П1-9 Defense guide, lecturer page, theory | ✅ `docs/lab4-guide.md`, `docs/about/lab4.md`; dry run from a cold start ≈ 75 s, two script fixes (wait for Redis reconnect); `labs/lab4-summary.md` was never written |
 
 ## Lab 3 — Horizontal scaling (✅ defended)
 
@@ -105,8 +119,9 @@ All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-
 | 1 System Design + MVP | ✅ defended (per Participant 1, 2026-10-28); `labs/lab1-summary.md` was never written |
 | 2 Stateless | ✅ defended; `labs/lab2-summary.md`, `docs/lab2-guide.md`, `docs/about/lab2.md` |
 | 3 Horizontal Scaling | ✅ defended; `labs/lab3-summary.md`, `docs/lab3-guide.md`, `docs/about/lab3.md` |
-| 4 Distributed Caching | 🟡 in progress (Participant 1 alone), branch `lab4/caching`: П1-1 … П1-10 done; PR, defense and `labs/lab4-summary.md` left |
-| 5 Load Testing | ⏳ (groundwork: 500 seed users, hot poll #1) |
+| 4 Distributed Caching | ✅ defended (per Participant 1, 2026-11-08); `docs/lab4-guide.md`, `docs/about/lab4.md`; `labs/lab4-summary.md` was never written |
+| 5 Load Testing | ✅ defended (per Participant 1, 2026-11-08); `docs/lab5-guide.md`, `docs/about/lab5.md`; `labs/lab5-summary.md` was never written |
+| 6 Database Replication | 🟡 in progress (Participant 1 alone), branch `lab6/replication`: all 6 stages done; PR, defense and `labs/lab6-summary.md` left |
 
 ## Repository state
 
@@ -131,6 +146,8 @@ All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-
 
 ## Next steps
 
-- **Lab 4 (Participant 1):** all tasks done on `lab4/caching`. Next: PR `lab4/caching` → `main` (review by
-  Participant 2), rehearse by `docs/lab4-guide.md`, defend, then `labs/lab4-summary.md` with what was asked.
-- Record what the lecturer asked at the lab 2 / 3 defenses in `labs/lab2-summary.md` / `lab3-summary.md` if remembered.
+- **Lab 6 (Participant 1):** rehearse by `docs/lab6-guide.md`, PR `lab6/replication` → `main` (review by Participant 2), defend, then `labs/lab6-summary.md`.
+- Known web UI behaviour during a Primary outage: after a page reload the user looks logged out (`/me` answers 503, the token is kept and works again afterwards). Not fixed.
+- Known bug outside lab 6: `POST /api/polls` with a valid token and no `options` answers 500 instead of 422 (NullReferenceException in
+  `PollValidators.cs:17`, in the code since lab 1). Not fixed.
+- Record what the lecturer asked at the lab 2–5 defenses in the lab summaries if remembered.

@@ -1,6 +1,6 @@
 # Платформа опитувань — Highload Systems Practice
 
-Наш варіант — платформа опитувань у реальному часі. Проєкт розвивається від лаби 1 (MVP) до лаби 5 (навантажувальне тестування); методички та дизайн-документи — у [`docs/`](docs/).
+Наш варіант — платформа опитувань у реальному часі. Проєкт розвивається від лаби 1 (MVP) до лаби 6 (реплікація БД); методички та дизайн-документи — у [`docs/`](docs/).
 
 > **Розгорнутий посібник до лаби 1** (архітектура, логіка, обґрунтування рішень, питання на захист): [`docs/lab1-guide.md`](docs/lab1-guide.md).
 >
@@ -8,9 +8,11 @@
 >
 > **Посібники до захисту лаб 3 і 4** (шпаргалка, сценарій за пунктами процедури, питання на захист): [`docs/lab3-guide.md`](docs/lab3-guide.md), [`docs/lab4-guide.md`](docs/lab4-guide.md); сторінки для викладача — [`docs/about/`](docs/about/lab4.md).
 >
+> **Посібник до захисту лаби 6** (реплікація, сценарій захисту, теорія: синхронна / асинхронна реплікація, Split-Brain, CAP, PACELC, Raft): [`docs/lab6-guide.md`](docs/lab6-guide.md); сторінка для викладача — [`docs/about/lab6.md`](docs/about/lab6.md).
+>
 > Контекст для учасників і AI-агентів: [`CLAUDE.md`](CLAUDE.md) → [`docs/ai/`](docs/ai/status.md) (стан, рішення/ADR, контракти, runbook, журнал сесій).
 
-**Стек:** C# / ASP.NET Core 10 · EF Core 10 + Npgsql · PostgreSQL 17 · Redis 8 (розподілений кеш) · HAProxy 3.4 · JWT · FluentValidation · Docker Compose
+**Стек:** C# / ASP.NET Core 10 · EF Core 10 + Npgsql · PostgreSQL 17 (Primary + Replica) · Redis 8 (розподілений кеш) · HAProxy 3.4 · JWT · FluentValidation · Docker Compose
 
 ## Швидкий старт
 
@@ -26,7 +28,7 @@ docker compose up -d --build
 | Swagger UI | http://localhost:8080/swagger |
 | Health check | http://localhost:8080/health |
 | Статистика балансувальника | http://localhost:8404/stats |
-| PostgreSQL (з хоста) | `localhost:5433`, БД/користувач/пароль `polling` |
+| PostgreSQL (з хоста) | Primary `localhost:5433`, Replica `localhost:5435` (лише читання), БД/користувач/пароль `polling` |
 | Redis (з хоста) | `localhost:6379`; консоль — `docker compose exec redis redis-cli` |
 | Adminer (опційно) | `docker compose --profile tools up -d` → http://localhost:8081 |
 | pgAdmin 4 | http://localhost:5050 (піднімається разом зі стеком, ~40 с), сервер `polling (docker)` уже додано, пароль БД `polling` |
@@ -198,16 +200,19 @@ src/PollingPlatform.Api/
   Data/          DbContext, конфігурації EF, міграції, сід
   Common/        бізнес-винятки → HTTP-коди, обробник помилок, X-Instance-ID
 frontend/       веб-інтерфейс (React + Vite + TypeScript), у стеку — контейнер web (nginx) за HAProxy, http://localhost:8080
-docker-compose.yml        стек: lb (HAProxy), web, backend-1/2 (+ backend-3 у профілі scale), postgres, redis, pgAdmin
+docker-compose.yml        стек: lb (HAProxy), web, backend-1/2 (+ backend-3 у профілі scale), postgres, postgres-replica, redis, pgAdmin
 docker-compose.debug.yml  лише для налагодження: порти 8091–8093 до окремих інстансів
 haproxy/         конфіг балансувальника (haproxy.cfg)
+postgres/        налаштування реплікації (лаба 6): роль і слот на Primary, pg_basebackup на Replica
 requests/        колекції запитів для демо (polls.http, cross-instance.http)
-scripts/         перевірки й експерименти лаб 2–4 (lb-algorithm.sh, lb-distribution.py, lb-failover.py, cross-instance.sh,
-                 load.py, cache-demo.py, cache-latency.py, cache-race-check.py, cache-stampede-check.py та ін.; Python — лише стандартна
+scripts/         перевірки й експерименти лаб 2–6 (lb-algorithm.sh, lb-distribution.py, lb-failover.py, cross-instance.sh,
+                 load.py, cache-demo.py, cache-race-check.py, replication-check.py, rw-routing-check.py, stale-read-demo.py,
+                 db-failure-check.py та ін.; Python — лише стандартна
                  бібліотека, запуск — у runbook)
 docs/            методички та дизайн-документи
 docs/lab2/, docs/lab3/  розподіл задач лаб 2 і 3 між учасниками
 docs/lab4/       задачі лаби 4 (виконує Учасник 1)
+docs/lab6/       план лаби 6 і порівняльний звіт Single Primary / Primary + Replica (виконує Учасник 1)
 docs/ai/         контекст для AI-агентів: стан, ADR, контракти, runbook, журнал сесій
 CLAUDE.md        точка входу для Claude Code
 ```
@@ -243,6 +248,8 @@ R — Responsible, A — Accountable, C — Consulted, I — Informed.
 | Лаба 4 (за домовленістю виконує Учасник 1): вибір об'єкта кешування, ключі, TTL, інвалідація | R/A | C (рев'ю) |
 | Лаба 4: `X-Cache`, fallback на БД, захист від Cache Stampede | R/A | C (рев'ю) |
 | Лаба 4: заміри, демо- і перевірочні скрипти, схема, документація | R/A | C (рев'ю) |
+| Лаба 6 (за домовленістю виконує Учасник 1): топологія реплікації, Read/Write Separation, Read-After-Write | R/A | C (рев'ю) |
+| Лаба 6: відмови вузлів БД, порівняння продуктивності, схема, документація | R/A | C (рев'ю) |
 
 ## High-Load сценарій
 
@@ -1778,3 +1785,172 @@ Primary Bottleneck:  row-lock contention on options.vote_count of the hot poll (
 ```
 
 **Обмеження вимірювань.** Усе на одній машині: ядра розділені (`cpuset`), але пам'ять, диск і хост-ОС Windows — спільні. Між нічною і ранковою серією абсолютні числа відрізнялися приблизно вдвічі (ранкова — нижча, хост був зайнятий іншим), тому порівнюються лише прогони однієї серії; висновки (точки насичення, вузьке місце, ефект інстансів і кешу) в обох серіях однакові. Таблиці — з ранкової серії, перша збережена як `load-tests/results/run1/` (поза Git).
+
+
+## Лабораторна 6: Реплікація БД і розділення читання та запису
+
+> Лабу виконує Учасник 1 (за домовленістю учасників). Посібник до захисту — [`docs/lab6-guide.md`](docs/lab6-guide.md), сторінка для викладача — [`docs/about/lab6.md`](docs/about/lab6.md), рішення — ADR [0049](docs/ai/decisions/0049-primary-replica-topology.md)–[0053](docs/ai/decisions/0053-replica-load-comparison.md).
+
+### Топологія і потоки R/W (2.1, §3)
+
+`postgres` — Primary, приймає всі записи. `postgres-replica` — read-only вузол, який асинхронно відтворює WAL Primary. Репліка стартує без ручних кроків: на порожньому томі сама робить `pg_basebackup`. Налаштування: [`docker-compose.yml`](docker-compose.yml) (WAL, `hot_standby_feedback`), [`postgres/primary-init.sh`](postgres/primary-init.sh) (роль `replicator`, слот `replica_1`), [`postgres/replica-entrypoint.sh`](postgres/replica-entrypoint.sh).
+
+```mermaid
+flowchart LR
+    Client["Клієнт"] --> LB["HAProxy :8080"]
+
+    subgraph inst ["backend-1 / backend-2"]
+        direction TB
+        WR["<b>Записи і строгі читання</b><br/>голос, publish, close,<br/>логін, /me, мій голос"]
+        EV["<b>Eventual-читання</b><br/>каталог, деталі опитування"]
+        RS["<b>Результати</b><br/>Cache-Aside"]
+    end
+
+    LB --> WR
+    LB --> EV
+    LB --> RS
+
+    P[("<b>PostgreSQL Primary</b><br/>усі записи")]
+    R[("<b>PostgreSQL Replica</b><br/>read-only")]
+    RED[("<b>Redis</b><br/>кеш результатів,<br/>позначки Sticky")]
+
+    WR -->|"читання і запис"| P
+    EV -->|"читання"| R
+    EV -.->|"щойно писав або Replica лежить"| P
+    RS -->|"MISS"| P
+    RS -.->|"Primary лежить, без запису в кеш"| R
+    P ==>|"асинхронний WAL, слот replica_1"| R
+    WR -->|"позначка Sticky, TTL 5 с"| RED
+    EV <-->|"перевірка позначки"| RED
+    RS <-->|"HIT, запис у кеш"| RED
+```
+
+Вибір живого вузла при відмовах робить `DbNodeMonitor` (розділ «Відмови вузлів»). Перевірка: `python scripts/replication-check.py [--pause]`. Міграції й сід застосовуються лише на Primary і з'являються на Replica; INSERT, UPDATE і DELETE через API доходять до неї, а запис напряму відхиляється: `cannot execute UPDATE in a read-only transaction`. `replay_lag` на простої ≈ 4–12 мс. Після `restart postgres` потік відновлюється сам (≈ 2 с), а зупинена репліка наздоганяє через слот без нового `pg_basebackup`.
+
+### Read/Write Separation і класифікація читань (2.2, 2.3)
+
+Маршрутизація — у застосунку: проксі не розрізнить два однакові `SELECT`, з яких лише один можна читати із застарілими даними. Увесь код за замовчуванням працює з Primary ([`AppDbContext`](src/PollingPlatform.Api/Data/AppDbContext.cs)), а на репліку веде лише [`ReadDb`](src/PollingPlatform.Api/Data/ReadDb.cs). Забута класифікація коштує зайвого навантаження на Primary, а не застарілих даних. Заголовок `X-DB-Node` ставить перехоплювач з'єднань EF, тож він показує, куди запит справді ходив.
+
+| Вузол | Операції | Чому |
+|---|---|---|
+| **Replica** (eventual) | каталог `GET /api/polls`, деталі `GET /api/polls/{id}`, результати при вимкненому кеші | коротке відставання не шкодить, відповідь ніде не зберігається |
+| **Primary** (strict) | логін, реєстрація, `/me` | автентифікація має бачити поточні дані |
+| **Primary** (strict) | голос, publish, close, delete і перевірки перед ними | застаріла перевірка відхилила б голос у щойно опублікованому опитуванні |
+| **Primary** (strict) | відповідь після запису, `GET /api/polls/{id}/vote` | користувач має бачити власну дію |
+| **Primary** | результати при MISS і BYPASS | інакше застарілий агрегат потрапить у спільний кеш, див. нижче |
+
+Доказ: `python scripts/rw-routing-check.py [--pause]` перевіряє 10 операцій і незалежно лічильники самого PostgreSQL: за 300 читань каталогу на репліці ≈ +1206 транзакцій, на Primary ≈ +30 (фон).
+
+**Чому результати при MISS читаються з Primary, виміряно.** Голос збільшує покоління кешу, і промах, що прочитав репліку, яка цього голосу ще не має, записав би старий агрегат під новим поколінням для всіх. `cache-race-check.py`, застарілих раундів із 60:
+
+| MISS читає з | Без штучної затримки | Затримка 200 мс | Затримка 1 с |
+|---|---|---|---|
+| Replica (тимчасовий дослід) | 11, 6 | 60 | є, кількість не зафіксовано |
+| Primary (реальний код) | 0 | 0 | 0 |
+
+### Stale Read і Read-After-Write (2.3, 2.4)
+
+Механізм — **Session Sticky Routing** ([`StickySessions.cs`](src/PollingPlatform.Api/Data/StickySessions.cs), [ADR 0051](docs/ai/decisions/0051-read-after-write-sticky-routing.md)): після успішного запису читання цього користувача 5 с ідуть на Primary. Позначка в Redis, бо наступний запит може потрапити на інший інстанс, і ставиться до відправки відповіді. Redis недоступний — автентифіковані читання йдуть на Primary. Перелік критичних читань вище — це Explicit Primary Routing.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant A as Автор
+    participant O as Інший читач
+    participant B as backend
+    participant Rd as Redis
+    participant P as Primary
+    participant R as Replica
+
+    A->>B: POST /api/polls, PATCH publish
+    B->>P: запис, COMMIT
+    B->>Rd: SET polling:sticky:userId EX 5 до відповіді
+    B-->>A: 200
+    Note over P,R: WAL іде асинхронно, Replica ще не має запису
+    O->>B: GET /api/polls/ID без токена
+    B->>R: читання
+    R-->>O: 404, Stale Read
+    A->>B: GET /api/polls/ID із токеном
+    B->>Rd: позначка є
+    B->>P: читання
+    P-->>A: 200, автор бачить свою зміну
+    P--)R: WAL відтворено
+    O->>B: GET /api/polls/ID
+    B->>R: читання
+    R-->>O: 200
+```
+
+`python scripts/stale-read-demo.py [--pause] [--lag 3]`, керована затримка через `recovery_min_apply_delay`:
+
+| Ситуація | Результат |
+|---|---|
+| Сторонній читач одразу після запису | 404 з репліки, бачить опитування через 2.5–2.9 с |
+| Автор, захист увімкнено | 200 з Primary на обох інстансах |
+| Автор після завершення TTL | знову читає з репліки |
+| Автор, захист вимкнено (`STICKY_TTL_SECONDS=0`) | 404 на власне опитування |
+| Затримка 8 с, більша за TTL 5 с | після TTL автор теж отримує 404: межа механізму |
+
+### Відмови вузлів (2.5)
+
+[`DbNodeMonitor`](src/PollingPlatform.Api/Data/DbNodeMonitor.cs) щосекунди перевіряє обидва вузли окремим з'єднанням поза пулом і реагує на першу невдалу спробу з'єднання живого запиту. До цього зупинена репліка давала 503 через 8.6–10.6 с, а `/health` дивився лише на Primary, і без нього HAProxy виключив би всі інстанси ([ADR 0052](docs/ai/decisions/0052-db-node-failures.md)).
+
+`python scripts/db-failure-check.py [--pause]`, сам зупиняє і запускає вузли, 4 читачі каталогу у фоні:
+
+| Відмова | Читання | Записи та строгі читання | Відновлення, без рестарту backend |
+|---|---|---|---|
+| **Replica** | 0 помилок, найповільніше 39–152 мс, далі на Primary | працюють, 201 | читання на репліці за 0.7–1.3 с |
+| **Primary** | 0 помилок, найповільніше 34–42 мс, на Replica; деталі й результати теж | 503 `Read-Only Mode`: створення, голос, логін, `/me` за 9–87 мс після прогріву | записи за 1.3–2.3 с, потік WAL за 0.3–0.8 с |
+| **Обидва** | `/health` 503 через 3.9–4.7 с, контрольована 503 | те саме | за 1.2–1.3 с |
+
+Автоматичного призначення нового Primary немає: завдання вимагає Read-Only Mode, а вибір лідера — теоретичне питання. Відомі межі: перший запис після падіння Primary чекає 4–8 с до своєї 503; голос у момент падіння може бути закомічений, хоча клієнт отримав 503 (повтор дасть 409 або 200, подвійного голосу не буде); backend не стартує без Primary через міграції; у веб-інтерфейсі під час відмови користувач виглядає незалогіненим після перезавантаження сторінки, бо `/me` відповідає 503, але токен не втрачається.
+
+### Порівняння: Single Primary проти Primary + Replica (2.6)
+
+Повний звіт з усіма ступенями — [`docs/lab6/load-comparison.md`](docs/lab6/load-comparison.md), стенд — [ADR 0053](docs/ai/decisions/0053-replica-load-comparison.md). 17 прогонів скриптами лаби 5 на 8 логічних потоках, кожен на чистому стеку, **0 % помилок**. Абсолютні числа з лабою 5 не порівнюються: її міряно на іншій машині.
+
+**Висновок:** одна репліка такого самого розміру **не збільшує пропускну здатність**, бо читання лише переїжджають на такий самий вузол, а Primary простоює. Її користь — **ізоляція читання від запису**. Значення по прогонах:
+
+| Сценарій | Показник | Single Primary | Primary + Replica |
+|---|---|---|---|
+| A, кеш увімк., 200 VU | RPS · p95 · p99 | 1870 · 442 · 615 | 1935 · 436 · 612 |
+| A, кеш вимк., 200 VU | RPS · p95 · p99 | 1163 · 461 · 601; 1154 · 445 · 586 | 1091 · 485 · 627; 1149 · 457 · 608 |
+| A + 15 VU запису, 50 VU | RPS читання | 1201; 1444 | 1372; 1336; 1345 |
+| | p95 читання, мс | 158; 134 | **73; 78; 74** |
+| | p99 читання, мс | 256; 204 | **109; 147; 118** |
+| 15 VU запису, весь прогін | RPS | 152; 127 | **197; 193; 198** |
+| | p99, мс | 972; 1071 | **425; 398; 386** |
+| B, запис, 10 VU | RPS | **420; 427** | 324; 316; 296 |
+| B, запис, 200 VU | RPS | 198; 198 | 185; 195; 184 |
+| C, workflow, 200 VU | RPS · p95 · p99 | 687 · 447 · 698 | 659 · 469 · 706 |
+
+```mermaid
+%%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#dc2626, #2563eb"}}}}%%
+xychart-beta
+    title "p95 читання, мс. Червона — Single, синя — Replica"
+    x-axis "VUs" [10, 25, 50, 100, 200]
+    y-axis "ms"
+    line [32, 68, 146, 237, 492]
+    line [35, 42, 75, 232, 655]
+```
+
+**Точка насичення.** Чисте читання: ≈ 25–50 VU в обох конфігураціях. Запис: ≈ 10 VU в обох, далі блокування рядків `vote_count`. Змішане: Primary + Replica виходить на плато близько 50 VU (≈ 1350 RPS), Single повільно росте далі, але ціною вдвічі більшого p95 на 50 VU. Вище насичення перевага репліки зникає.
+
+**Сценарій C** показує ціну Read-After-Write: цикл користувача коротший за TTL, тож Sticky веде майже всі його читання на Primary, і на репліці лише 4–5 транзакцій/с.
+
+**Затримка реплікації.** До насичення — щонайбільше 206 мс, у ≈ 24 рази менше за TTL. Вище насичення у змішаному навантаженні вона стрибала до 4.1, 24.8 і 29.5 с із великим розкидом, а в одному прогоні лишалася нижче 0.5 с. Причину не встановлено. У 2 з 4 прогонів вона перевищила TTL, тож там автор міг би побачити застарілі дані. Рішення: TTL лишається 5 с, це записана межа механізму (ADR 0053).
+
+**Обмеження вимірювань.** Сусідні логічні потоки ділять фізичне ядро, диск спільний, прогонів по 1–3, розкид Single у змішаному навантаженні великий, тому висновки стосуються лише великих різниць. Перша версія серії була спотворена: слот зупиненої репліки сповільнював запис Single у 1.6 раза. Це виявлено, виправлено і описано у звіті.
+
+### Підсумок лаби 6
+
+| Вимога | Де і чим підтверджено |
+|---|---|
+| 2.1 Топологія, автореплікація | `postgres-replica`, `scripts/replication-check.py` |
+| 2.2 Read/Write Separation | `ReadDb`, `X-DB-Node`, `scripts/rw-routing-check.py` |
+| 2.3 Класифікація, Replication Lag, Stale Read | таблиця класифікації, `recovery_min_apply_delay`, `scripts/stale-read-demo.py` |
+| 2.4 Read-After-Write | Session Sticky у Redis і Explicit Primary, той самий скрипт |
+| 2.5 Відмови | `DbNodeMonitor`, `scripts/db-failure-check.py` |
+| 2.6 Порівняння | `load-tests/series-lab6.sh`, `docs/lab6/load-comparison.md` |
+| §3 Конфігурація, код, звіт, схема | цей розділ |
+
+Перевірка з холодного старту (`down -v` → `up`, 2026-11-08): готовність 18 с без ручних кроків; `replication-check`, `rw-routing-check`, `stale-read-demo`, `db-failure-check` — ALL PASSED, разом ≈ 100 с. Веб-інтерфейс перевірено в браузері під затримкою 3 с: автор одразу бачить нове опитування; без Primary каталог працює, а голос показує повідомлення про недоступність.

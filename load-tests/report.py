@@ -80,7 +80,35 @@ def resources(json_path, windows):
         # Транзакцій PostgreSQL за секунду: приріст накопиченого лічильника між першим і останнім зняттям на плато.
         db_out[s]["tps"] = ((points[-1][1] - points[0][1]) / (points[-1][0] - points[0][0])
                             if len(points) >= 2 and points[-1][0] > points[0][0] else None)
+    replica_stats(prefix, windows, db_out)
     return {s: {c: avg(v) for c, v in d.items()} for s, d in cpu.items()}, db_out
+
+
+def replica_stats(prefix, windows, db_out):
+    """Лаба 6: транзакції репліки за секунду і затримка реплікації по ступенях; файла немає — поля лишаються порожні."""
+    path = f"{prefix}-replica.tsv"
+    if not os.path.exists(path):
+        return
+    points, lags, bytes_behind = defaultdict(list), defaultdict(list), defaultdict(list)
+    with open(path, encoding="utf8") as f:
+        for row in csv.DictReader(f, delimiter="\t"):
+            t = float(row["epoch_s"])
+            step = next((n for n, (a, b) in windows.items() if a + 3 <= t <= b), None)
+            if step is None:
+                continue
+            if row.get("replica_xact_total"):
+                points[step].append((t, float(row["replica_xact_total"])))
+            if row.get("replay_lag_ms"):
+                lags[step].append(float(row["replay_lag_ms"]))
+            if row.get("lag_bytes"):
+                bytes_behind[step].append(float(row["lag_bytes"]))
+    for step in set(points) | set(lags):
+        d = db_out.setdefault(step, {})
+        p = points.get(step, [])
+        d["replica_tps"] = (p[-1][1] - p[0][1]) / (p[-1][0] - p[0][0]) if len(p) >= 2 and p[-1][0] > p[0][0] else None
+        d["lag_avg"] = sum(lags[step]) / len(lags[step]) if lags.get(step) else None
+        d["lag_max"] = max(lags[step]) if lags.get(step) else None
+        d["behind_max"] = max(bytes_behind[step]) if bytes_behind.get(step) else None
 
 
 def fmt(v, digits=1):
@@ -100,15 +128,18 @@ def step_table(steps):
 def resource_table(steps, cpu, db):
     containers = sorted({c for d in cpu.values() for c in d})
     head = ("| VUs | " + " | ".join(f"CPU {c}, %" for c in containers) +
-            " | PG транзакцій/с | PG active | PG wait Lock | PG idle in tx | PG conns |")
-    out = [head, "|" + "---|" * (len(containers) + 6)]
+            " | PG транзакцій/с | PG active | PG wait Lock | PG idle in tx | PG conns |"
+            " Replica транзакцій/с | Lag avg, мс | Lag max, мс | Behind max, КБ |")
+    out = [head, "|" + "---|" * (len(containers) + 10)]
     for s in steps:
         if s["vus"] is None or s["name"] not in cpu:
             continue
         c, d = cpu[s["name"]], db.get(s["name"], {})
         out.append(f"| {s['vus']} | " + " | ".join(fmt(c.get(x), 0) for x in containers) +
                    f" | {fmt(d.get('tps'), 0)} | {fmt(d.get('active'))} | {fmt(d.get('waiting_lock'))} | "
-                   f"{fmt(d.get('idle_in_tx'))} | {fmt(d.get('client_conns'), 0)} |")
+                   f"{fmt(d.get('idle_in_tx'))} | {fmt(d.get('client_conns'), 0)} | {fmt(d.get('replica_tps'), 0)} | "
+                   f"{fmt(d.get('lag_avg'))} | {fmt(d.get('lag_max'))} | "
+                   f"{fmt(d['behind_max'] / 1024 if d.get('behind_max') is not None else None, 0)} |")
     return "\n".join(out)
 
 

@@ -1,5 +1,5 @@
 # 0019. `/health` uses its own PostgreSQL probe with a 2 s timeout
-**Status:** Accepted (amends 0012) · **Date:** 2026-09-30 · **Author:** Participant 1
+**Status:** Accepted (amends 0012), amended by 0052 (`/health` answers from the monitor) · **Date:** 2026-09-30 · **Author:** Participant 1
 
 ## Context
 The review (`log/2026-09-22-p1-lab1-review.md`, problem 4) measured `/health` at ~16 s when the DB container was

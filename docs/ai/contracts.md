@@ -15,7 +15,7 @@ Update this file whenever the API, the schema, or code another participant depen
 | PATCH | `/api/polls/{id}/publish` | author | 200 | 403, 404, 409 | P1 |
 | PATCH | `/api/polls/{id}/close` | author | 200 | 403, 404, 409 | P1 |
 | DELETE | `/api/polls/{id}` | author | 204 | 403, 404, 409 | P1 |
-| GET | `/health` | — | 200 / 503 `{status, instance, checks, durationMs}`, answers within 2 s (ADR 0019) | | P1 |
+| GET | `/health` | — | 200 `Healthy` / `Degraded` (one database node down) or 503 `Unhealthy` (both down); `{status, instance, checks, detail, durationMs}`, answers at once from the monitor's state (ADR 0052) | | P1 |
 | POST | `/api/polls/{id}/vote` | JWT | 201 new vote / 200 changed or repeated; `{pollId, optionId, votedAt}` | 401, 404, 409, 422 | P2 |
 | GET | `/api/polls/{id}/vote` | JWT | 200 `{pollId, optionId, votedAt}` — the caller's own vote (web UI, ADR 0048) | 401, 404 (not voted) | P1 (web UI) |
 | GET | `/api/polls/{id}/results` | optional | 200 `{pollId, title, status, totalVotes, generatedAt, options[]}` + header `X-Cache: HIT \| MISS \| BYPASS` (ADR 0042, 0043) | 404 | P2 → P1 (lab 4) |
@@ -26,8 +26,14 @@ Update this file whenever the API, the schema, or code another participant depen
   are reachable only inside `app-network` as `backend-N:8080`. HAProxy logs every request to stdout (`docker compose
   logs lb`) with the backend/server name, status and timers (`%s`, `%ST`, `%Tr`, `%Ta`), and since lab 4 the captured
   `X-Cache` response header in braces — `{HIT}` / `{MISS}` on results reads, `{}` elsewhere (ADR 0042).
+- Since lab 6 (ADR 0050) responses carry `X-DB-Node: primary | replica | primary,replica`: the nodes the request really
+  connected to; absent when no database was touched (results HIT). Catalog and details are eventually consistent (replica);
+  everything else reads the Primary. After a successful write the user's own catalog and details reads also go to the Primary
+  for `STICKY_TTL_SECONDS` (default 5, ADR 0051); other users may still see the old state for the replication lag.
+- Primary down (ADR 0052): every write and strict read (login, registration, `/me`, own vote) answers 503 ProblemDetails with the title
+  `Read-Only Mode`; catalog, details and results keep working from the replica. Replica down: reads silently go to the Primary.
 - Load balancer behaviour other code relies on (ADR 0033, 0034): `/health` is the readiness check (200 = in the pool,
-  503 = out; it must stay DB-only and never check Redis, ADR 0021); a node is also taken out on the first connection
+  503 = out, only when both database nodes are down; it must stay DB-only and never check Redis, ADR 0021); a node is also taken out on the first connection
   error; failed connects are retried on another node for any method, in-flight failures only for GET. HAProxy never
   treats the API's 5xx as a node failure. `POST /api/polls/{id}/vote` goes to a separate backend `be_vote`
   (Participant 2, ADR 0037): same algorithm/weights (switched together by `lb-algorithm.sh`), its own `/health` checks
@@ -54,7 +60,7 @@ Update this file whenever the API, the schema, or code another participant depen
 | 404 | Poll doesn't exist, or it's someone else's draft |
 | 409 | Invalid status transition; duplicate email/username; duplicate vote; voting outside `startsAt`…`endsAt` |
 | 422 | Field validation failed |
-| 503 | Transient DB failure that outlived EF's retries (ADR 0016) — `detail` names the dependency. Since lab 4 a Redis outage no longer produces 503 on results reads: they fall back to the DB (ADR 0043); the Redis → 503 mapping stays only as a safety net |
+| 503 | Primary down: title `Read-Only Mode` (ADR 0052). Transient DB failure that outlived EF's retries (ADR 0016) — `detail` names the dependency. Since lab 4 a Redis outage no longer produces 503 on results reads: they fall back to the DB (ADR 0043); the Redis → 503 mapping stays only as a safety net |
 
 **Voting rules (ADR 0014, 0015):** `{optionId}` body; the unique index `(poll_id, user_id)` — not the pre-check — is
 what guarantees one vote per user; an option from another poll → 404 `PollOptionNotFoundException`; before
@@ -120,6 +126,7 @@ Defined by EF migrations in `src/PollingPlatform.Api/Data/Migrations` (current: 
   `InvalidateAsync` log a warning and return, so a committed vote/publish/close/delete still answers with its success
   code. Callers need no try/catch. The Redis client is fail-fast (`BacklogPolicy.FailFast`, 1 s timeouts) and Redis
   runs without persistence (`--save ""`) — it comes back empty after a restart.
+- Redis format since lab 6 (ADR 0051): `polling:sticky:{userId}`, value 1, TTL `STICKY_TTL_SECONDS`.
 - New exceptions in `Common/Exceptions/VoteExceptions.cs`: `PollOptionNotFoundException` (404),
   `PollNotStartedException`, `PollVotingEndedException`, `DuplicateVoteException` (409).
 - `GlobalExceptionHandler` maps transient DB failures (ADR 0016) and Redis connection failures/timeouts (ADR 0027)
