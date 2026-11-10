@@ -27,6 +27,13 @@ public class ReadOnlyModeException()
     : AppException(StatusCodes.Status503ServiceUnavailable, "Read-Only Mode",
         "The primary database is unavailable: writes and strictly consistent reads are rejected. Please retry later.");
 
+/// <summary>
+/// Шард недоступний повністю (лаба 7, ADR 0057): монітор не бачить живим жодного його вузла, тож запит одразу отримує 503
+/// замість очікування таймауту підключення. Для каталогу — коли не відповів жоден шард.
+/// </summary>
+public class ShardUnavailableException(string message)
+    : AppException(StatusCodes.Status503ServiceUnavailable, "Shard Unavailable", message);
+
 public class ValidationException(IDictionary<string, string[]> errors)
     : AppException(StatusCodes.Status422UnprocessableEntity, "Validation Failed", "One or more validation errors occurred.")
 {

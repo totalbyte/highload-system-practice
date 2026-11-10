@@ -91,6 +91,7 @@ Common/
   `ShardContexts.PrimaryFor(pollId)` / `ReadFor(pollId)` (or all shards for the catalog). The bare `AppDbContext` is Shard A:
   use it only for `users` and `nextval('poll_ids')`. No JOIN from poll data to `users` (different nodes) — the author name is
   `polls.creator_username`; no FKs to `users`. New poll ids always come from `poll_ids`, never from the shard.
-- `/health` answers from `DbNodeMonitor`, never through the DbContext / EF retry strategy; 503 only when both database nodes are
-  down (ADR 0019, 0052). The monitor's probe must stay unpooled: on the shared pool, load would look like a dead Primary and
+- `/health` answers from `DbNodeMonitor`, never through the DbContext / EF retry strategy; 503 only when every node of every
+  shard is down (ADR 0019, 0052, 0055). The catalog skips a shard that has no live node (`X-Shard-Unavailable`), and
+  `ReadDb` throws `ShardUnavailableException` at once for such a shard (ADR 0057). The monitor's probe must stay unpooled: on the shared pool, load would look like a dead Primary and
   block writes. Only data read from the Primary goes into the results cache (ADR 0052).

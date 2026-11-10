@@ -1,8 +1,8 @@
 # Polling Platform — High-Load Systems course project
 
 Two-person university project for "High-Load Systems Engineering" (4th year). A real-time polling platform
-(User, Poll, Option, Vote) that grows over 6 labs: MVP → stateless → horizontal scaling → distributed caching →
-load testing → database replication. **Participant 1** ("platform": infra, DB, auth, poll lifecycle);
+(User, Poll, Option, Vote) that grows over 7 labs: MVP → stateless → horizontal scaling → distributed caching →
+load testing → database replication → sharding. **Participant 1** ("platform": infra, DB, auth, poll lifecycle);
 **Participant 2** — teammate ("voting core": votes, results, caching, error handling, bottleneck analysis).
 Both are questioned about the *whole* system at every lab defense.
 
@@ -38,15 +38,16 @@ Course materials and team documents are in Ukrainian ("Учасник 1/2" = Par
 | [`docs/lab3-guide.md`](docs/lab3-guide.md) | Lab 3 defense guide (Ukrainian): one-minute cheat sheet, step-by-step defense script for the 4 procedure items, Q&A, what to do if a demo breaks |
 | [`docs/lab4-guide.md`](docs/lab4-guide.md) | Lab 4 defense guide (Ukrainian): cheat sheet, defense script for the 4 procedure items, theory (stampede, avalanche, LRU / LFU, expiration vs invalidation) and Q&A, troubleshooting |
 | [`docs/lab5-guide.md`](docs/lab5-guide.md) | Lab 5 defense guide (Ukrainian): cheat sheet, defense script for the 4 procedure items (k6 runs, analysis, scaling / cache comparison), theory (saturation point, coordinated omission, GC / JIT) and Q&A |
+| [`docs/lab7-guide.md`](docs/lab7-guide.md) | Lab 7 defense guide (Ukrainian): cheat sheet, defense script for the 4 procedure items, theory (partitioning / sharding / replication, distributed JOIN, unique constraints, 2PC, Saga, consistent hashing), Q&A, troubleshooting |
 | [`docs/lab6-guide.md`](docs/lab6-guide.md) | Lab 6 defense guide (Ukrainian): cheat sheet, defense script for the 4 procedure items, theory (replication modes, Split-Brain, CAP, PACELC, Raft), Q&A, troubleshooting |
-| [`docs/about/lab2.md`](docs/about/lab2.md), [`lab3.md`](docs/about/lab3.md), [`lab4.md`](docs/about/lab4.md), [`lab5.md`](docs/about/lab5.md), [`lab6.md`](docs/about/lab6.md) | Pages to show the lecturer at the defense (Ukrainian): requirement → what was done → proof with numbers, diagrams, live-demo commands; no speaker notes |
+| [`docs/about/lab2.md`](docs/about/lab2.md), [`lab3.md`](docs/about/lab3.md), [`lab4.md`](docs/about/lab4.md), [`lab5.md`](docs/about/lab5.md), [`lab6.md`](docs/about/lab6.md), [`lab7.md`](docs/about/lab7.md) | Pages to show the lecturer at the defense (Ukrainian): requirement → what was done → proof with numbers, diagrams, live-demo commands; no speaker notes |
 | `docs/labs/*.md`, `docs/*.docx` | Original assignments / design docs (Ukrainian); summarized in `project-context.md` |
 
 ## Stack
 
 C# / ASP.NET Core 10 (controllers) · EF Core 10 + Npgsql · PostgreSQL 17 · JWT · FluentValidation · Swashbuckle ·
 Docker Compose. Redis since lab 2 (distributed results cache in lab 4), HAProxy since lab 3 (ADR 0031, instead of the
-Nginx named in lab 1), k6 in lab 5, PostgreSQL streaming replica in lab 6 (ADR 0049).
+Nginx named in lab 1), k6 in lab 5, PostgreSQL streaming replica in lab 6 (ADR 0049), two shards with an application-level router in lab 7 (ADR 0055).
 
 ## Quick start
 

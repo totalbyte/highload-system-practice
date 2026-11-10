@@ -5,6 +5,9 @@
   1. Втрата Replica: читання без помилок переходять на Primary (Primary Fallback), записи працюють.
   2. Втрата Primary: читання лишаються на Replica, записи і строгі читання одразу отримують 503 Read-Only Mode.
   3. Втрата обох: /health дає 503, балансувальник виключає вузли; після старту все повертається без рестарту backend.
+     З лаби 7 (ADR 0057) зупиняються обидва вузли Shard A, а Shard B живий: /health лишається 200 (Degraded), каталог
+     віддає опитування Shard B із заголовком X-Shard-Unavailable: A, а опитування Shard A — одразу 503. З SHARD_COUNT=1
+     поведінка та сама, що в лабі 6.
 
 Скрипт сам зупиняє вузли (`docker compose stop`) і завжди запускає їх знову (`finally`).
 Запуск з кореня репозиторію (стек піднятий):  python scripts/db-failure-check.py [--pause]
@@ -21,6 +24,8 @@ import threading
 import time
 import urllib.error
 import urllib.request
+
+from shardlib import backend_config
 
 API = os.environ.get("API", "http://127.0.0.1:8080")
 PRIMARY, REPLICA = "postgres", "postgres-replica"
@@ -156,7 +161,8 @@ def replica_loss(token):
         time.sleep(6)
         window, errors = stream.report(stopped_at)
     check(not errors, "no reader saw an error")
-    check(window and window[-1][2] == "primary", "reads went over to the primary (Primary Fallback)")
+    # З лаби 7 каталог читає й Shard B, у якого репліка жива, тож заголовок — "primary,replica": досить того, що з'явився Primary.
+    check(window and "primary" in (window[-1][2] or ""), f"reads went over to the primary (Primary Fallback): X-DB-Node={window and window[-1][2]}")
 
     status, body, _, took = new_poll(token, "Written while the replica is down")
     check(status == 201, f"writes still work: HTTP {status} in {took:.0f} ms")
@@ -215,12 +221,27 @@ def primary_loss(token):
 
 
 def both_lost():
-    step("3. Both nodes lost")
-    compose("stop", REPLICA, PRIMARY)
-    took = wait_until(lambda: health()[0] == 503)
-    status, body, _, _ = call("GET", CATALOG)
-    print(f"  catalog: HTTP {status} ({'the API' if body else 'the balancer'})")
-    check(took is not None and status == 503, f"/health reports 503 after {took or 0:.1f} s, clients get a controlled 503")
+    if backend_config()["count"] == 1:
+        step("3. Both nodes lost")
+        compose("stop", REPLICA, PRIMARY)
+        took = wait_until(lambda: health()[0] == 503)
+        status, body, _, _ = call("GET", CATALOG)
+        print(f"  catalog: HTTP {status} ({'the API' if body else 'the balancer'})")
+        check(took is not None and status == 503, f"/health reports 503 after {took or 0:.1f} s, clients get a controlled 503")
+    else:
+        step("3. Both nodes of shard A lost, shard B alive")
+        compose("stop", REPLICA, PRIMARY)
+        # Кожен backend має власний монітор: чекаємо, поки відмову побачать обидва (HAProxy чергує їх по колу).
+        took = wait_until(lambda: all("Shard A: no database node" in ((health()[1] or {}).get("detail") or "") for _ in range(4)))
+        status, body = health()
+        check(took is not None and status == 200,
+              f"/health {status} {body and body.get('status')} after {took or 0:.1f} s: backends stay in the pool for shard B")
+        status, body, headers, took_ms = call("GET", CATALOG)
+        check(status == 200 and headers.get("X-Shard-Unavailable") == "A",
+              f"catalog -> HTTP {status} in {took_ms:.0f} ms, X-Shard-Unavailable={headers.get('X-Shard-Unavailable')}")
+        status, body, _, took_ms = call("GET", "/api/polls/1")
+        check(status == 503 and took_ms < FAST_MS,
+              f"poll #1 (shard A) -> HTTP {status} {body and body.get('title')} in {took_ms:.0f} ms")
     compose("start", PRIMARY, REPLICA)
     took = wait_until(healthy_again)
     check(took is not None, f"the system is back in {took or 0:.1f} s, no backend restart")

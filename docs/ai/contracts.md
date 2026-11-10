@@ -34,6 +34,9 @@ Update this file whenever the API, the schema, or code another participant depen
   operation on one poll goes to its shard only (`poll_id` is the shard key, ADR 0054); the catalog `GET /api/polls` asks all
   shards (scatter-gather); auth and creating a poll touch Shard A (users, the `poll_ids` sequence). Option ids are unique
   only within their poll — always send them together with the poll id (the API already does).
+- Catalog with a shard fully down (ADR 0057): 200 with the polls of the answering shards and `X-Shard-Unavailable: B`
+  (`totalCount` counts only those shards); 503 `Shard Unavailable` only when no shard answers. Any request for a poll on a
+  fully down shard answers 503 `Shard Unavailable` in milliseconds.
 - Primary down (ADR 0052): every write and strict read (login, registration, `/me`, own vote) answers 503 ProblemDetails with the title
   `Read-Only Mode`; catalog, details and results keep working from the replica. Replica down: reads silently go to the Primary.
 - Load balancer behaviour other code relies on (ADR 0033, 0034): `/health` is the readiness check (200 = in the pool,

@@ -41,6 +41,11 @@ public sealed class ReadDb(
         if (replica is null)
             return (await read(primary), DbNodes.Primary);
 
+        // Обидва вузли шарду лежать (лаба 7, ADR 0057): спроба підключення до зупиненого вузла чекала б пошуку імені
+        // через Docker DNS ~3–5 с, а відповідь однаково буде 503.
+        if (!monitor.PrimaryAvailable && !monitor.ReplicaAvailable)
+            throw new ShardUnavailableException("The database shard holding this poll is unavailable. Please retry later.");
+
         var first = (preferPrimary ? monitor.PrimaryAvailable : !monitor.ReplicaAvailable) ? DbNodes.Primary : DbNodes.Replica;
         // Монітор бачить відмову із запізненням до кількох секунд; за цей час запит рятує повтор на іншому вузлі.
         try
@@ -57,9 +62,10 @@ public sealed class ReadDb(
 
     private AppDbContext Context(DbNodes node) => node == DbNodes.Primary ? primary : replicaContext ??= new AppDbContext(replica!);
 
-    private static bool IsUnavailable(Exception ex) => ex switch
+    /// <summary>Вузол недоступний (а не помилка запиту): це читання можна повторити деінде або пропустити шард (лаба 7).</summary>
+    public static bool IsUnavailable(Exception ex) => ex switch
     {
-        ReadOnlyModeException or TimeoutException or SocketException or IOException => true,
+        ReadOnlyModeException or ShardUnavailableException or TimeoutException or SocketException or IOException => true,
         NpgsqlException { IsTransient: true } => true,
         // 57P01 / 57P02 / 57P03: сервер зупиняється або ще стартує.
         PostgresException { SqlState: "57P01" or "57P02" or "57P03" } => true,

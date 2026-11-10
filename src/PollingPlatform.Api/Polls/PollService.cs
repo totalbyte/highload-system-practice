@@ -60,24 +60,32 @@ public class PollService(AppDbContext db, ShardContexts shards, ResultsCache res
     /// Каталог — Cross-Shard запит (лаба 7, 2.4): кожен шард паралельно віддає свою частину, далі злиття тут.
     /// Шард не знає, які опитування є на інших, тому для сторінки N кожен повертає перші N × PageSize рядків, а сторінку
     /// вирізаємо вже зі злитого списку. Ціна росте з номером сторінки й кількістю шардів — це і є оверхед fan-out.
+    /// Шард, у якого не відповідає жоден вузол, пропускається (ADR 0057): каталог — eventual-читання, і неповний список
+    /// кращий за 503 для всіх, поки опитування живого шарду доступні. Яких шардів бракує, видно в UnavailableShards.
     /// </summary>
-    public async Task<PagedResponse<PollSummaryResponse>> ListAsync(PollListQuery query, long? currentUserId, CancellationToken ct)
+    public async Task<CatalogPage> ListAsync(PollListQuery query, long? currentUserId, CancellationToken ct)
     {
-        var tasks = new List<Task<(int TotalCount, List<PollSummaryResponse> Items)>>();
+        var tasks = new List<Task<(int TotalCount, List<PollSummaryResponse> Items)?>>();
         for (var shard = 0; shard < shards.Count; shard++)
-        {
-            var readDb = shards.Read(shard);
-            tasks.Add(readDb.EventualAsync(currentUserId, source => LoadListPartAsync(source, query, currentUserId, ct)));
-        }
+            tasks.Add(LoadShardPartAsync(shard, query, currentUserId, ct));
         var parts = await Task.WhenAll(tasks);
 
         var totalCount = 0;
         var all = new List<PollSummaryResponse>();
-        foreach (var part in parts)
+        var unavailable = new List<string>();
+        for (var shard = 0; shard < parts.Length; shard++)
         {
+            if (parts[shard] is not { } part)
+            {
+                unavailable.Add(ShardRouter.Name(shard));
+                continue;
+            }
             totalCount += part.TotalCount;
             all.AddRange(part.Items);
         }
+        // Не відповів жоден шард — це вже не неповний каталог, а відмова: та сама 503, що й до лаби 7.
+        if (unavailable.Count == shards.Count)
+            throw new ShardUnavailableException("No database shard is available. Please retry later.");
 
         // Той самий порядок, що й на кожному шарді: нові спочатку, при однаковому часі — більший id.
         var items = all
@@ -86,7 +94,20 @@ public class PollService(AppDbContext db, ShardContexts shards, ResultsCache res
             .Take(query.PageSize)
             .ToList();
 
-        return new PagedResponse<PollSummaryResponse>(items, query.Page, query.PageSize, totalCount);
+        return new CatalogPage(new PagedResponse<PollSummaryResponse>(items, query.Page, query.PageSize, totalCount), unavailable);
+    }
+
+    private async Task<(int TotalCount, List<PollSummaryResponse> Items)?> LoadShardPartAsync(
+        int shard, PollListQuery query, long? currentUserId, CancellationToken ct)
+    {
+        try
+        {
+            return await shards.Read(shard).EventualAsync(currentUserId, source => LoadListPartAsync(source, query, currentUserId, ct));
+        }
+        catch (Exception ex) when (ReadDb.IsUnavailable(ex))
+        {
+            return null;
+        }
     }
 
     private static async Task<(int TotalCount, List<PollSummaryResponse> Items)> LoadListPartAsync(
