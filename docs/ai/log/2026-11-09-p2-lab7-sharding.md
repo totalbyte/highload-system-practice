@@ -1,5 +1,5 @@
 # 2026-11-09 — Participant 2 — lab 7 stages 1–2: shard key, Shard B, Shard Router
-**Lab:** 7 · **Commits:** not committed
+**Lab:** 7 · **Commits:** `a199260`
 ## Goal
 Start lab 7 (sharding): choose the dataset and the shard key, plan the stages, bring up a second shard.
 ## Done

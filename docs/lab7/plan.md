@@ -2,7 +2,7 @@
 
 > Вимоги: [`docs/labs/Lab7 - Data Scaling Sharding Partitioning.md`](../labs/Lab7%20-%20Data%20Scaling%20Sharding%20Partitioning.md).
 > Лабу виконує Учасник 2, гілка `lab7/sharding` від `lab6/replication` (потрібні репліка і `ReadDb` з лаби 6).
-> **Порядок злиття:** спочатку PR #16 (лаба 6), потім PR лаби 7. ADR лаби 7 — з 0054 поспіль.
+> Лаба 6 уже в `main` (PR #16), гілка лаби 7 стоїть прямо на ній. ADR лаби 7 — з 0054 поспіль.
 
 ## Головне рішення (ADR 0054)
 
@@ -82,5 +82,5 @@
 ## Етап 7. Документи (§3, §4) — ✅
 
 - README «Лабораторна 7» (схема: Shard Router, Shard A / B з репліками), `docs/lab7-guide.md`, `docs/about/lab7.md`.
-- Діаграми Mermaid перевірено в браузері (mermaid 11.4.0). Лишилось: репетиція захисту, PR у `main` після PR #16,
+- Діаграми Mermaid перевірено в браузері (mermaid 11.4.0). Лишилось: репетиція захисту, злиття PR у `main`,
   `labs/lab7-summary.md` після захисту.

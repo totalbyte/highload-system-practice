@@ -1,5 +1,5 @@
 # 2026-11-10 — Participant 2 — lab 7 stages 3–7: distribution, Hot Shard, cross-shard, resharding, load comparison, docs
-**Lab:** 7 · **Commits:** `c5af796` (stage 3); stages 4–7 not committed
+**Lab:** 7 · **Commits:** `c5af796` (stage 3), `7b4364d` (stages 4–7)
 ## Goal
 Lab 7 2.3: data distribution baseline, a Hot Shard under asymmetric load and its levelling; adapt the lab 2–6 scripts that
 read the database directly to two shards.
@@ -35,4 +35,4 @@ read the database directly to two shards.
 - Stage 6: `series-lab7.sh` — 6 runs, 0 % errors (numbers in ADR 0059).
 - Stage 7: the 5 Mermaid diagrams of README / reports rendered by mermaid 11.4.0 in a browser.
 ## Not done / next steps
-- Defense rehearsal; push `lab7/sharding` and open a PR after PR #16; `labs/lab7-summary.md` after the defense.
+- Defense rehearsal; merge the lab 7 PR (lab 6 is already in `main`); `labs/lab7-summary.md` after the defense.
