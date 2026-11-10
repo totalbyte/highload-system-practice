@@ -1,0 +1,77 @@
+# Навантажувальний контур лаби 7 (ADR 0056): як у лабі 5 (ADR 0045), але кожен шард — окремий «сервер» з однаковими
+# ресурсами, щоб гарячий шард було видно по його власному CPU і затримках.
+#   OVERLAY=load-tests/docker-compose.loadtest-shards.yml bash load-tests/run.sh scenario-hot-shard мітка
+#
+# Primary кожного шарду — одне ядро: так БД насичується раніше за backend-и, і перекіс навантаження між шардами
+# видно напряму, а не ховається за запасом CPU.
+#
+# Розкладка ядер (24 vCPU у Docker Desktop / WSL2):
+#   0-1 lb · 2-3 backend-1 · 4-5 backend-2 · 6 postgres (Shard A) · 7 postgres-replica · 8 postgres-shard-b (Shard B)
+#   9 postgres-shard-b-replica · 12 redis · 13 web, pgadmin · 16-23 k6
+x-sut-backend: &sut-backend
+  cpus: 2.0
+  mem_limit: 1g
+
+x-shard-primary: &shard-primary
+  cpus: 1.0
+  mem_limit: 1g
+
+x-shard-replica: &shard-replica
+  cpus: 1.0
+  mem_limit: 512m
+
+services:
+  lb:
+    cpuset: "0-1"
+    cpus: 2.0
+    mem_limit: 256m
+
+  backend-1:
+    <<: *sut-backend
+    cpuset: "2-3"
+
+  backend-2:
+    <<: *sut-backend
+    cpuset: "4-5"
+
+  postgres:
+    <<: *shard-primary
+    cpuset: "6"
+
+  postgres-replica:
+    <<: *shard-replica
+    cpuset: "7"
+
+  postgres-shard-b:
+    <<: *shard-primary
+    cpuset: "8"
+
+  postgres-shard-b-replica:
+    <<: *shard-replica
+    cpuset: "9"
+
+  redis:
+    cpuset: "12"
+    cpus: 1.0
+    mem_limit: 256m
+
+  web:
+    cpuset: "13"
+
+  pgadmin:
+    cpuset: "13"
+
+  k6:
+    image: grafana/k6:1.3.0
+    profiles: ["loadtest"]
+    cpuset: "16-23"
+    cpus: 8.0
+    mem_limit: 2g
+    working_dir: /scripts
+    volumes:
+      - ./load-tests:/scripts
+    environment:
+      BASE_URL: http://lb:8080
+      K6_SUMMARY_DIR: /scripts/results
+    networks:
+      - app-network

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PollingPlatform.Api.Common.Exceptions;
 using PollingPlatform.Api.Data;
 using PollingPlatform.Api.Domain;
+using PollingPlatform.Api.Sharding;
 
 namespace PollingPlatform.Api.Results;
 
@@ -10,7 +11,7 @@ namespace PollingPlatform.Api.Results;
 /// Рахуються з денормалізованого <c>options.vote_count</c>, а не COUNT(*) по <c>votes</c>,
 /// і кешуються, щоб пікове читання не впиралося в БД.
 /// </summary>
-public class ResultsService(ReadDb readDb, ResultsCache cache, ResultsSingleFlight singleFlight, TimeProvider timeProvider)
+public class ResultsService(ShardContexts shards, ResultsCache cache, ResultsSingleFlight singleFlight, TimeProvider timeProvider)
 {
     public async Task<PollResultsRead> GetAsync(long pollId, long? currentUserId, CancellationToken ct)
     {
@@ -18,7 +19,7 @@ public class ResultsService(ReadDb readDb, ResultsCache cache, ResultsSingleFlig
         // можна читати з репліки (ADR 0050): відповідь застаріє на затримку реплікації, але нікуди не збережеться.
         if (!cache.Enabled)
         {
-            var direct = await readDb.EventualAsync(currentUserId, source => LoadAsync(source, pollId, timeProvider, ct));
+            var direct = await shards.ReadFor(pollId).EventualAsync(currentUserId, source => LoadAsync(source, pollId, timeProvider, ct));
             if (direct.Response.Status == PollStatus.Draft && direct.CreatorId != currentUserId)
                 throw new PollNotFoundException(pollId);
             return new PollResultsRead(direct.Response, CacheResult.Disabled);
@@ -46,7 +47,7 @@ public class ResultsService(ReadDb readDb, ResultsCache cache, ResultsSingleFlig
 
     private async Task<ResultsLoad> LoadBypassAsync(long pollId, CancellationToken ct)
     {
-        var (entry, node) = await readDb.PrimaryPreferredAsync(source => LoadAsync(source, pollId, timeProvider, ct));
+        var (entry, node) = await shards.ReadFor(pollId).PrimaryPreferredAsync(source => LoadAsync(source, pollId, timeProvider, ct));
         return new ResultsLoad(entry, node);
     }
 

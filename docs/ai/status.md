@@ -1,9 +1,26 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-11-08 by Participant 1 (lab 6 stages 1–6 — see `log/2026-11-08-p1-lab6-topology.md`).
+> Last updated: 2026-11-10 by Participant 2 (lab 7 stages 3–7 — see `log/2026-11-10-p2-lab7-hot-shard.md`).
 
-## Current lab: 6 — Database replication
+## Current lab: 7 — Data scaling: sharding & partitioning
+
+**Participant 2 does lab 7.** Branch `lab7/sharding` from `lab6/replication` (needs the replica and `ReadDb`); lab 6 is
+merged into `main` (PR #16, `1e0a50c`), and `lab7/sharding` sits right on top of it. ADRs from 0054. Plan by stages
+(Ukrainian): [`docs/lab7/plan.md`](../lab7/plan.md). All 7 stages done and pushed (`a199260`, `c5af796`, `7b4364d`), PR into
+`main` open; left: a defense rehearsal, `labs/lab7-summary.md` after the defense.
+
+| Stage | Status |
+|---|---|
+| 1. Dataset and shard key (2.1) | ✅ ADR 0054: poll aggregate (`polls`, `options`, `votes`) by `poll_id`, `users` unsharded on Shard A; operation × key table |
+| 2. Topology and Shard Router (2.2) | ✅ ADR 0055: Shard B pair (5436 / 5437); `Sharding/ShardRouter` (`Range` / `Modulo` / `Hash` / default `Buckets`), `ShardContexts`, per-shard `ReadDb` / monitor, catalog scatter-gather, `X-Shard`; migration `ShardPollAggregate` (FKs to `users` dropped, `creator_username`, sequence `poll_ids`); `scripts/shard-routing-check.py` + `shardlib.py` ALL PASSED, smoke, `concurrency-checks.py` adapted and green. Committed `a199260` |
+| 3. Distribution and Hot Shard (2.3) | ✅ ADR 0056, `docs/lab7/hot-shard.md`: `shard-distribution.py` (model + `--live`), `scenario-hot-shard.js`, `docker-compose.loadtest-shards.yml`, `hot-shard.sh` / `hot-shard-report.py`; Range: 100 % on B, CPU B 99 %, ≈ 520 RPS → Buckets: 47 / 53 %, ≈ 1000 RPS. Direct-DB scripts adapted and re-run green (`kill-test`, `load`, `redis-outage-check`, `replication-check --shard A/B`); Committed `c5af796` |
+| 4. Cross-shard (2.4) | ✅ ADR 0057, `docs/lab7/cross-shard.md`: catalog skips a dead shard (`X-Shard-Unavailable`), `ShardUnavailableException` fail-fast; `scripts/cross-shard-check.py` (details 2.8 vs catalog 8.8 DB transactions per request; Shard B down → catalog 200 in 16 ms, B poll 503 in 6 ms); `db-failure-check.py` step 3 per shard, ALL PASSED; cross-shard write: shard-local aggregate, no 2PC, account deletion as a Saga on paper. Committed `7b4364d` |
+| 5. Resharding (2.5) | ✅ ADR 0058, `docs/lab7/resharding.md`, `scripts/resharding-model.py` (model + `--live`): modulo N/(N+1), ring 100 vnodes / buckets ≈ (M−N)/M; live 2 → 3: 67 % vs 36 % of rows. Committed `7b4364d` |
+| 6. Single Node vs sharded (2.6) | ✅ ADR 0059, `docs/lab7/load-comparison.md`: `scenario-shards.js` (MODE write / read / catalog), `series-lab7.sh`, `shards-report.py`; 0 % errors; write 420 → 780 RPS, read 1400 → 2700 (×1.9), catalog fan-out 390 → 420 (×1.1). Committed `7b4364d` |
+| 7. README, guide, lecturer page (§3, §4) | ✅ README «Лабораторна 7» (key table, topology diagram with Shard Router and replicas, every stage's numbers, summary), `docs/lab7-guide.md`, `docs/about/lab7.md`; all 5 Mermaid diagrams rendered with mermaid 11.4.0 in a browser (GitHub itself not checked). Committed `7b4364d` |
+
+## Lab 6 — Database replication (merged via PR #16)
 
 **Participant 1 does lab 6 alone** (agreed by both participants). Branch `lab6/replication`, ADRs from 0049. Plan by
 stages: [`docs/lab6/plan.md`](../lab6/plan.md). Measurements (stage 5) run on Participant 1's machine (8 threads), so a

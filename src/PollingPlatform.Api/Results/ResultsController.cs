@@ -1,13 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using PollingPlatform.Api.Auth;
 using PollingPlatform.Api.Data;
+using PollingPlatform.Api.Sharding;
 
 namespace PollingPlatform.Api.Results;
 
 [ApiController]
 [Route("api/polls")]
 [Produces("application/json")]
-public class ResultsController(ResultsService resultsService) : ControllerBase
+public class ResultsController(ResultsService resultsService, ShardRouter router) : ControllerBase
 {
     /// <summary>Агреговані результати опитування (голоси та відсотки по варіантах).</summary>
     /// <remarks>Заголовок відповіді <c>X-Cache</c>: <c>HIT</c> — з Redis без звернення до БД, <c>MISS</c> — з БД, <c>BYPASS</c> — Redis недоступний, відповідь прямо з БД, <c>DISABLED</c> — кеш вимкнено конфігурацією (лаба 5).</remarks>
@@ -21,7 +22,10 @@ public class ResultsController(ResultsService resultsService) : ControllerBase
         Response.Headers["X-Cache"] = read.Cache.ToString().ToUpperInvariant();
         // Той, хто приєднався до чужого читання (ADR 0044), сам з'єднання не відкривав, але дані теж отримав із цього вузла.
         if (read.Node != DbNodes.None)
+        {
             HttpContext.MarkDbNode(read.Node);
+            HttpContext.MarkShard(ShardRouter.Name(router.ShardFor(id)));
+        }
         return read.Response;
     }
 }

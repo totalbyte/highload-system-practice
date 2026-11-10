@@ -86,8 +86,11 @@ mixed() {
 }
 
 check_counters() {
-  docker compose exec -T postgres psql -U polling -d polling -tAc \
-    "SELECT 'counter mismatches: ' || count(*) FROM options o WHERE o.vote_count <> (SELECT count(*) FROM votes v WHERE v.option_id = o.id)"
+  # Лаба 7: лічильники на кожному шарді.
+  for db in postgres postgres-shard-b; do
+    docker compose exec -T $db psql -U polling -d polling -tAc \
+      "SELECT '$db counter mismatches: ' || count(*) FROM options o WHERE o.vote_count <> (SELECT count(*) FROM votes v WHERE v.option_id = o.id)"
+  done
 }
 
 run single  true  scenario-a-read     single-a-on

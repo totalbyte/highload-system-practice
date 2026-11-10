@@ -127,6 +127,44 @@ To verify a cold start without wiping the local data, use a separate project: `C
 compose up -d --build` (the scripts call `docker compose`, so they follow the variable); remove it with the same variable
 and `down -v`. The default project's containers must be stopped first: the host ports are the same.
 
+## Sharding (lab 7)
+
+Polls with their options and votes are sharded by `poll_id` (ADR 0054, 0055): Shard A = `postgres` + `postgres-replica` (also
+`users` and the `poll_ids` sequence), Shard B = `postgres-shard-b` + `postgres-shard-b-replica` (host ports 5436 / 5437).
+**A volume from before lab 7 needs `docker compose down -v` once**, and so does every change of `SHARD_STRATEGY`,
+`SHARD_COUNT`, `SHARD_RANGE_SIZE` or `SHARD_BUCKETS`: rows stay on the shard the strategy chose when they were written.
+
+```bash
+python scripts/shard-routing-check.py [--pause] [--polls 10]   # new polls on the computed shard only, determinism, shard-local vs catalog fan-out, placement of every poll; exit 0 = passed
+curl -si localhost:8080/api/polls/2 | grep -i x-shard          # B with the default Buckets strategy
+docker compose exec -T postgres-shard-b psql -U polling -d polling -c "SELECT count(*) FROM polls"
+SHARD_STRATEGY=Range SHARD_RANGE_SIZE=40 docker compose up -d   # after down -v: another strategy (Buckets | Hash | Modulo | Range)
+SHARD_COUNT=1 docker compose up -d                              # after down -v: Single Node, everything on Shard A
+```
+
+Expected on a cold start with the default `Buckets` (2026-11-09): seed shard A 18 polls / 1937 votes, shard B 32 / 3659;
+the hot poll #1 is on A. `scripts/shardlib.py` holds the same router as the backend; the scripts compare against it. Scripts
+that query the database directly ask the poll's shard (`shard_of`) and check counters on both shards;
+`replication-check.py --shard A|B` checks one shard's pair.
+
+**Cross-shard (ADR 0057):** `python scripts/cross-shard-check.py [--pause] [--requests 300] [--no-outage]` (≈ 1.5 min) —
+details vs catalog latency, PostgreSQL transactions per request on all four nodes, then stops Shard B completely: catalog
+200 with `X-Shard-Unavailable: B`, Shard A polls fine, Shard B polls 503; always starts Shard B again.
+`db-failure-check.py` step 3 now stops both nodes of Shard A and expects the same partial behaviour (with `SHARD_COUNT=1`
+the lab 6 expectation, `/health` 503).
+
+**Single Node vs shards (ADR 0059):** `bash load-tests/series-lab7.sh` (≈ 25 min, 6 runs on fresh stacks with
+`docker-compose.loadtest-shards.yml`, restores the default stack at the end); report again: `python load-tests/shards-report.py`;
+one run: `ONLY="sharded-read" LEVELS=10,50 STEP=20 bash load-tests/series-lab7.sh`.
+
+**Resharding model (ADR 0058):** `python scripts/resharding-model.py [--keys 100000] [--live]` (≈ 3 s) — share of keys that
+move for 2 → 3 / 3 → 4 / 2 → 4 / 4 → 5 under modulo, hash % N, ring (1 / 100 vnodes), 64 buckets; `--live` counts real rows.
+
+**Distribution and Hot Shard (ADR 0056):** `python scripts/shard-distribution.py [--live --polls 100 --votes 3000]` — model
+for all strategies, then a generated dataset with the Data Distribution Matrix (≈ 1 min; a few 409 are two threads racing
+the same first vote). `bash load-tests/hot-shard.sh` (≈ 8 min, `down -v` inside, restores the default stack) — the same k6
+load with `Range` (boundary 51: all new polls on B) and `Buckets`, report with per-shard p95 / CPU / RAM and Mermaid charts.
+
 ## Run the backend locally (without Docker for the backend)
 
 ```bash

@@ -1,6 +1,6 @@
 # Платформа опитувань — Highload Systems Practice
 
-Наш варіант — платформа опитувань у реальному часі. Проєкт розвивається від лаби 1 (MVP) до лаби 6 (реплікація БД); методички та дизайн-документи — у [`docs/`](docs/).
+Наш варіант — платформа опитувань у реальному часі. Проєкт розвивається від лаби 1 (MVP) до лаби 7 (шардинг); методички та дизайн-документи — у [`docs/`](docs/).
 
 > **Розгорнутий посібник до лаби 1** (архітектура, логіка, обґрунтування рішень, питання на захист): [`docs/lab1-guide.md`](docs/lab1-guide.md).
 >
@@ -10,9 +10,11 @@
 >
 > **Посібник до захисту лаби 6** (реплікація, сценарій захисту, теорія: синхронна / асинхронна реплікація, Split-Brain, CAP, PACELC, Raft): [`docs/lab6-guide.md`](docs/lab6-guide.md); сторінка для викладача — [`docs/about/lab6.md`](docs/about/lab6.md).
 >
+> **Посібник до захисту лаби 7** (шардинг, сценарій захисту, теорія: партиціювання / шардинг / реплікація, distributed JOIN, 2PC, Saga, Consistent Hashing): [`docs/lab7-guide.md`](docs/lab7-guide.md); сторінка для викладача — [`docs/about/lab7.md`](docs/about/lab7.md).
+>
 > Контекст для учасників і AI-агентів: [`CLAUDE.md`](CLAUDE.md) → [`docs/ai/`](docs/ai/status.md) (стан, рішення/ADR, контракти, runbook, журнал сесій).
 
-**Стек:** C# / ASP.NET Core 10 · EF Core 10 + Npgsql · PostgreSQL 17 (Primary + Replica) · Redis 8 (розподілений кеш) · HAProxy 3.4 · JWT · FluentValidation · Docker Compose
+**Стек:** C# / ASP.NET Core 10 · EF Core 10 + Npgsql · PostgreSQL 17 (два шарди, кожен Primary + Replica) · Redis 8 (розподілений кеш) · HAProxy 3.4 · JWT · FluentValidation · Docker Compose
 
 ## Швидкий старт
 
@@ -198,9 +200,11 @@ src/PollingPlatform.Api/
   Results/       агреговані результати і їхній кеш (з лаби 2 — у Redis)
   Domain/        сутності User, Poll, PollOption, Vote
   Data/          DbContext, конфігурації EF, міграції, сід
+  Sharding/      Shard Router (лаба 7): poll_id → шард, контексти шардів
   Common/        бізнес-винятки → HTTP-коди, обробник помилок, X-Instance-ID
 frontend/       веб-інтерфейс (React + Vite + TypeScript), у стеку — контейнер web (nginx) за HAProxy, http://localhost:8080
-docker-compose.yml        стек: lb (HAProxy), web, backend-1/2 (+ backend-3 у профілі scale), postgres, postgres-replica, redis, pgAdmin
+docker-compose.yml        стек: lb (HAProxy), web, backend-1/2 (+ backend-3 у профілі scale), postgres + postgres-replica (Shard A),
+                          postgres-shard-b + postgres-shard-b-replica (Shard B), redis, pgAdmin
 docker-compose.debug.yml  лише для налагодження: порти 8091–8093 до окремих інстансів
 haproxy/         конфіг балансувальника (haproxy.cfg)
 postgres/        налаштування реплікації (лаба 6): роль і слот на Primary, pg_basebackup на Replica
@@ -213,6 +217,7 @@ docs/            методички та дизайн-документи
 docs/lab2/, docs/lab3/  розподіл задач лаб 2 і 3 між учасниками
 docs/lab4/       задачі лаби 4 (виконує Учасник 1)
 docs/lab6/       план лаби 6 і порівняльний звіт Single Primary / Primary + Replica (виконує Учасник 1)
+docs/lab7/       план лаби 7 і звіти: розподіл і Hot Shard, Cross-Shard, решардинг, Single Node / шарди (виконує Учасник 2)
 docs/ai/         контекст для AI-агентів: стан, ADR, контракти, runbook, журнал сесій
 CLAUDE.md        точка входу для Claude Code
 ```
@@ -1954,3 +1959,142 @@ xychart-beta
 | §3 Конфігурація, код, звіт, схема | цей розділ |
 
 Перевірка з холодного старту (`down -v` → `up`, 2026-11-08): готовність 18 с без ручних кроків; `replication-check`, `rw-routing-check`, `stale-read-demo`, `db-failure-check` — ALL PASSED, разом ≈ 100 с. Веб-інтерфейс перевірено в браузері під затримкою 3 с: автор одразу бачить нове опитування; без Primary каталог працює, а голос показує повідомлення про недоступність.
+
+## Лабораторна 7: Шардинг і партиціювання даних
+
+> Лабу виконує Учасник 2. Посібник до захисту — [`docs/lab7-guide.md`](docs/lab7-guide.md), сторінка для викладача — [`docs/about/lab7.md`](docs/about/lab7.md), звіти по пунктах — [`docs/lab7/`](docs/lab7/plan.md), рішення — ADR [0054](docs/ai/decisions/0054-shard-dataset-and-key.md)–[0059](docs/ai/decisions/0059-sharding-load-comparison.md).
+
+### Dataset і Shard Key (2.1)
+
+Шардуємо агрегат «опитування»: `polls` разом з `options` і `votes`. Це найбільша частина даних (голосів у десятки разів більше, ніж користувачів), і саме вона приймає записи: у лабі 5 вузьким місцем було блокування рядка лічильника голосів. **Ключ шардингу — `poll_id`.** Таблицю `users` не шардуємо: вона мала, а email і логін мають бути унікальними глобально, тож вона лежить на Shard A.
+
+Скільки шардів зачіпає кожна операція з різними кандидатами в ключ (N — кількість шардів):
+
+| Операція | `poll_id` | `user_id` | `votes.id` (сурогатний) | `creator_id` |
+|---|---|---|---|---|
+| голос (вставка + лічильник в одній транзакції) | 1 | 2: голос і лічильник на різних шардах | голос будь-де, `UNIQUE (poll_id, user_id)` не перевірити | 1 |
+| результати | 1 | N | N | 1 |
+| деталі, publish, close, delete | 1 | 1 | 1 | 1 |
+| «мій голос» | 1 | 1 | N | 1 |
+| каталог | N | N | N | N (фільтр за автором — 1) |
+
+З `poll_id` кожна гаряча операція йде на один шард, а «один голос від користувача» лишається одним унікальним індексом і звичайною локальною транзакцією. Сліпий сурогатний ключ `votes.id` розкидає голоси одного опитування по всіх шардах: результати стають fan-out, а унікальність голосу вже не перевірити однією БД. `creator_id` має низьку Cardinality (20 авторів у сіді), і «великий автор» перевантажить свій шард.
+
+Що довелося змінити в схемі (міграція `ShardPollAggregate`): FK на `users` прибрано, бо між різними базами він неможливий; ім'я автора копіюється в `polls.creator_username`, щоб каталогу не був потрібен розподілений JOIN; id опитувань видає одна послідовність `poll_ids` на Shard A, бо автоінкремент кожного шарду роздав би однакові id.
+
+### Топологія і Shard Router (2.2, §3)
+
+Два незалежні шарди, кожен — пара Primary + Replica з лаби 6: Shard A — `postgres` + `postgres-replica` (плюс `users` і `poll_ids`), Shard B — `postgres-shard-b` + `postgres-shard-b-replica` з тими самими скриптами реплікації. Маршрутизація — у застосунку: [`Sharding/ShardRouter.cs`](src/PollingPlatform.Api/Sharding/ShardRouter.cs) за `poll_id` обчислює шард, [`ShardContexts`](src/PollingPlatform.Api/Sharding/ShardContexts.cs) дає контекст його Primary або `ReadDb` з лаби 6. Стратегії перемикаються змінною `SHARD_STRATEGY`: `Range`, `Modulo`, `Hash` і за замовчуванням `Buckets` — `fmix64(poll_id) % 64` → таблиця «бакет → шард». `SHARD_COUNT=1` — конфігурація Single Node. Заголовок `X-Shard` показує, куди насправді пішов запит.
+
+```mermaid
+flowchart LR
+    Client["Клієнт"] --> LB["HAProxy :8080"]
+
+    subgraph inst ["backend-1 / backend-2"]
+        direction TB
+        R["<b>Shard Router</b><br/>fmix64(poll_id) % 64<br/>→ бакет → шард"]
+        AUTH["<b>Користувачі</b><br/>логін, реєстрація, /me,<br/>id нового опитування"]
+        CAT["<b>Каталог</b><br/>Scatter-Gather"]
+    end
+
+    LB --> R
+    LB --> AUTH
+    LB --> CAT
+
+    subgraph SA ["Shard A"]
+        PA[("<b>Primary A</b><br/>опитування A,<br/>users, poll_ids")]
+        RA[("<b>Replica A</b>")]
+    end
+    subgraph SB ["Shard B"]
+        PB[("<b>Primary B</b><br/>опитування B")]
+        RB[("<b>Replica B</b>")]
+    end
+
+    R -->|"запис і строгі читання, бакети A"| PA
+    R -->|"запис і строгі читання, бакети B"| PB
+    R -.->|"eventual-читання"| RA
+    R -.->|"eventual-читання"| RB
+    AUTH --> PA
+    CAT -->|"паралельно"| RA
+    CAT -->|"паралельно"| RB
+    PA ==>|"WAL"| RA
+    PB ==>|"WAL"| RB
+    R <-->|"кеш результатів, Sticky"| RED[("Redis")]
+```
+
+Перевірка: `python scripts/shard-routing-check.py [--pause]`. 10 нових опитувань потрапляють на обчислений шард і лише туди (перевірено прямо в БД обох шардів), повторні запити через обидва інстанси йдуть на той самий шард, голос і результати — shard-local, каталог — `A,B`, кожне опитування сіду лежить на своєму шарді, на Shard B немає жодного користувача. Сід з `Buckets`: Shard A — 18 опитувань і 1937 голосів, Shard B — 32 і 3659.
+
+### Розподіл даних і Hot Shard (2.3)
+
+Data Distribution Matrix (`scripts/shard-distribution.py --live`: 100 нових опитувань і 3000 голосів через API, `Buckets`):
+
+| Шард / Вузол | Кількість записів | Частка даних (%) | Частка Write Operations (%) |
+|---|---|---|---|
+| Shard A | 4934 | 42.2 | 55.6 (за PostgreSQL — 55.1) |
+| Shard B | 6758 | 57.8 | 44.4 (за PostgreSQL — 44.9) |
+
+Hot Shard відтворено стратегією `Range` — це партиціювання за часом: сід (id 1..50) лежить на Shard A як «архів», а всі нові опитування, куди й ідуть голоси, — на Shard B. Те саме навантаження k6 (`load-tests/hot-shard.sh`, одне ядро на Primary шарду):
+
+| | `Range` (до) | `Buckets` (після) |
+|---|---|---|
+| частка запитів A / B | 0 / 100 % | 47 / 53 % |
+| CPU Primary A / B | 1–3 % / 99 % | до 86 % / до 100 % |
+| пропускна здатність | ≈ 520 RPS | ≈ 1000 RPS |
+| p95 на 10 / 25 / 50 VU | 35 / 85 / 177 мс | 23 / 56 / 127 мс |
+
+Одне вірусне опитування — це гарячий **ключ**, а не шард: його не розкладе жоден хеш. Читання такого опитування бере кеш результатів (лаба 4), запис лишається обмеженим одним рядком лічильника. Повний звіт і графіки — [`docs/lab7/hot-shard.md`](docs/lab7/hot-shard.md).
+
+### Cross-Shard запити і транзакції (2.4)
+
+Каталог — fan-out: кожен шард паралельно віддає свої перші `сторінка × розмір` рядків і кількість, backend зливає їх. На простої затримка майже як у shard-local запиту (шарди опитуються паралельно), але роботи БД утричі більше: 8.8 транзакції на двох вузлах проти 2.8 на одному (`scripts/cross-shard-check.py`). Якщо шард лежить повністю, каталог за 16 мс віддає опитування інших шардів із заголовком `X-Shard-Unavailable: B`, а опитування мертвого шарду одразу отримують 503 `Shard Unavailable`.
+
+Міжшардова транзакція в API не потрібна: голос, лічильник і опитування лежать на одному шарді (шард-локальний агрегат), а створення опитування бере id з нетранзакційної послідовності. 2PC свідомо не використовуємо (блокуючий координатор); видалення акаунта розібрано як Saga. Деталі — [`docs/lab7/cross-shard.md`](docs/lab7/cross-shard.md).
+
+### Решардинг і Consistent Hashing (2.5)
+
+`scripts/resharding-model.py`, 100 000 id, частка ключів, що переїжджають:
+
+| Спосіб | 2 → 3 | 3 → 4 | 4 → 5 |
+|---|---|---|---|
+| `key % N` | 66.7 % | 75.0 % | 80.0 % |
+| кільце, 1 віртуальний вузол | 63.6 % | 2.1 % | 40.3 % |
+| кільце, 100 віртуальних вузлів | 36.4 % | 25.2 % | 18.8 % |
+| Virtual Buckets, 64 | 32.6 % | 24.9 % | 18.6 % |
+| ідеал (M − N) / M | 33.3 % | 25.0 % | 20.0 % |
+
+`key % N` при N → N + 1 переносить N / (N + 1) даних, і що більший кластер, то ближче до 100 %. Віртуальні вузли й бакети переносять лише те, що має опинитися на новому шарді. На реальних даних стеку перехід 2 → 3 переніс би 67 % рядків з modulo і 36 % з бакетами. Модель і порядок перенесення бакета — [`docs/lab7/resharding.md`](docs/lab7/resharding.md).
+
+### Single Node проти шардів (2.6)
+
+`load-tests/series-lab7.sh`: той самий стек з `SHARD_COUNT=1` і `SHARD_COUNT=2`, одне ядро на кожен вузол БД, 10 → 200 VU, 0 % помилок у всіх прогонах.
+
+| Режим | Single Node | 2 шарди | Приріст | Точка насичення Single → Sharded |
+|---|---|---|---|---|
+| shard-local запис (голоси) | ≈ 420 RPS | ≈ 780 RPS | ×1.9 | 10 VU / 420 RPS → 25 VU / 772 RPS |
+| shard-local читання (деталі) | ≈ 1400 RPS | ≈ 2700 RPS | ×1.9 | 10 VU / 1445 RPS → 25 VU / 2675 RPS |
+| fan-out (каталог) | ≈ 390 RPS | ≈ 420 RPS | ×1.1 | 10 VU / 455 RPS → 10 VU / 410 RPS |
+
+```mermaid
+xychart-beta
+    title "RPS на 50 VU: Single Node (1) і 2 шарди (2)"
+    x-axis ["запис", "читання", "каталог"]
+    y-axis "RPS" 0 --> 3000
+    bar [418, 1385, 373]
+    bar [777, 2673, 413]
+```
+
+Масштабуються лише запити, які знають ключ: другий шард подвоює запис і читання одного опитування, а fan-out каталогу виконує свою роботу на кожному шарді, тож майже не росте, і на 200 VU його p95 навіть гірший (853 проти 665 мс). Таблиці по ступенях і CPU кожного вузла — [`docs/lab7/load-comparison.md`](docs/lab7/load-comparison.md).
+
+### Підсумок лаби 7
+
+| Вимога | Де і чим підтверджено |
+|---|---|
+| 2.1 Dataset і Shard Key | таблиця операцій вище, [ADR 0054](docs/ai/decisions/0054-shard-dataset-and-key.md) |
+| 2.2 Два шарди, Shard Router | `postgres-shard-b` (+ репліка), `Sharding/ShardRouter.cs`, `X-Shard`, `scripts/shard-routing-check.py` |
+| 2.3 Розподіл, Hot Shard, оптимізація | `scripts/shard-distribution.py`, `load-tests/hot-shard.sh`, [`docs/lab7/hot-shard.md`](docs/lab7/hot-shard.md) |
+| 2.4 Cross-Shard запити й транзакції | каталог Scatter-Gather, `scripts/cross-shard-check.py`, [`docs/lab7/cross-shard.md`](docs/lab7/cross-shard.md) |
+| 2.5 Решардинг, Consistent Hashing | `scripts/resharding-model.py`, [`docs/lab7/resharding.md`](docs/lab7/resharding.md) |
+| 2.6 Порівняння продуктивності | `load-tests/series-lab7.sh`, [`docs/lab7/load-comparison.md`](docs/lab7/load-comparison.md) |
+| §3 Код, скрипти, звіти, схема | цей розділ |
+
+Регресії попередніх лаб на шардах проходять: `concurrency-checks.py`, `kill-test.py`, `redis-outage-check.py`, `replication-check.py --shard A` і `--shard B`, `db-failure-check.py` (крок «обидва вузли лежать» тепер про Shard A при живому Shard B).

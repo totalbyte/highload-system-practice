@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using PollingPlatform.Api.Data;
+using PollingPlatform.Api.Sharding;
 
 namespace PollingPlatform.Api.Results;
 
@@ -41,7 +42,7 @@ public class ResultsSingleFlight(
         try
         {
             await using var scope = scopes.CreateAsyncScope();
-            var readDb = scope.ServiceProvider.GetRequiredService<ReadDb>();
+            var readDb = scope.ServiceProvider.GetRequiredService<ShardContexts>().ReadFor(key.PollId);
             // Читання з Primary (ADR 0050). Репліка — лише коли він лежить (ADR 0052): старі результати кращі за помилку.
             var (entry, node) = await readDb.PrimaryPreferredAsync(
                 db => ResultsService.LoadAsync(db, key.PollId, timeProvider, CancellationToken.None));
