@@ -6,19 +6,16 @@ using PollingPlatform.Api.Common.Exceptions;
 namespace PollingPlatform.Api.Data;
 
 /// <summary>
-/// Налаштування контексту репліки. Options == null — репліка вимкнена або не задана (конфігурація Single Primary).
-/// </summary>
-public sealed record ReplicaContextOptions(DbContextOptions<AppDbContext>? Options);
-
-/// <summary>
 /// Маршрутизація читань (лаба 6, ADR 0050). За замовчуванням увесь код працює з <see cref="AppDbContext"/>, тобто з
 /// Primary, а цей клас запитують лише читання, яким дозволена eventual consistency. Так забута класифікація дає зайве
 /// навантаження на Primary, а не застарілі дані.
 /// Читання передається функцією: якщо вибраний вузол відмовить, його можна повторити на іншому (ADR 0052).
 /// Контекст репліки створюється лише за потреби: більшість запитів його не торкається.
+/// З лаби 7 у кожного шарду свій ReadDb (його створює ShardContexts): Primary і Replica — вузли саме цього шарду.
+/// replica == null — репліка вимкнена або не задана (конфігурація Single Primary).
 /// </summary>
 public sealed class ReadDb(
-    AppDbContext primary, ReplicaContextOptions replica, StickySessions sticky, DbNodeMonitor monitor, ILogger<ReadDb> logger)
+    AppDbContext primary, DbContextOptions<AppDbContext>? replica, StickySessions sticky, DbNodeMonitor monitor, ILogger<ReadDb> logger)
     : IAsyncDisposable
 {
     private AppDbContext? replicaContext;
@@ -41,7 +38,7 @@ public sealed class ReadDb(
 
     private async Task<(T Value, DbNodes Node)> ReadAsync<T>(bool preferPrimary, Func<AppDbContext, Task<T>> read)
     {
-        if (replica.Options is null)
+        if (replica is null)
             return (await read(primary), DbNodes.Primary);
 
         var first = (preferPrimary ? monitor.PrimaryAvailable : !monitor.ReplicaAvailable) ? DbNodes.Primary : DbNodes.Replica;
@@ -58,7 +55,7 @@ public sealed class ReadDb(
         }
     }
 
-    private AppDbContext Context(DbNodes node) => node == DbNodes.Primary ? primary : replicaContext ??= new AppDbContext(replica.Options!);
+    private AppDbContext Context(DbNodes node) => node == DbNodes.Primary ? primary : replicaContext ??= new AppDbContext(replica!);
 
     private static bool IsUnavailable(Exception ex) => ex switch
     {

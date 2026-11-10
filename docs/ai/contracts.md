@@ -30,6 +30,10 @@ Update this file whenever the API, the schema, or code another participant depen
   connected to; absent when no database was touched (results HIT). Catalog and details are eventually consistent (replica);
   everything else reads the Primary. After a successful write the user's own catalog and details reads also go to the Primary
   for `STICKY_TTL_SECONDS` (default 5, ADR 0051); other users may still see the old state for the replication lag.
+- Since lab 7 (ADR 0055) responses also carry `X-Shard: A | B | A,B` — the shards the request really connected to. Every
+  operation on one poll goes to its shard only (`poll_id` is the shard key, ADR 0054); the catalog `GET /api/polls` asks all
+  shards (scatter-gather); auth and creating a poll touch Shard A (users, the `poll_ids` sequence). Option ids are unique
+  only within their poll — always send them together with the poll id (the API already does).
 - Primary down (ADR 0052): every write and strict read (login, registration, `/me`, own vote) answers 503 ProblemDetails with the title
   `Read-Only Mode`; catalog, details and results keep working from the replica. Replica down: reads silently go to the Primary.
 - Load balancer behaviour other code relies on (ADR 0033, 0034): `/health` is the readiness check (200 = in the pool,
@@ -74,14 +78,16 @@ served; the cache entry also holds `CreatorId`, so visibility is decided without
 
 ## Database schema
 
-Defined by EF migrations in `src/PollingPlatform.Api/Data/Migrations` (current: `InitialSchema`).
+Defined by EF migrations in `src/PollingPlatform.Api/Data/Migrations` (current: `ShardPollAggregate`). Since lab 7 the same
+schema is applied to every shard, but `users` and `nextval('poll_ids')` are used only on Shard A, and each poll with its
+options and votes lives on one shard (ADR 0054, 0055).
 
 | Table | Columns | Constraints / indexes |
 |---|---|---|
 | `users` | id, username(50), email(254, lower-cased), password_hash, created_at | PK, UNIQUE(email), UNIQUE(username) |
-| `polls` | id, title(200), description(2000)?, creator_id, status(16), is_public, allow_vote_change, starts_at?, ends_at, created_at | FK creator_id→users RESTRICT; CHECK status IN (draft, active, closed); CHECK `starts_at IS NULL OR starts_at < ends_at`; idx(creator_id), idx(status, created_at) |
+| `polls` | id (from sequence `poll_ids`, not identity), title(200), description(2000)?, creator_id, creator_username(50), status(16), is_public, allow_vote_change, starts_at?, ends_at, created_at | no FK to users (lab 7); CHECK status IN (draft, active, closed); CHECK `starts_at IS NULL OR starts_at < ends_at`; idx(creator_id), idx(status, created_at) |
 | `options` | id, poll_id, text(200), position, vote_count DEFAULT 0 | FK→polls CASCADE; UNIQUE(poll_id, position); CHECK vote_count ≥ 0 |
-| `votes` | id, poll_id, option_id, user_id, created_at | FK→polls CASCADE, →options CASCADE, →users RESTRICT; **UNIQUE(poll_id, user_id)**; idx(option_id), idx(user_id) |
+| `votes` | id, poll_id, option_id, user_id, created_at | FK→polls CASCADE, →options CASCADE, no FK to users (lab 7); **UNIQUE(poll_id, user_id)**; idx(option_id) |
 
 - `UNIQUE(poll_id, user_id)` also serves lookups of votes by `poll_id`; `UNIQUE(poll_id, position)` serves lookups of
   options by `poll_id`.

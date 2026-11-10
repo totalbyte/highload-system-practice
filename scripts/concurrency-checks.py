@@ -12,6 +12,8 @@
 Після кожної перевірки: лічильники по кожному варіанту = кількість рядків у votes (не сумою — ADR 0017),
 і результати з обох інстансів збігаються з БД (кеш у Redis спільний — ADR 0026).
 Наприкінці: у логах postgres немає «deadlock detected», у логах backend — записів fail:.
+З лаби 7 опитування лежать на двох шардах (ADR 0054): лічильники і логи перевіряються на обох, а дані опитування —
+на тому шарді, де воно справді лежить.
 
 Запуск з кореня репозиторію (стек піднятий):  python scripts/concurrency-checks.py
 Вивід англійською — щоб не залежати від кодування консолі.
@@ -51,8 +53,19 @@ def compose(*args):
     return subprocess.run(["docker", "compose", *args], capture_output=True, text=True, check=True).stdout
 
 
-def sql(query):
-    return compose("exec", "-T", "postgres", "psql", "-U", "polling", "-d", "polling", "-tAc", query).strip()
+SHARDS = ["postgres", "postgres-shard-b"]
+
+
+def sql(query, service="postgres"):
+    return compose("exec", "-T", service, "psql", "-U", "polling", "-d", "polling", "-tAc", query).strip()
+
+
+def shard_of(poll_id):
+    """Сервіс БД, на якому лежить опитування: питаємо обидва шарди напряму, повз роутер застосунку."""
+    for service in SHARDS:
+        if sql(f"SELECT count(*) FROM polls WHERE id = {poll_id}", service) == "1":
+            return service
+    raise RuntimeError(f"poll {poll_id} is on no shard")
 
 
 def check(name, ok, detail=""):
@@ -109,11 +122,11 @@ def codes_summary(codes):
 
 def invariants(poll_id):
     """Лічильники по варіантах у всій БД, і результати з обох інстансів = дані БД для цього опитування."""
-    bad = sql("SELECT count(*) FROM options o WHERE o.vote_count <> "
-              "(SELECT count(*) FROM votes v WHERE v.option_id = o.id)")
-    check("per-option counters = votes rows (whole DB)", bad == "0", f"mismatches={bad}")
+    bad = sum(int(sql("SELECT count(*) FROM options o WHERE o.vote_count <> "
+                      "(SELECT count(*) FROM votes v WHERE v.option_id = o.id)", service)) for service in SHARDS)
+    check("per-option counters = votes rows (both shards)", bad == 0, f"mismatches={bad}")
     db_votes = sql(f"SELECT string_agg((SELECT count(*) FROM votes v WHERE v.option_id = o.id)::text, ',' "
-                   f"ORDER BY o.position) FROM options o WHERE o.poll_id = {poll_id}")
+                   f"ORDER BY o.position) FROM options o WHERE o.poll_id = {poll_id}", shard_of(poll_id))
     seen = []
     for base in INSTANCES:
         _, results = call(base, "GET", f"/api/polls/{poll_id}/results")
@@ -131,7 +144,7 @@ def main():
     voters = login_many(range(101, 301))
     codes = burst([(t, poll_id, options[i % 2]) for i, t in enumerate(voters)])
     check("all 201, no 5xx", codes.count(201) == len(voters), codes_summary(codes))
-    rows = sql(f"SELECT count(*) FROM votes WHERE poll_id = {poll_id}")
+    rows = sql(f"SELECT count(*) FROM votes WHERE poll_id = {poll_id}", shard_of(poll_id))
     check("one vote row per user", rows == str(len(voters)), f"rows={rows}")
     invariants(poll_id)
 
@@ -142,8 +155,10 @@ def main():
         call(INSTANCES[0], "POST", f"/api/polls/{target_id}/vote", token, {"optionId": target_options[0]})
         codes = burst([(token, target_id, target_options[(i + 1) % 2]) for i in range(40)])
         check(f"{label}: all 200", codes.count(200) == 40, codes_summary(codes))
-        rows = sql(f"SELECT count(*) FROM votes v JOIN users u ON u.id = v.user_id "
-                   f"WHERE v.poll_id = {target_id} AND u.email = 'user{user_number:03d}@example.com'")
+        # Не JOIN votes → users: з лаби 7 users лише на Shard A, а голоси — на шарді опитування (розподілений JOIN).
+        # Тому два запити: id користувача з Shard A, потім його голоси на шарді опитування.
+        user_id = sql(f"SELECT id FROM users WHERE email = 'user{user_number:03d}@example.com'")
+        rows = sql(f"SELECT count(*) FROM votes WHERE poll_id = {target_id} AND user_id = {user_id}", shard_of(target_id))
         check(f"{label}: exactly one vote row for the user", rows == "1", f"rows={rows}")
         invariants(target_id)
 
@@ -154,12 +169,13 @@ def main():
     check("initial votes: all 201", first.count(201) == len(users), codes_summary(first))
     codes = burst([(t, poll_id, options[(i + 1) % 2]) for i, t in enumerate(users)])
     check("opposite changes: all 200", codes.count(200) == len(users), codes_summary(codes))
-    split = sql(f"SELECT string_agg(vote_count::text, '/' ORDER BY position) FROM options WHERE poll_id = {poll_id}")
+    split = sql(f"SELECT string_agg(vote_count::text, '/' ORDER BY position) FROM options WHERE poll_id = {poll_id}",
+                shard_of(poll_id))
     check("still 50/50 after the swap", split == "50/50", split)
     invariants(poll_id)
 
     print("\nLogs since the start of this run")
-    deadlocks = compose("logs", "--since", started_at, "postgres").count("deadlock detected")
+    deadlocks = compose("logs", "--since", started_at, *SHARDS).count("deadlock detected")
     check("no 'deadlock detected' in postgres logs", deadlocks == 0, f"count={deadlocks}")
     backend_fails = compose("logs", "--since", started_at, "backend-1", "backend-2").count("fail:")
     check("no 'fail:' entries in backend logs", backend_fails == 0, f"count={backend_fails}")

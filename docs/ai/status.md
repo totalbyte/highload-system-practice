@@ -1,9 +1,20 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-11-08 by Participant 1 (lab 6 stages 1–6 — see `log/2026-11-08-p1-lab6-topology.md`).
+> Last updated: 2026-11-09 by Participant 2 (lab 7 started — see `log/2026-11-09-p2-lab7-sharding.md`).
 
-## Current lab: 6 — Database replication
+## Current lab: 7 — Data scaling: sharding & partitioning
+
+**Participant 2 does lab 7.** Branch `lab7/sharding` from `lab6/replication` (needs the replica and `ReadDb`); merge PR #16
+first. ADRs from 0054. Plan by stages (Ukrainian): [`docs/lab7/plan.md`](../lab7/plan.md).
+
+| Stage | Status |
+|---|---|
+| 1. Dataset and shard key (2.1) | ✅ ADR 0054: poll aggregate (`polls`, `options`, `votes`) by `poll_id`, `users` unsharded on Shard A; operation × key table |
+| 2. Topology and Shard Router (2.2) | ✅ ADR 0055: Shard B pair (5436 / 5437); `Sharding/ShardRouter` (`Range` / `Modulo` / `Hash` / default `Buckets`), `ShardContexts`, per-shard `ReadDb` / monitor, catalog scatter-gather, `X-Shard`; migration `ShardPollAggregate` (FKs to `users` dropped, `creator_username`, sequence `poll_ids`); `scripts/shard-routing-check.py` + `shardlib.py` ALL PASSED, smoke, `concurrency-checks.py` adapted and green. Not committed. Left: `kill-test.py`, `load.py`, `redis-outage-check.py`, `replication-check.py`, `db-failure-check.py`, `series*.sh` still query only `postgres` |
+| 3–7. Distribution / Hot Shard, cross-shard, resharding, load, docs | not started |
+
+## Lab 6 — Database replication (PR #16 open)
 
 **Participant 1 does lab 6 alone** (agreed by both participants). Branch `lab6/replication`, ADRs from 0049. Plan by
 stages: [`docs/lab6/plan.md`](../lab6/plan.md). Measurements (stage 5) run on Participant 1's machine (8 threads), so a

@@ -127,6 +127,27 @@ To verify a cold start without wiping the local data, use a separate project: `C
 compose up -d --build` (the scripts call `docker compose`, so they follow the variable); remove it with the same variable
 and `down -v`. The default project's containers must be stopped first: the host ports are the same.
 
+## Sharding (lab 7)
+
+Polls with their options and votes are sharded by `poll_id` (ADR 0054, 0055): Shard A = `postgres` + `postgres-replica` (also
+`users` and the `poll_ids` sequence), Shard B = `postgres-shard-b` + `postgres-shard-b-replica` (host ports 5436 / 5437).
+**A volume from before lab 7 needs `docker compose down -v` once**, and so does every change of `SHARD_STRATEGY`,
+`SHARD_COUNT`, `SHARD_RANGE_SIZE` or `SHARD_BUCKETS`: rows stay on the shard the strategy chose when they were written.
+
+```bash
+python scripts/shard-routing-check.py [--pause] [--polls 10]   # new polls on the computed shard only, determinism, shard-local vs catalog fan-out, placement of every poll; exit 0 = passed
+curl -si localhost:8080/api/polls/2 | grep -i x-shard          # B with the default Buckets strategy
+docker compose exec -T postgres-shard-b psql -U polling -d polling -c "SELECT count(*) FROM polls"
+SHARD_STRATEGY=Range SHARD_RANGE_SIZE=40 docker compose up -d   # after down -v: another strategy (Buckets | Hash | Modulo | Range)
+SHARD_COUNT=1 docker compose up -d                              # after down -v: Single Node, everything on Shard A
+```
+
+Expected on a cold start with the default `Buckets` (2026-11-09): seed shard A 18 polls / 1937 votes, shard B 32 / 3659;
+the hot poll #1 is on A. `scripts/shardlib.py` holds the same router as the backend; the scripts compare against it. Scripts
+that query the database directly must use the poll's shard: `concurrency-checks.py` does; `kill-test.py`, `load.py`,
+`redis-outage-check.py`, `replication-check.py`, `db-failure-check.py` and the counter lines of `load-tests/series*.sh` still
+look only at `postgres` (their DB checks can fail for polls on Shard B).
+
 ## Run the backend locally (without Docker for the backend)
 
 ```bash
