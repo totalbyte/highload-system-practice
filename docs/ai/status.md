@@ -1,7 +1,7 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-11-09 by Participant 2 (lab 7 started — see `log/2026-11-09-p2-lab7-sharding.md`).
+> Last updated: 2026-11-10 by Participant 2 (lab 7 stage 3 — see `log/2026-11-10-p2-lab7-hot-shard.md`).
 
 ## Current lab: 7 — Data scaling: sharding & partitioning
 
@@ -11,8 +11,9 @@ first. ADRs from 0054. Plan by stages (Ukrainian): [`docs/lab7/plan.md`](../lab7
 | Stage | Status |
 |---|---|
 | 1. Dataset and shard key (2.1) | ✅ ADR 0054: poll aggregate (`polls`, `options`, `votes`) by `poll_id`, `users` unsharded on Shard A; operation × key table |
-| 2. Topology and Shard Router (2.2) | ✅ ADR 0055: Shard B pair (5436 / 5437); `Sharding/ShardRouter` (`Range` / `Modulo` / `Hash` / default `Buckets`), `ShardContexts`, per-shard `ReadDb` / monitor, catalog scatter-gather, `X-Shard`; migration `ShardPollAggregate` (FKs to `users` dropped, `creator_username`, sequence `poll_ids`); `scripts/shard-routing-check.py` + `shardlib.py` ALL PASSED, smoke, `concurrency-checks.py` adapted and green. Not committed. Left: `kill-test.py`, `load.py`, `redis-outage-check.py`, `replication-check.py`, `db-failure-check.py`, `series*.sh` still query only `postgres` |
-| 3–7. Distribution / Hot Shard, cross-shard, resharding, load, docs | not started |
+| 2. Topology and Shard Router (2.2) | ✅ ADR 0055: Shard B pair (5436 / 5437); `Sharding/ShardRouter` (`Range` / `Modulo` / `Hash` / default `Buckets`), `ShardContexts`, per-shard `ReadDb` / monitor, catalog scatter-gather, `X-Shard`; migration `ShardPollAggregate` (FKs to `users` dropped, `creator_username`, sequence `poll_ids`); `scripts/shard-routing-check.py` + `shardlib.py` ALL PASSED, smoke, `concurrency-checks.py` adapted and green. Not committed. Committed `a199260` |
+| 3. Distribution and Hot Shard (2.3) | ✅ ADR 0056, `docs/lab7/hot-shard.md`: `shard-distribution.py` (model + `--live`), `scenario-hot-shard.js`, `docker-compose.loadtest-shards.yml`, `hot-shard.sh` / `hot-shard-report.py`; Range: 100 % on B, CPU B 99 %, ≈ 520 RPS → Buckets: 47 / 53 %, ≈ 1000 RPS. Direct-DB scripts adapted and re-run green (`kill-test`, `load`, `redis-outage-check`, `replication-check --shard A/B`); `db-failure-check` step 3 to revisit in stage 4. Not committed |
+| 4–7. Cross-shard, resharding, load, docs | not started |
 
 ## Lab 6 — Database replication (PR #16 open)
 

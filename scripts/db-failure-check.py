@@ -244,8 +244,10 @@ def main():
         compose("start", PRIMARY, REPLICA)
         print(f"  back to normal in {wait_until(healthy_again) or 0:.1f} s")
 
-    mismatches = sql(PRIMARY, "SELECT count(*) FROM options o WHERE o.vote_count <> (SELECT count(*) FROM votes v WHERE v.option_id = o.id)")
-    check(mismatches == "0", f"counter mismatches on the primary: {mismatches}")
+    # Лаба 7: лічильники на Primary обох шардів.
+    mismatches = sum(int(sql(db, "SELECT count(*) FROM options o WHERE o.vote_count <> (SELECT count(*) FROM votes v WHERE v.option_id = o.id)"))
+                     for db in (PRIMARY, "postgres-shard-b"))
+    check(mismatches == 0, f"counter mismatches on both shards' primaries: {mismatches}")
 
     print(f"\n{'ALL PASSED' if not failures else f'FAILED: {len(failures)}'}")
     return 1 if failures else 0

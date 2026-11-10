@@ -74,8 +74,27 @@ def compose(*args):
     return subprocess.run(["docker", "compose", *args], capture_output=True, text=True, check=True).stdout.strip()
 
 
-def sql(query):
-    return compose("exec", "-T", "postgres", "psql", "-U", "polling", "-d", "polling", "-tAc", query)
+# З лаби 7 опитування лежать на двох шардах (ADR 0054): дані опитування — на його шарді, лічильники — на обох.
+SHARDS = ["postgres", "postgres-shard-b"]
+
+
+def sql(query, service="postgres"):
+    return compose("exec", "-T", service, "psql", "-U", "polling", "-d", "polling", "-tAc", query)
+
+
+def shard_of(poll_id):
+    """Сервіс БД, на якому лежить опитування: питаємо обидва шарди напряму, повз роутер застосунку."""
+    for service in SHARDS:
+        if sql(f"SELECT count(*) FROM polls WHERE id = {poll_id}", service).strip() == "1":
+            return service
+    raise RuntimeError(f"poll {poll_id} is on no shard")
+
+
+def counter_mismatches():
+    """Варіанти, у яких vote_count не дорівнює кількості рядків votes, — на всіх шардах разом."""
+    return str(sum(int(sql("SELECT count(*) FROM options o WHERE o.vote_count <> "
+                           "(SELECT count(*) FROM votes v WHERE v.option_id = o.id)", service).strip())
+                   for service in SHARDS))
 
 
 def login(number):
@@ -192,9 +211,8 @@ def main():
               f"({(max(values) - min(values)) / max(values):.1%} of max)")
 
     if args.scenario != "read" and not args.no_db_check:
-        mismatches = sql("SELECT count(*) FROM options o WHERE o.vote_count <> "
-                         "(SELECT count(*) FROM votes v WHERE v.option_id = o.id)")
-        rows = sql(f"SELECT count(*) FROM votes WHERE poll_id = {poll_id}")
+        mismatches = counter_mismatches()
+        rows = sql(f"SELECT count(*) FROM votes WHERE poll_id = {poll_id}", shard_of(poll_id))
         print(f"\nCounters: per-option mismatches in the whole DB = {mismatches}; vote rows in poll {poll_id} = {rows} "
               f"(<= {len(tokens)} users)")
         if mismatches != "0" or int(rows) > len(tokens):

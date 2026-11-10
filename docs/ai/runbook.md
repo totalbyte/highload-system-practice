@@ -144,9 +144,14 @@ SHARD_COUNT=1 docker compose up -d                              # after down -v:
 
 Expected on a cold start with the default `Buckets` (2026-11-09): seed shard A 18 polls / 1937 votes, shard B 32 / 3659;
 the hot poll #1 is on A. `scripts/shardlib.py` holds the same router as the backend; the scripts compare against it. Scripts
-that query the database directly must use the poll's shard: `concurrency-checks.py` does; `kill-test.py`, `load.py`,
-`redis-outage-check.py`, `replication-check.py`, `db-failure-check.py` and the counter lines of `load-tests/series*.sh` still
-look only at `postgres` (their DB checks can fail for polls on Shard B).
+that query the database directly ask the poll's shard (`shard_of`) and check counters on both shards;
+`replication-check.py --shard A|B` checks one shard's pair. `db-failure-check.py` still stops only Shard A: its last step
+expects `/health` 503, which no longer happens while Shard B is alive (ADR 0055).
+
+**Distribution and Hot Shard (ADR 0056):** `python scripts/shard-distribution.py [--live --polls 100 --votes 3000]` — model
+for all strategies, then a generated dataset with the Data Distribution Matrix (≈ 1 min; a few 409 are two threads racing
+the same first vote). `bash load-tests/hot-shard.sh` (≈ 8 min, `down -v` inside, restores the default stack) — the same k6
+load with `Range` (boundary 51: all new polls on B) and `Buckets`, report with per-shard p95 / CPU / RAM and Mermaid charts.
 
 ## Run the backend locally (without Docker for the backend)
 

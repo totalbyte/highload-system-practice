@@ -27,6 +27,7 @@ docker compose $C run --rm k6 run scenario-c-workflow.js # C — наскріз�
 | [`report.py`](report.py) | таблиці у форматі методички, ресурси по ступенях, графіки Mermaid; `--compare` для серій |
 | [`env-spec.sh`](env-spec.sh) | Baseline Environment Specification |
 | [`docker-compose.loadtest-8cpu.yml`](docker-compose.loadtest-8cpu.yml) | лаба 6: те саме для машини з 8 логічними потоками ([ADR 0053](../docs/ai/decisions/0053-replica-load-comparison.md)); `OVERLAY=...` для `run.sh` |
+| [`scenario-hot-shard.js`](scenario-hot-shard.js), [`hot-shard.sh`](hot-shard.sh), [`hot-shard-report.py`](hot-shard-report.py), [`docker-compose.loadtest-shards.yml`](docker-compose.loadtest-shards.yml) | лаба 7: Hot Shard — те саме навантаження на свіжі опитування з `Range` і `Buckets`, затримка й частка запитів по шардах (`X-Shard`), CPU / RAM Primary кожного шарду; ≈ 8 хв; результат — [`docs/lab7/hot-shard.md`](../docs/lab7/hot-shard.md) ([ADR 0056](../docs/ai/decisions/0056-hot-shard-experiment.md)) |
 | [`series-lab6.sh`](series-lab6.sh) | лаба 6: Single Primary проти Primary + Replica, 17 прогонів, ≈ 95 хв; `mixed` — сценарій A під фоновим записом; результат — [`docs/lab6/load-comparison.md`](../docs/lab6/load-comparison.md) |
 
 **Профіль навантаження** (однаковий для всіх сценаріїв): warm-up 20 с на 10 VU, далі плато по 40 с на 10 → 25 → 50 →
