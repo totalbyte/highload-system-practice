@@ -39,6 +39,8 @@ x-backend: &backend
     ResultsCache__StampedeProtection: ${RESULTS_STAMPEDE_PROTECTION:-Lock}
     # > 0 — кожне читання агрегату результатів з БД триває на стільки мс довше: імітація важкого агрегату (лаба 8, ADR 0060).
     Diagnostics__ResultsLoadDelayMs: ${RESULTS_LOAD_DELAY_MS:-0}
+    # Розкид TTL кешу результатів, частка від базового: 0.2 → TTL = Base ± 20 % (лаба 8, ADR 0062); 0 — без розкиду, демо лавини.
+    ResultsCache__TtlJitter: ${RESULTS_TTL_JITTER:-0.2}
   depends_on:
     postgres:
       condition: service_healthy

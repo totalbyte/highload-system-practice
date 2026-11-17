@@ -169,7 +169,7 @@ load with `Range` (boundary 51: all new polls on B) and `Buckets`, report with p
 
 Switches (backend restart, no `down -v`): `RESULTS_STAMPEDE_PROTECTION=None|SingleFlight|Lock` (default `Lock`, ADR 0061) and
 `RESULTS_LOAD_DELAY_MS` (default 0; > 0 adds `pg_sleep` to every DB read of the results aggregate — simulated expensive
-aggregate, ADR 0060). DB reads of the aggregate are counted by `pg_stat_statements` on both shard Primaries (statement
+aggregate, ADR 0060), `RESULTS_TTL_JITTER` (default 0.2 = TTL ± 20 %; 0 only for the avalanche demo, ADR 0062). DB reads of the aggregate are counted by `pg_stat_statements` on both shard Primaries (statement
 tagged `-- results-load`; extension from the migration `EnablePgStatStatements`, `shared_preload_libraries` in compose).
 
 ```bash
@@ -192,6 +192,14 @@ Lock 1.0.
 dead owner's lock (`PX 1000`, foreign token), expects all readers 200 after ≈ 1 s, exactly 1 DB load, no lock keys left.
 Load longer than the lease: `RESULTS_LOAD_DELAY_MS=1500 bash load-tests/stampede.sh Lock burst -e PERIOD=5` → 2.0 loads per
 invalidation, 0 errors, Warning "lease … expired before the load" in both backends' logs.
+
+**Avalanche (ADR 0062)** needs 1000 polls: `docker compose down -v && SEED_POLLS=1000 docker compose -f docker-compose.yml -f
+load-tests/docker-compose.loadtest-lab8.yml up -d --build` (healthy in ≈ 60 s, 832 visible polls). Then
+`RESULTS_LOAD_DELAY_MS=50 bash load-tests/avalanche.sh 0` and `… avalanche.sh 0.2` (≈ 1.5 min each: empties the results
+cache, samples both Primaries every second with psql `\watch i=1 c=N`, prints the per-second table);
+`python load-tests/avalanche-report.py <run>.json [<run>.json] --mermaid` prints the charts again. Expected (2026-11-17):
+jitter 0 — waves every ≈ 10 s up to ≈ 270 DB loads/s with idle gaps; 0.2 — peak ≈ 160, flat from the third cycle.
+Back to the normal seed: `docker compose down -v && docker compose up -d`.
 
 ## Run the backend locally (without Docker for the backend)
 

@@ -1,7 +1,7 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-11-17 by Participant 1 (lab 8 stages 0–3, see `log/2026-11-17-p1-lab8-stampede.md`; PR #17 review fixes — see `log/2026-11-17-p1-lab7-pr-review-fixes.md`; lab 7 stages in `log/2026-11-10-p2-lab7-hot-shard.md`).
+> Last updated: 2026-11-17 by Participant 1 (lab 8 stages 0–4, see `log/2026-11-17-p1-lab8-stampede.md`; PR #17 review fixes — see `log/2026-11-17-p1-lab7-pr-review-fixes.md`; lab 7 stages in `log/2026-11-10-p2-lab7-hot-shard.md`).
 
 ## Current lab: 8 — Resilience Engineering (stampede, avalanche, penetration)
 
@@ -13,11 +13,11 @@ generations (ADR 0041), single-flight per instance ≈ 2 DB loads per invalidati
 
 | Stage | Status |
 |---|---|
-| 0. Assignment as Markdown, plan, knowledge map | ✅ not committed |
-| 1. Cached object (2.1) | ✅ README «Лабораторна 8 → Об'єкт»: `/results` of the hot poll; cheap aggregate (1–2 ms) → simulated heavy one `RESULTS_LOAD_DELAY_MS` (`pg_sleep`, default 0, ADR 0060). Not committed |
-| 2. Protection switch, unprotected stampede with k6 500+ VU (2.2) | ✅ ADR 0060: `RESULTS_STAMPEDE_PROTECTION=None/SingleFlight`, `pg_stat_statements` (migration `EnablePgStatStatements`, tag `results-load`), `scenario-stampede.js` burst / sustained, `stampede.sh`, `docker-compose.loadtest-lab8.yml`; 500 VU, delay 50 ms: None 434 DB loads per invalidation, p95 1.7 s, 593 RPS → SingleFlight 2.0, p95 0.56 s, 2467 RPS; smoke, race / stampede / concurrency / redis-outage checks green. Not committed |
-| 3. Distributed lock in Redis → 1 DB load per invalidation (2.4) | ✅ ADR 0061 (amends 0044): `Lock` mode, now the default — single-flight + `SET lock:{poll}:g{gen} token NX PX 1000`, value checked before / after, own-token Lua release, 2 s max wait; 500 VU: 1.0 DB load per invalidation (burst and sustained), sustained 3520 RPS vs 2467 single-flight; `scripts/lock-check.py` dead owner → 200 after ≈ 1 s, 1 load, no keys left; load 1.5 s > lease → 2 loads, 0 errors; smoke and all cache / vote regressions green. Not committed |
-| 4. Avalanche, TTL jitter `Base ± Random` with a switch (2.3, 2.5) | ⬜ |
+| 0. Assignment as Markdown, plan, knowledge map | ✅ Committed `5169a77` |
+| 1. Cached object (2.1) | ✅ README «Лабораторна 8 → Об'єкт»: `/results` of the hot poll; cheap aggregate (1–2 ms) → simulated heavy one `RESULTS_LOAD_DELAY_MS` (`pg_sleep`, default 0, ADR 0060). Committed `96845a2` |
+| 2. Protection switch, unprotected stampede with k6 500+ VU (2.2) | ✅ ADR 0060: `RESULTS_STAMPEDE_PROTECTION=None/SingleFlight`, `pg_stat_statements` (migration `EnablePgStatStatements`, tag `results-load`), `scenario-stampede.js` burst / sustained, `stampede.sh`, `docker-compose.loadtest-lab8.yml`; 500 VU, delay 50 ms: None 434 DB loads per invalidation, p95 1.7 s, 593 RPS → SingleFlight 2.0, p95 0.56 s, 2467 RPS; smoke, race / stampede / concurrency / redis-outage checks green. Committed `96845a2` |
+| 3. Distributed lock in Redis → 1 DB load per invalidation (2.4) | ✅ ADR 0061 (amends 0044): `Lock` mode, now the default — single-flight + `SET lock:{poll}:g{gen} token NX PX 1000`, value checked before / after, own-token Lua release, 2 s max wait; 500 VU: 1.0 DB load per invalidation (burst and sustained), sustained 3520 RPS vs 2467 single-flight; `scripts/lock-check.py` dead owner → 200 after ≈ 1 s, 1 load, no keys left; load 1.5 s > lease → 2 loads, 0 errors; smoke and all cache / vote regressions green. Committed `96845a2` |
+| 4. Avalanche, TTL jitter `Base ± Random` with a switch (2.3, 2.5) | ✅ ADR 0062 (amends 0041): `RESULTS_TTL_JITTER` (default 0.2 → TTL ± 20 %), `avalanche.sh` + `scenario-avalanche.js` + `avalanche-report.py` on `SEED_POLLS=1000` (832 keys); delay 50: jitter 0 → waves every 10 s up to 269 DB loads/s, 26 sessions, wave p95 370 vs 245 ms; ±20 % → peak 162, flat from the third cycle; real aggregate: DB waves only. Not committed |
 | 5. Negative Caching (2.6) | ⬜ |
 | 6. Comparison matrix, Failure Modes, Resilience Profile (2.7) | ⬜ |
 | 7. README, guide, lecturer page (§3, §4) | ⬜ |
@@ -183,7 +183,7 @@ All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-
 
 ## Next steps
 
-- **Lab 8 (Participant 1):** stage 4 next — Cache Avalanche (synchronized TTL of many keys) and TTL jitter `Base ± Random` with a switch.
+- **Lab 8 (Participant 1):** stage 5 next — Negative Caching for missing polls (`GET /api/polls/9999999/results`), invalidate the id on poll creation.
 - **Lab 6 (Participant 1):** rehearse by `docs/lab6-guide.md`, defend, then `labs/lab6-summary.md`.
 - Known web UI behaviour during a Primary outage: after a page reload the user looks logged out (`/me` answers 503, the token is kept and works again afterwards). Not fixed.
 - Known bug outside lab 6: `POST /api/polls` with a valid token and no `options` answers 500 instead of 422 (NullReferenceException in

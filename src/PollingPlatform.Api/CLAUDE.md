@@ -35,7 +35,8 @@ Results/                    ResultsController (GET /api/polls/{id}/results), Res
                             miss, against Cache Stampede (ADR 0044)
                             lab 8 (ADR 0060, 0061): `ResultsCache:StampedeProtection` None | SingleFlight | Lock (default),
                             ResultsDistributedLock — Redis lock per (poll, generation) inside the flight, `Diagnostics:ResultsLoadDelayMs`
-                            (pg_sleep before the aggregate), the aggregate query is tagged `results-load` for pg_stat_statements
+                            (pg_sleep before the aggregate), the aggregate query is tagged `results-load` for pg_stat_statements;
+                            `ResultsCache:TtlJitter` — TTL = Base ± j (default 0.2, ADR 0062)
 Common/
   Exceptions/               AppException (carries StatusCode) + NotFound/Conflict/Unauthorized/Forbidden/Validation;
                             PollNotFoundException, InvalidPollStateException; VoteExceptions.cs (option not in poll,

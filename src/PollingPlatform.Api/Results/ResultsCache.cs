@@ -53,8 +53,12 @@ public class ResultsCache(IConnectionMultiplexer redis, IConfiguration configura
     /// <summary>Закрите опитування вже не зміниться: голосувати можна лише в активному, а з closed переходів немає.</summary>
     private static readonly TimeSpan ClosedTtl = TimeSpan.FromHours(1);
 
-    /// <summary>Розкид TTL проти Cache Avalanche: записи, створені в одну секунду, не спливають в одну секунду.</summary>
-    private const double TtlJitter = 0.2;
+    /// <summary>
+    /// Розкид TTL проти Cache Avalanche (лаба 4; формула <c>Base ± Random</c> — лаба 8, ADR 0062): записи, створені в одну
+    /// секунду, не спливають в одну секунду. Частка від базового TTL, 0.2 → ±20 %. <c>ResultsCache:TtlJitter=0</c> вимикає
+    /// розкид — лише для демонстрації лавини.
+    /// </summary>
+    private readonly double ttlJitter = Math.Clamp(configuration.GetValue("ResultsCache:TtlJitter", 0.2), 0, 0.9);
 
     // Покоління і значення за один round-trip. Ключ значення будується зі значення лічильника всередині скрипта —
     // на одному вузлі Redis це коректно; для Redis Cluster знадобився б hash tag (ADR 0041).
@@ -143,7 +147,7 @@ public class ResultsCache(IConnectionMultiplexer redis, IConfiguration configura
         catch (Exception ex) when (IsUnavailable(ex))
         {
             logger.LogWarning("Results cache unavailable, poll {PollId} not invalidated; a stale entry expires within {Ttl} s: {Error}",
-                pollId, OpenTtl.TotalSeconds * (1 + TtlJitter), ex.Message);
+                pollId, OpenTtl.TotalSeconds * (1 + ttlJitter), ex.Message);
         }
     }
 
@@ -211,8 +215,8 @@ public class ResultsCache(IConnectionMultiplexer redis, IConfiguration configura
     /// TTL за статусом, з яким агрегат порахований: довгий — лише для даних, що вже не зміняться. Запис, зроблений
     /// поки опитування було активним, лишається з коротким TTL, навіть якщо опитування закрили мить потому.
     /// </summary>
-    private static TimeSpan TtlFor(PollStatus status) =>
-        (status == PollStatus.Closed ? ClosedTtl : OpenTtl) * (1 + Random.Shared.NextDouble() * TtlJitter);
+    private TimeSpan TtlFor(PollStatus status) =>
+        (status == PollStatus.Closed ? ClosedTtl : OpenTtl) * (1 + (2 * Random.Shared.NextDouble() - 1) * ttlJitter);
 
     private static bool IsUnavailable(Exception ex) => ex is RedisConnectionException or RedisTimeoutException;
 
