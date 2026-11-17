@@ -26,6 +26,7 @@ Course materials and team documents are in Ukrainian ("Учасник 1/2" = Par
 | [`docs/lab5/plan.md`](docs/lab5/plan.md), [`load-tests/README.md`](load-tests/README.md) | Lab 5 stages (both participants, one branch) and how to run k6 / the full measurement series |
 | [`docs/lab6/plan.md`](docs/lab6/plan.md), [`load-comparison.md`](docs/lab6/load-comparison.md) | Lab 6 stages and load comparison (Ukrainian) — Participant 1 does lab 6 alone, by agreement |
 | [`docs/lab7/plan.md`](docs/lab7/plan.md), [`hot-shard.md`](docs/lab7/hot-shard.md) | Lab 7 stages and the distribution / Hot Shard report (Ukrainian) — sharding the poll aggregate by `poll_id`, Participant 2 |
+| [`docs/lab8/plan.md`](docs/lab8/plan.md) | Lab 8 stages (Ukrainian) — Resilience Engineering: stampede protection, TTL jitter, negative caching; Participant 1 does lab 8 alone, by agreement |
 | [`docs/ai/project-context.md`](docs/ai/project-context.md) | You need lab requirements, the design-doc summary, the high-load scenario, bottlenecks, defense questions |
 | [`docs/ai/contracts.md`](docs/ai/contracts.md) | You touch the API, DB schema, or code another participant depends on; open questions for Participant 2 |
 | [`docs/ai/runbook.md`](docs/ai/runbook.md) | Running, testing, migrations, seed data, troubleshooting |

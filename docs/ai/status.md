@@ -1,14 +1,32 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-11-17 by Participant 1 (PR #17 review fixes — see `log/2026-11-17-p1-lab7-pr-review-fixes.md`; lab 7 stages in `log/2026-11-10-p2-lab7-hot-shard.md`; lab 6 lecturer page in `log/2026-11-11-p1-lab6-lecturer-page.md`).
+> Last updated: 2026-11-17 by Participant 1 (lab 8 started; PR #17 review fixes — see `log/2026-11-17-p1-lab7-pr-review-fixes.md`; lab 7 stages in `log/2026-11-10-p2-lab7-hot-shard.md`).
 
-## Current lab: 7 — Data scaling: sharding & partitioning
+## Current lab: 8 — Resilience Engineering (stampede, avalanche, penetration)
 
-**Participant 2 does lab 7.** Branch `lab7/sharding` from `lab6/replication` (needs the replica and `ReadDb`); lab 6 is
-merged into `main` (PR #16, `1e0a50c`), and `lab7/sharding` sits right on top of it. ADRs from 0054. Plan by stages
-(Ukrainian): [`docs/lab7/plan.md`](../lab7/plan.md). All 7 stages done and pushed (`a199260`, `c5af796`, `7b4364d`), PR into
-`main` open; left: a defense rehearsal, `labs/lab7-summary.md` after the defense.
+**Participant 1 does lab 8 alone** (agreed by both participants), strictly by the assignment. Branch `lab8/resilience`
+from `main` (`b77ea93`, labs 6 and 7 merged). ADRs from 0060. Assignment: `docs/labs/Lab8 - Resilience Engineering.md`;
+plan by stages (Ukrainian): [`docs/lab8/plan.md`](../lab8/plan.md). Starting point from lab 4: Cache-Aside with
+generations (ADR 0041), single-flight per instance ≈ 2 DB loads per invalidation on 2 instances (ADR 0044), TTL jitter
++0–20 %.
+
+| Stage | Status |
+|---|---|
+| 0. Assignment as Markdown, plan, knowledge map | ✅ not committed |
+| 1. Cached object (2.1) | ⬜ |
+| 2. Protection switch, unprotected stampede with k6 500+ VU (2.2) | ⬜ |
+| 3. Distributed lock in Redis → 1 DB load per invalidation (2.4) | ⬜ |
+| 4. Avalanche, TTL jitter `Base ± Random` with a switch (2.3, 2.5) | ⬜ |
+| 5. Negative Caching (2.6) | ⬜ |
+| 6. Comparison matrix, Failure Modes, Resilience Profile (2.7) | ⬜ |
+| 7. README, guide, lecturer page (§3, §4) | ⬜ |
+
+## Lab 7 — Data scaling: sharding & partitioning (merged via PR #17)
+
+**Participant 2 does lab 7.** Branch `lab7/sharding`, ADRs 0054–0059. Plan by stages (Ukrainian):
+[`docs/lab7/plan.md`](../lab7/plan.md). All 7 stages done, merged into `main` (`b77ea93`, review fixes `8cda8e6`);
+left: a defense rehearsal, `labs/lab7-summary.md` after the defense.
 
 | Stage | Status |
 |---|---|
@@ -138,7 +156,9 @@ All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-
 | 3 Horizontal Scaling | ✅ defended; `labs/lab3-summary.md`, `docs/lab3-guide.md`, `docs/about/lab3.md` |
 | 4 Distributed Caching | ✅ defended (per Participant 1, 2026-11-08); `docs/lab4-guide.md`, `docs/about/lab4.md`; `labs/lab4-summary.md` was never written |
 | 5 Load Testing | ✅ defended (per Participant 1, 2026-11-08); `docs/lab5-guide.md`, `docs/about/lab5.md`; `labs/lab5-summary.md` was never written |
-| 6 Database Replication | 🟡 in progress (Participant 1 alone), branch `lab6/replication`: all 6 stages done; PR, defense and `labs/lab6-summary.md` left |
+| 6 Database Replication | 🟡 merged via PR #16 / #18 (Participant 1 alone); defense and `labs/lab6-summary.md` left |
+| 7 Sharding & Partitioning | 🟡 merged via PR #17 (Participant 2); defense and `labs/lab7-summary.md` left |
+| 8 Resilience Engineering | 🟡 in progress (Participant 1 alone), branch `lab8/resilience`, see the stage table above |
 
 ## Repository state
 
@@ -163,7 +183,8 @@ All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-
 
 ## Next steps
 
-- **Lab 6 (Participant 1):** rehearse by `docs/lab6-guide.md`, PR `lab6/replication` → `main` (review by Participant 2), defend, then `labs/lab6-summary.md`.
+- **Lab 8 (Participant 1):** stage 1–2 next — README paragraph on the cached object, `RESULTS_STAMPEDE_PROTECTION` switch, k6 stampede scenario.
+- **Lab 6 (Participant 1):** rehearse by `docs/lab6-guide.md`, defend, then `labs/lab6-summary.md`.
 - Known web UI behaviour during a Primary outage: after a page reload the user looks logged out (`/me` answers 503, the token is kept and works again afterwards). Not fixed.
 - Known bug outside lab 6: `POST /api/polls` with a valid token and no `options` answers 500 instead of 422 (NullReferenceException in
   `PollValidators.cs:17`, in the code since lab 1). Not fixed.
