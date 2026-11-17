@@ -28,7 +28,7 @@ Avalanche-експерименту, Negative Caching, k6 на 500+ VU, матр�
 - Звернення до БД рахує PostgreSQL: `pg_stat_statements` (міграція `EnablePgStatStatements`), запит агрегату з тегом
   `results-load`. `load-tests/stampede.sh <None|SingleFlight> [burst|sustained]`.
 - Виміряно (500 VU): агрегат + 50 мс, burst — None 434 звернення на інвалідацію (з 500), p95 1.7 с; SingleFlight 2.0,
-  p95 0.56 с. Sustained — 593 проти 2467 RPS. Справжній агрегат: None 21 (142 після холодного старту), SingleFlight 2.2.
+  p95 0.56 с. Справжній агрегат: None 21 (142 після холодного старту), SingleFlight 2.2. RPS і p95 — див. серію етапу 6.
 
 ## Етап 3. Distributed lock (2.4) — ✅ (ADR 0061)
 
@@ -38,7 +38,8 @@ Avalanche-експерименту, Negative Caching, k6 на 500+ VU, матр�
 - Хто не отримав lock — перечитує кеш до обмеженого часу очікування, потім читає з БД сам: без deadlock, lease
   обмежений у часі (критерій оцінювання). Redis недоступний — BYPASS, як у ADR 0043.
 - Перевірка: власника lock зупинено — решта відповідають після спливу lease.
-- Виміряно: 1.0 звернення до БД на інвалідацію (500 VU, burst і sustained), sustained 3520 RPS проти 2467 у single-flight.
+- Виміряно: 1.0 звернення до БД на інвалідацію (500 VU, burst і sustained); у серії етапу 6 Lock за RPS не швидший
+  за single-flight (3420 проти 3765), p95 нижчий.
   `scripts/lock-check.py` (мертвий власник): усі 200 через ≈ 1 с, 1 звернення; читання 1.5 с при lease 1 с — 2 звернення,
   0 помилок. `Lock` — режим за замовчуванням.
 
@@ -61,11 +62,15 @@ Avalanche-експерименту, Negative Caching, k6 на 500+ VU, матр�
 - `scripts/negative-cache-check.py`, `load-tests/penetration.sh`. Виміряно (200 VU, 30 с): 100 неіснуючих id — у БД 53.8 % →
   0.39 % запитів, RPS 744 → 1468; новий id на кожен запит — 100 % в обох режимах, Redis +1 ключ на запит (межа методу).
 
-## Етап 6. Матриця і Failure Modes (2.7)
+## Етап 6. Матриця і Failure Modes (2.7) — ✅ (ADR 0064, [`resilience-profile.md`](resilience-profile.md))
 
 - Матриця з методички: `none` / `single-flight` / `lock` — звернення до БД, RPS, p95, p99, % помилок.
 - Ризики: deadlock, сплив lease, пам'ять під negative cache, застарілість при SWR (SWR не реалізуємо — ADR 0044).
 - Resilience Profile: таблиця «відмова → поведінка → механізм → виміряно» за лаби 2–8.
+
+- `load-tests/series-lab8.sh`, кожен режим × 3. Агрегат + 50 мс: None 124 звернення / 1075 RPS → SingleFlight 2.2 / 3765
+  → Lock 1.0 / 3420; справжній агрегат: захист +50 % RPS; penetration 100 % → 0.15 %; сценарій A −7 % на 50 VU.
+  Висновки одиночних прогонів про RPS виправлено (ADR 0064).
 
 ## Етап 7. Документи (§3, §4)
 

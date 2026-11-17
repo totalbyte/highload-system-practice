@@ -202,6 +202,10 @@ cache, samples both Primaries every second with psql `\watch i=1 c=N`, prints th
 jitter 0 — waves every ≈ 10 s up to ≈ 270 DB loads/s with idle gaps; 0.2 — peak ≈ 160, flat from the third cycle.
 Back to the normal seed: `docker compose down -v && docker compose up -d`.
 
+**Comparison series (ADR 0064):** `bash load-tests/series-lab8.sh` (≈ 30 min, `down -v` inside, restores the default stack,
+keep the laptop on mains) — stampede sustained × 3 modes × 2 delays × 3, burst × 3 modes, penetration × 3 configs × 3,
+scenario A control × 2; `python load-tests/series-lab8-report.py` prints the matrix again (median [min–max]).
+
 **Negative caching (ADR 0063):** `python scripts/negative-cache-check.py [--missing 9999999]` (≈ 5 s, nobody else creating
 polls) — 150 reads of a missing id → 1 DB load and a `not-found` entry (PTTL ≤ 36 s); the next `poll_ids` id read
 before creation → 404, after creation the author gets 200; deleted draft → 404. Load: `bash load-tests/penetration.sh

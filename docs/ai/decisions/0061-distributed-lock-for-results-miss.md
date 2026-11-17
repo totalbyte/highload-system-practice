@@ -1,5 +1,5 @@
 # 0061. Lab 8: distributed lock in Redis behind single-flight — one DB load per invalidation for the cluster
-**Status:** Accepted · **Date:** 2026-11-17 · **Author:** Participant 1 · Amends 0044
+**Status:** Accepted, single-run throughput corrected by 0064 · **Date:** 2026-11-17 · **Author:** Participant 1 · Amends 0044
 
 ## Context
 Single-flight (ADR 0044) coalesces misses only inside one instance, so a stampede costs one DB load per instance:
@@ -44,6 +44,10 @@ Measured 2026-11-17 with `load-tests/stampede.sh` (ADR 0060 stand, 500 VUs, 2 ba
 | burst, real aggregate — DB loads per invalidation / p95 | 2.2 / 433 ms | **1.0** / 394 ms |
 | burst, delay 50 ms — DB loads / p95 | 2.0 / 564 ms | **1.0** / 634 ms |
 | sustained 30 s, delay 50 ms — DB loads / RPS / p95 / p99 | 2.2 / 2467 / 423 / 630 ms | **1.0** (128 for 130) / 3520 / 312 / 455 ms |
+
+The sustained row is a single run each. **Corrected by ADR 0064** (median of 3): SingleFlight 2.2 / 3765 / 294 / 387 ms,
+Lock 1.0 / 3420 / 257 / 397 ms — Lock is not faster than single-flight on two instances (−9 % RPS, −13 % p95); its gain is
+the bound of one load however many instances there are.
 
 Failure modes checked:
 - **Dead owner** (`scripts/lock-check.py`): a planted lock with a foreign token and `PX 1000`, never released; 50 and

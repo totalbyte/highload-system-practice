@@ -12,7 +12,8 @@ mode=${2:-burst}
 shift 2 2>/dev/null || shift $#
 C="-f docker-compose.yml -f ${OVERLAY:-load-tests/docker-compose.loadtest-lab8.yml}"
 delay=${RESULTS_LOAD_DELAY_MS:-0}
-tag=$(echo "$protection" | tr '[:upper:]' '[:lower:]')-delay$delay
+# REP — номер повтору в серії (series-lab8.sh): JSON кожного повтору зберігається окремо.
+tag=$(echo "$protection" | tr '[:upper:]' '[:lower:]')-delay$delay${REP:+-r$REP}
 api=${API:-http://localhost:8080}
 poll=1
 for arg in "$@"; do case $arg in POLL=*) poll=${arg#POLL=} ;; esac; done
@@ -56,3 +57,6 @@ print(m['invalidations']['values']['count'], m.get('warmup_db_loads', {'values':
 loads=$((total - warm))
 echo "RESULT $protection $mode, load delay $delay ms: $loads DB loads (pg_stat_statements, warm-up $warm excluded) for $inv invalidations =" \
   "$(python -c "print(f'{$loads / max($inv, 1):.1f}')") per invalidation"
+# Рядок для звіту серії (series-lab8-report.py); RPS, p95 / p99 і помилки — з JSON k6.
+printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$protection" "$mode" "$delay" "${REP:-1}" "$loads" "$inv" \
+  "stampede-$mode-$tag.json" >> load-tests/results/stampede-summary.tsv

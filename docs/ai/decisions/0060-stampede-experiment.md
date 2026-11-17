@@ -1,5 +1,5 @@
 # 0060. Lab 8: stampede protection switch, DB-side load count, simulated expensive aggregate
-**Status:** Accepted · **Date:** 2026-11-17 · **Author:** Participant 1
+**Status:** Accepted, single-run numbers corrected by 0064 · **Date:** 2026-11-17 · **Author:** Participant 1
 
 ## Context
 Lab 8 asks to reproduce Cache Stampede / Thundering Herd on an expensive cached read with 500+ VUs, to show the mass of
@@ -49,8 +49,9 @@ Measured 2026-11-17, Participant 1's machine, 2 backends, poll #1 (Shard A), 0 %
 
 - With an expensive aggregate the herd is almost the whole crowd (434 of 500) and it exhausts the pools (2 × 30
   connections): throughput ×4.2 lower and p95 ×3.8 higher than with single-flight.
-- With the real aggregate protection cuts DB loads ×10–40 but gives no throughput gain (one 20 s run each, the
-  single-flight run was even 28 % lower; not investigated): the database has spare capacity for 1–2 ms queries.
+- With the real aggregate protection cuts DB loads ×10–40; these single runs showed no throughput gain (single-flight
+  even 28 % lower). **Corrected by ADR 0064**: in a series of three repeats protection gives +50 % RPS and ×2.4 lower p95
+  on the real aggregate too — the single runs were noise.
 - Single-flight leaves one load per instance (2.0–2.2 on 2 instances); getting to 1 is stage 3 (distributed lock).
 - `pg_stat_statements` adds a small per-statement overhead on the Primaries; negligible here, and the view is not
   queried by the application.

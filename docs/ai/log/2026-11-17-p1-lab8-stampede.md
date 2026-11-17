@@ -1,4 +1,4 @@
-# 2026-11-17 — Participant 1 — lab 8 stages 0–5: plan, stampede, distributed lock, avalanche, negative caching
+# 2026-11-17 — Participant 1 — lab 8 stages 0–6: stampede, lock, avalanche, negative caching, matrix
 **Lab:** 8 · **Commits:** `5169a77` (stage 0), `96845a2` (stages 1–3), `27344dd` (stage 4), `3eccd0b` (stage 5)
 
 ## Goal
@@ -23,6 +23,9 @@ agreed with Participant 2), then stages 1–3: the cached object, an unprotected
 - Stage 5 (ADR 0063): negative entry `not-found` (`SetNotFoundAsync`, `ResultsCacheLookup.NotFound`), `LoadAsync` returns
   null for a missing poll, waiters under the lock answer 404 from the entry, `PollService.CreateAsync` invalidates the new
   id; `scripts/negative-cache-check.py`, `load-tests/scenario-penetration.js` + `penetration.sh`; README «2.6».
+- Stage 6 (ADR 0064): `load-tests/series-lab8.sh` + `series-lab8-report.py` (`REP` and summary TSV in the runners), README
+  «2.7» matrix, `docs/lab8/resilience-profile.md` (Failure Modes, Resilience Profile labs 2–8), single-run claims corrected
+  in README 2.2 / 2.4 and ADR 0060 / 0061.
 
 ## Decisions (link ADRs)
 - [ADR 0060](../decisions/0060-stampede-experiment.md): protection switch, DB-side count, simulated expensive aggregate.
@@ -30,9 +33,12 @@ agreed with Participant 2), then stages 1–3: the cached object, an unprotected
   2 s, no fencing token (idempotent cache write keyed by generation), `Lock` is the default.
 - [ADR 0062](../decisions/0062-avalanche-and-ttl-jitter.md): TTL ± j instead of + j, switch for the demo, avalanche on 832 keys.
 - [ADR 0063](../decisions/0063-negative-caching.md): negative entry in the same key, 30 s, invalidate on create, no Bloom filter.
+- [ADR 0064](../decisions/0064-lab8-comparison-series.md): the matrix only from one series with 3 interleaved repeats.
 - Out of scope by agreement: SWR, XFetch, Redlock, Bloom filter — theory only.
 
 ## Problems & fixes
+- Single runs were noisy for RPS / p95 (30–50 %): "Lock 3520 vs single-flight 2467" and "no gain on the real
+  aggregate" did not survive the three-repeat series → corrected (ADR 0064); DB load counts were stable.
 - Avalanche: DB loads lag the k6 misses by ≈ 1 s (start-second tag vs sample after completion) and both runs have one
   unrelated ≈ 1 s stall → latency compared by miss-wave seconds vs quiet seconds, not by the per-second maximum.
 - Real aggregate (1–2 ms) gave only 21 DB loads per invalidation on a warm stack (142 right after a cold start) and no
@@ -52,6 +58,7 @@ agreed with Participant 2), then stages 1–3: the cached object, an unprotected
 - Stage 4: cold start with `SEED_POLLS=1000` healthy in 59 s (1000 polls, 106 079 votes over both shards); four
   avalanche runs (jitter 0 / 0.2 × delay 0 / 50), 0 % errors; numbers in ADR 0062 / README.
 - Stage 5: `negative-cache-check.py` ALL PASSED; four `penetration.sh` runs (on / off × 100 ids / unique), 0 % errors.
+- Stage 6: `series-lab8.sh` completed in 27 min, exit 0, 0 % errors in all 34 runs; numbers in ADR 0064 / README «2.7».
 
 ## Not done / next steps
 - The README sequence diagram (2.4) is not yet rendered in a browser — check all lab 8 diagrams in stage 7.

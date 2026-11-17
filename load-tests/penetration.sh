@@ -11,16 +11,19 @@ shift
 C="-f docker-compose.yml -f ${OVERLAY:-load-tests/docker-compose.loadtest-lab8.yml}"
 ids=100
 for arg in "$@"; do case $arg in IDS=*) ids=${arg#IDS=} ;; esac; done
-tag="negative-${negative}-ids${ids}"
+# Захист від stampede — з оточення (за замовчуванням Lock): None + false — зовсім незахищений «до».
+protection=${RESULTS_STAMPEDE_PROTECTION:-Lock}
+tag="$(echo "$protection" | tr '[:upper:]' '[:lower:]')-negative-${negative}-ids${ids}${REP:+-r$REP}"
 shards="postgres postgres-shard-b"
 psql_q() { docker compose exec -T "$1" psql -U polling -d polling -tAc "$2" | tr -d '\r'; }
 redis_q() { docker compose exec -T redis redis-cli "$@" | tr -d '\r'; }
 
-RESULTS_NEGATIVE_CACHING=$negative docker compose $C up -d backend-1 backend-2 >/dev/null 2>&1 ||
-  { echo "docker compose up failed"; exit 1; }
+RESULTS_STAMPEDE_PROTECTION=$protection RESULTS_NEGATIVE_CACHING=$negative docker compose $C up -d backend-1 backend-2 \
+  >/dev/null 2>&1 || { echo "docker compose up failed"; exit 1; }
 for b in backend-1 backend-2; do
-  actual=$(docker compose exec -T "$b" printenv ResultsCache__NegativeCaching | tr -d '\r')
-  [ "$actual" = "$negative" ] || { echo "$b runs with '$actual', expected '$negative'"; exit 1; }
+  actual=$(docker compose exec -T "$b" sh -c 'echo "$ResultsCache__StampedeProtection $ResultsCache__NegativeCaching"' |
+    tr -d '\r')
+  [ "$actual" = "$protection $negative" ] || { echo "$b runs with '$actual', expected '$protection $negative'"; exit 1; }
 done
 for _ in $(seq 1 60); do
   [ "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/health)" = 200 ] && break; sleep 1
@@ -41,6 +44,10 @@ done
 keys_after=$(redis_q dbsize)
 mem_after=$(redis_q info memory | sed -n 's/^used_memory://p')
 requests=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['requests'])" "load-tests/results/penetration-$tag.json" | tr -d '\r')
-echo "RESULT negative caching $negative, ids $ids: $loads DB lookups for $requests requests" \
+echo "RESULT $protection, negative caching $negative, ids $ids: $loads DB lookups for $requests requests" \
   "($(python -c "print(f'{100 * $loads / max($requests, 1):.2f}')") %), Redis +$((keys_after - keys_before)) keys," \
   "+$(( (mem_after - mem_before) / 1024 )) KiB"
+# Рядок для звіту серії (series-lab8-report.py); RPS, p95 / p99 і помилки — з JSON k6.
+printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$protection" "$negative" "$ids" "${REP:-1}" "$loads" "$requests" \
+  "$((keys_after - keys_before))" "$(( (mem_after - mem_before) / 1024 ))" "penetration-$tag.json" \
+  >> load-tests/results/penetration-summary.tsv
