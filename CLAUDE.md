@@ -1,8 +1,8 @@
 # Polling Platform — High-Load Systems course project
 
 Two-person university project for "High-Load Systems Engineering" (4th year). A real-time polling platform
-(User, Poll, Option, Vote) that grows over 7 labs: MVP → stateless → horizontal scaling → distributed caching →
-load testing → database replication → sharding. **Participant 1** ("platform": infra, DB, auth, poll lifecycle);
+(User, Poll, Option, Vote) that grows over 8 labs: MVP → stateless → horizontal scaling → distributed caching →
+load testing → database replication → sharding → cache resilience. **Participant 1** ("platform": infra, DB, auth, poll lifecycle);
 **Participant 2** — teammate ("voting core": votes, results, caching, error handling, bottleneck analysis).
 Both are questioned about the *whole* system at every lab defense.
 
@@ -26,7 +26,7 @@ Course materials and team documents are in Ukrainian ("Учасник 1/2" = Par
 | [`docs/lab5/plan.md`](docs/lab5/plan.md), [`load-tests/README.md`](load-tests/README.md) | Lab 5 stages (both participants, one branch) and how to run k6 / the full measurement series |
 | [`docs/lab6/plan.md`](docs/lab6/plan.md), [`load-comparison.md`](docs/lab6/load-comparison.md) | Lab 6 stages and load comparison (Ukrainian) — Participant 1 does lab 6 alone, by agreement |
 | [`docs/lab7/plan.md`](docs/lab7/plan.md), [`hot-shard.md`](docs/lab7/hot-shard.md) | Lab 7 stages and the distribution / Hot Shard report (Ukrainian) — sharding the poll aggregate by `poll_id`, Participant 2 |
-| [`docs/lab8/plan.md`](docs/lab8/plan.md) | Lab 8 stages (Ukrainian) — Resilience Engineering: stampede protection, TTL jitter, negative caching; Participant 1 does lab 8 alone, by agreement |
+| [`docs/lab8/plan.md`](docs/lab8/plan.md), [`resilience-profile.md`](docs/lab8/resilience-profile.md) | Lab 8 stages and the Failure Modes / Resilience Profile report (Ukrainian) — Resilience Engineering: stampede protection, TTL jitter, negative caching; Participant 1 does lab 8 alone, by agreement |
 | [`docs/ai/project-context.md`](docs/ai/project-context.md) | You need lab requirements, the design-doc summary, the high-load scenario, bottlenecks, defense questions |
 | [`docs/ai/contracts.md`](docs/ai/contracts.md) | You touch the API, DB schema, or code another participant depends on; open questions for Participant 2 |
 | [`docs/ai/runbook.md`](docs/ai/runbook.md) | Running, testing, migrations, seed data, troubleshooting |
@@ -40,15 +40,17 @@ Course materials and team documents are in Ukrainian ("Учасник 1/2" = Par
 | [`docs/lab4-guide.md`](docs/lab4-guide.md) | Lab 4 defense guide (Ukrainian): cheat sheet, defense script for the 4 procedure items, theory (stampede, avalanche, LRU / LFU, expiration vs invalidation) and Q&A, troubleshooting |
 | [`docs/lab5-guide.md`](docs/lab5-guide.md) | Lab 5 defense guide (Ukrainian): cheat sheet, defense script for the 4 procedure items (k6 runs, analysis, scaling / cache comparison), theory (saturation point, coordinated omission, GC / JIT) and Q&A |
 | [`docs/lab7-guide.md`](docs/lab7-guide.md) | Lab 7 defense guide (Ukrainian): cheat sheet, defense script for the 4 procedure items, theory (partitioning / sharding / replication, distributed JOIN, unique constraints, 2PC, Saga, consistent hashing), Q&A, troubleshooting |
+| [`docs/lab8-guide.md`](docs/lab8-guide.md) | Lab 8 defense guide (Ukrainian): cheat sheet, defense script for the 4 procedure items (stampede live, lock down to 1 DB load, negative caching), theory (stampede / herd / avalanche / penetration, Redlock, Bloom filter, XFetch), Q&A, troubleshooting |
 | [`docs/lab6-guide.md`](docs/lab6-guide.md) | Lab 6 defense guide (Ukrainian): cheat sheet, defense script for the 4 procedure items, theory (replication modes, Split-Brain, CAP, PACELC, Raft), Q&A, troubleshooting |
-| [`docs/about/lab2.md`](docs/about/lab2.md), [`lab3.md`](docs/about/lab3.md), [`lab4.md`](docs/about/lab4.md), [`lab5.md`](docs/about/lab5.md), [`lab6.md`](docs/about/lab6.md), [`lab7.md`](docs/about/lab7.md) | Pages to show the lecturer at the defense (Ukrainian): requirement → what was done → proof with numbers, diagrams, live-demo commands; no speaker notes |
+| [`docs/about/lab2.md`](docs/about/lab2.md), [`lab3.md`](docs/about/lab3.md), [`lab4.md`](docs/about/lab4.md), [`lab5.md`](docs/about/lab5.md), [`lab6.md`](docs/about/lab6.md), [`lab7.md`](docs/about/lab7.md), [`lab8.md`](docs/about/lab8.md) | Pages to show the lecturer at the defense (Ukrainian): requirement → what was done → proof with numbers, diagrams, live-demo commands; no speaker notes |
 | `docs/labs/*.md`, `docs/*.docx` | Original assignments / design docs (Ukrainian); summarized in `project-context.md` |
 
 ## Stack
 
 C# / ASP.NET Core 10 (controllers) · EF Core 10 + Npgsql · PostgreSQL 17 · JWT · FluentValidation · Swashbuckle ·
 Docker Compose. Redis since lab 2 (distributed results cache in lab 4), HAProxy since lab 3 (ADR 0031, instead of the
-Nginx named in lab 1), k6 in lab 5, PostgreSQL streaming replica in lab 6 (ADR 0049), two shards with an application-level router in lab 7 (ADR 0055).
+Nginx named in lab 1), k6 in lab 5, PostgreSQL streaming replica in lab 6 (ADR 0049), two shards with an application-level router in lab 7 (ADR 0055), Redis lock + negative caching for the results cache and
+`pg_stat_statements` in lab 8 (ADR 0060–0064).
 
 ## Quick start
 

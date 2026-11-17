@@ -1,5 +1,5 @@
-# 2026-11-17 — Participant 1 — lab 8 stages 0–6: stampede, lock, avalanche, negative caching, matrix
-**Lab:** 8 · **Commits:** `5169a77` (stage 0), `96845a2` (stages 1–3), `27344dd` (stage 4), `3eccd0b` (stage 5)
+# 2026-11-17 — Participant 1 — lab 8 stages 0–7: stampede, lock, avalanche, negative caching, matrix, defense docs
+**Lab:** 8 · **Commits:** `5169a77` (stage 0), `96845a2` (stages 1–3), `27344dd` (stage 4), `3eccd0b` (stage 5), `5851ad3` (stage 6), stage 7 not committed yet
 
 ## Goal
 Read the lab 8 assignment (Resilience Engineering), plan it strictly by the assignment (Participant 1 does lab 8 alone,
@@ -26,6 +26,8 @@ agreed with Participant 2), then stages 1–3: the cached object, an unprotected
 - Stage 6 (ADR 0064): `load-tests/series-lab8.sh` + `series-lab8-report.py` (`REP` and summary TSV in the runners), README
   «2.7» matrix, `docs/lab8/resilience-profile.md` (Failure Modes, Resilience Profile labs 2–8), single-run claims corrected
   in README 2.2 / 2.4 and ADR 0060 / 0061.
+- Stage 7 (continued 2026-11-18): `docs/lab8-guide.md`, `docs/about/lab8.md`, README «Підсумок лаби 8» and header
+  links, CLAUDE.md knowledge map (8 labs, guide, lecturer page, resilience profile).
 
 ## Decisions (link ADRs)
 - [ADR 0060](../decisions/0060-stampede-experiment.md): protection switch, DB-side count, simulated expensive aggregate.
@@ -37,6 +39,13 @@ agreed with Participant 2), then stages 1–3: the cached object, an unprotected
 - Out of scope by agreement: SWR, XFetch, Redlock, Bloom filter — theory only.
 
 ## Problems & fixes
+- The avalanche chart listed 58 seconds on the x-axis (labels overlapped in a normal-width preview) and both lines were
+  near-white in a dark theme; the first browser check only verified that the diagrams parse. Fixed in
+  `avalanche-report.py`: numeric axis `2 --> 59`, `plotColorPalette` orange / blue named under the chart; the sequence
+  diagram note now spans two participants. Re-checked by measuring text boxes in light and dark: 0 overlaps.
+- The lock sequence diagram showed one instance, so "one DB read per cluster" was not visible, nor the `OK` / `nil` of
+  `SET NX` and the time bounds. Redrawn (README 2.4 and the lecturer page) as two instances: A gets the lock and reads
+  PostgreSQL once, B gets `nil` and polls the value, a closing note on lease 1 s / max wait 2 s; notes measured, 0 overflow.
 - Single runs were noisy for RPS / p95 (30–50 %): "Lock 3520 vs single-flight 2467" and "no gain on the real
   aggregate" did not survive the three-repeat series → corrected (ADR 0064); DB load counts were stable.
 - Avalanche: DB loads lag the k6 misses by ≈ 1 s (start-second tag vs sample after completion) and both runs have one
@@ -59,7 +68,11 @@ agreed with Participant 2), then stages 1–3: the cached object, an unprotected
   avalanche runs (jitter 0 / 0.2 × delay 0 / 50), 0 % errors; numbers in ADR 0062 / README.
 - Stage 5: `negative-cache-check.py` ALL PASSED; four `penetration.sh` runs (on / off × 100 ids / unique), 0 % errors.
 - Stage 6: `series-lab8.sh` completed in 27 min, exit 0, 0 % errors in all 34 runs; numbers in ADR 0064 / README «2.7».
+- Stage 7: the 3 lab 8 Mermaid diagrams (README sequence + xychart, lecturer page sequence) parsed and rendered with
+  mermaid 11.4.0 in the built-in browser; defense dry run from a cold start (healthy in 23 s, whole demo ≈ 3 min):
+  burst None 500 / SingleFlight 2 / Lock 1 DB loads, `lock-check` and `negative-cache-check` ALL PASSED, penetration
+  None + off 100 % vs Lock + on 0.16 %; default stack smoke afterwards.
 
 ## Not done / next steps
-- The README sequence diagram (2.4) is not yet rendered in a browser — check all lab 8 diagrams in stage 7.
-- Stages 4–7: avalanche + jitter, negative caching, matrix / failure modes / Resilience Profile, guide and lecturer page.
+- Push `lab8/resilience`, PR into `main`, defense rehearsal, `labs/lab8-summary.md` after the defense.
+- Diagrams not checked on GitHub itself (only mermaid 11.4.0 locally).

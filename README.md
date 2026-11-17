@@ -12,6 +12,8 @@
 >
 > **Посібник до захисту лаби 7** (шардинг, сценарій захисту, теорія: партиціювання / шардинг / реплікація, distributed JOIN, 2PC, Saga, Consistent Hashing): [`docs/lab7-guide.md`](docs/lab7-guide.md); сторінка для викладача — [`docs/about/lab7.md`](docs/about/lab7.md).
 >
+> **Посібник до захисту лаби 8** (stampede, lock, avalanche, negative caching, сценарій захисту, теорія: Redlock, Bloom filter, XFetch): [`docs/lab8-guide.md`](docs/lab8-guide.md); сторінка для викладача — [`docs/about/lab8.md`](docs/about/lab8.md).
+>
 > Контекст для учасників і AI-агентів: [`CLAUDE.md`](CLAUDE.md) → [`docs/ai/`](docs/ai/status.md) (стан, рішення/ADR, контракти, runbook, журнал сесій).
 
 **Стек:** C# / ASP.NET Core 10 · EF Core 10 + Npgsql · PostgreSQL 17 (два шарди, кожен Primary + Replica) · Redis 8 (розподілений кеш) · HAProxy 3.4 · JWT · FluentValidation · Docker Compose
@@ -2102,7 +2104,7 @@ xychart-beta
 
 ## Лабораторна 8: Інженерія стійкості кешу
 
-> Лабу виконує Учасник 1 (за згодою обох учасників). План за етапами — [`docs/lab8/plan.md`](docs/lab8/plan.md), рішення — ADR [0060](docs/ai/decisions/0060-stampede-experiment.md), [0061](docs/ai/decisions/0061-distributed-lock-for-results-miss.md), [0062](docs/ai/decisions/0062-avalanche-and-ttl-jitter.md), [0063](docs/ai/decisions/0063-negative-caching.md), [0064](docs/ai/decisions/0064-lab8-comparison-series.md); Failure Modes і Resilience Profile — [`docs/lab8/resilience-profile.md`](docs/lab8/resilience-profile.md).
+> Лабу виконує Учасник 1 (за згодою обох учасників). Посібник до захисту — [`docs/lab8-guide.md`](docs/lab8-guide.md), сторінка для викладача — [`docs/about/lab8.md`](docs/about/lab8.md). План за етапами — [`docs/lab8/plan.md`](docs/lab8/plan.md), рішення — ADR [0060](docs/ai/decisions/0060-stampede-experiment.md), [0061](docs/ai/decisions/0061-distributed-lock-for-results-miss.md), [0062](docs/ai/decisions/0062-avalanche-and-ttl-jitter.md), [0063](docs/ai/decisions/0063-negative-caching.md), [0064](docs/ai/decisions/0064-lab8-comparison-series.md); Failure Modes і Resilience Profile — [`docs/lab8/resilience-profile.md`](docs/lab8/resilience-profile.md).
 
 ### Об'єкт: результати гарячого опитування (2.1)
 
@@ -2151,24 +2153,25 @@ RESULTS_LOAD_DELAY_MS=50 bash load-tests/stampede.sh SingleFlight burst # single
 
 ```mermaid
 sequenceDiagram
-    participant R as Читачі інстансу
-    participant SF as Single-flight інстансу
+    participant A as Інстанс A
+    participant B as Інстанс B
     participant Redis
-    participant PG as PostgreSQL (Primary шарду)
-    R->>SF: промах покоління g (сотні запитів)
-    Note over SF: у Redis іде лише один запит з інстансу
-    SF->>Redis: GET значення покоління g
-    Redis-->>SF: немає
-    SF->>Redis: SET lock:{poll}:g{g} token NX PX 1000
-    alt lock узято
-        SF->>PG: агрегат (одне читання на кластер)
-        SF->>Redis: SET значення g, потім DEL lock, лише якщо token свій (Lua)
-    else lock тримає інший інстанс
-        loop кожні 10–20 мс, не довше 2 с
-            SF->>Redis: GET значення покоління g
-        end
+    participant PG as PostgreSQL
+    Note over A,Redis: голос збільшив покоління до g, сотні читачів<br/>обох інстансів промахнулися разом. Single-flight:<br/>від кожного інстансу далі йде лише один запит
+    A->>Redis: SET lock:{poll}:g{g} token-A NX PX 1000
+    Redis-->>A: OK, lock у A
+    B->>Redis: SET lock:{poll}:g{g} token-B NX PX 1000
+    Redis-->>B: nil, lock зайнятий
+    A->>PG: агрегат результатів
+    PG-->>A: одне читання на весь кластер
+    A->>Redis: SET значення покоління g
+    A->>Redis: DEL lock, лише якщо там token-A (Lua)
+    loop кожні 10–20 мс, доки значення немає
+        B->>Redis: GET значення покоління g
+        Redis-->>B: немає, потім є
     end
-    SF-->>R: однакова відповідь усім
+    Note over A,Redis: обидва інстанси віддають своїм читачам той самий агрегат
+    Note over A,PG: без deadlock: якщо A впав, lock зникне сам через 1 с (lease) і його візьме B,<br/>а якщо B чекає довше 2 с, він читає БД сам
 ```
 
 - **Два рівні.** Single-flight з лаби 4 лишається перед lock: у Redis іде один запит з інстансу, а не сотні. Lock узгоджує інстанси між собою.
@@ -2192,7 +2195,7 @@ Lock доводить кількість звернень до 1, але **пр�
 
 | Сценарій | Як перевірено | Результат |
 |---|---|---|
-| Власник lock помер і не звільнив його | [`scripts/lock-check.py`](scripts/lock-check.py): скрипт сам ставить lock нового покоління з чужим token і `PX 1000`, потім 50 / 200 одночасних читачів | усі 200 через 1.01–1.02 с (сплив lease), 1 звернення до БД, ключів lock у Redis не лишилося |
+| Власник lock помер і не звільнив його | [`scripts/lock-check.py`](scripts/lock-check.py): скрипт сам ставить lock нового покоління з чужим token і `PX 1000`, потім 50 одночасних читачів (і окремо 200) | кожен читач отримав `HTTP 200` через 1.01–1.02 с, тобто одразу після спливу lease; 1 звернення до БД; ключів lock у Redis не лишилося |
 | Читання довше за lease | `RESULTS_LOAD_DELAY_MS=1500 bash load-tests/stampede.sh Lock burst -e PERIOD=5` | 2.0 звернення на інвалідацію замість 1, 0 % помилок, p95 2.6 с; у лозі обох інстансів «lease expired before the load finished» — чужий lock ніхто не зняв |
 | Redis недоступний | `scripts/redis-outage-check.py` | lock не використовується, читання з БД (`X-Cache: BYPASS`), як у лабі 4 |
 
@@ -2217,12 +2220,13 @@ RESULTS_LOAD_DELAY_MS=50 bash load-tests/avalanche.sh 0.2    # ±20 %
 python load-tests/avalanche-report.py load-tests/results/avalanche-jitter0-delay50.json load-tests/results/avalanche-jitter0.2-delay50.json --mermaid
 ```
 
-Звернення до БД за секунду, агрегат + 50 мс (перша лінія — без розкиду, друга — ±20 %; секунди 0–1 — прогрів):
+Звернення до БД за секунду, агрегат + 50 мс: **помаранчева** лінія — без розкиду TTL, **синя** — ±20 % (секунди 0–1 — прогрів, не показано):
 
 ```mermaid
+%%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#e8590c, #1c7ed6"}}}}%%
 xychart-beta
     title "Звернення до БД за секунду"
-    x-axis "секунда" [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59]
+    x-axis "секунда" 2 --> 59
     y-axis "читань агрегату"
     line [0, 0, 0, 0, 0, 0, 34, 128, 245, 248, 25, 0, 0, 0, 0, 0, 2, 68, 158, 269, 168, 14, 1, 0, 0, 0, 0, 28, 112, 165, 264, 104, 6, 1, 0, 0, 0, 10, 61, 149, 210, 204, 43, 3, 0, 0, 0, 1, 32, 99, 177, 226, 127, 18, 0, 0, 0, 0]
     line [0, 0, 0, 0, 0, 15, 72, 146, 162, 160, 105, 19, 1, 0, 4, 24, 48, 103, 148, 120, 112, 76, 34, 12, 8, 23, 50, 67, 108, 117, 104, 83, 62, 46, 17, 21, 46, 49, 96, 77, 119, 89, 85, 51, 32, 29, 35, 58, 80, 82, 99, 81, 96, 58, 38, 31, 52, 40]
@@ -2326,3 +2330,19 @@ Burst — 500 VU одночасно після кожної з 5 інвалід�
 - Ці числа з одиночних прогонів у розділах вище розходилися з серією на 30–50 % для RPS і p95, тому порівнюємо лише серію. Різницю менше ~10 % не вважаємо доведеною.
 
 **Failure Modes** (ризики самих механізмів: deadlock і сплив lease, пам'ять негативного кешу, застарілість при SWR) і **Resilience Profile** системи за лаби 2–8 — [`docs/lab8/resilience-profile.md`](docs/lab8/resilience-profile.md).
+
+### Підсумок лаби 8
+
+| Вимога | Де і чим підтверджено |
+|---|---|
+| 2.1 Ресурсоємний кешований об'єкт | `GET /api/polls/{id}/results` гарячого опитування; дешевий агрегат + чесна імітація важкого (`RESULTS_LOAD_DELAY_MS`), [ADR 0060](docs/ai/decisions/0060-stampede-experiment.md) |
+| 2.2 Відтворення Stampede / Thundering Herd, 500+ VU | `load-tests/scenario-stampede.js` + `stampede.sh`: 486 звернень до БД на одне скидання ключа, `pg_stat_statements` |
+| 2.3 Cache Avalanche | `load-tests/avalanche.sh`: 832 ключі, хвилі до 269 звернень/с і 26 сесій кожні 10 с |
+| 2.4 Механізм координації | single-flight + distributed lock (`Results/ResultsDistributedLock.cs`): 1.0 звернення на інвалідацію; `scripts/lock-check.py`, [ADR 0061](docs/ai/decisions/0061-distributed-lock-for-results-miss.md) |
+| 2.5 TTL Jitter | `TTL = Base × (1 ± 0.2)`, `RESULTS_TTL_JITTER`: пік 269 → 162, рівно з третього циклу, [ADR 0062](docs/ai/decisions/0062-avalanche-and-ttl-jitter.md) |
+| 2.6 Negative Caching | маркер `not-found`, інвалідація при створенні: 100 % → 0.15 % запитів до БД; `scripts/negative-cache-check.py`, [ADR 0063](docs/ai/decisions/0063-negative-caching.md) |
+| 2.7 Матриця і Failure Modes | `load-tests/series-lab8.sh` (× 3 повтори): 124 / 1075 RPS → 1.0 / 3420 RPS; [`docs/lab8/resilience-profile.md`](docs/lab8/resilience-profile.md), [ADR 0064](docs/ai/decisions/0064-lab8-comparison-series.md) |
+| §3 Код, звіт, Resilience Profile | цей розділ, `docs/lab8/`, `load-tests/`, `scripts/` |
+| §4 Процедура захисту | [`docs/lab8-guide.md`](docs/lab8-guide.md), [`docs/about/lab8.md`](docs/about/lab8.md) |
+
+Регресії попередніх лаб у режимі за замовчуванням (`Lock`, негативний кеш, jitter ± 20 %) проходять: смоук, `cache-race-check.py` (0 з 60), `cache-stampede-check.py` (1.0 звернення в кожному раунді), `cache-demo.py`, `results-cache-demo.py`, `concurrency-checks.py`, `redis-outage-check.py`.

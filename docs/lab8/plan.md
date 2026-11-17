@@ -72,8 +72,10 @@ Avalanche-експерименту, Negative Caching, k6 на 500+ VU, матр�
   → Lock 1.0 / 3420; справжній агрегат: захист +50 % RPS; penetration 100 % → 0.15 %; сценарій A −7 % на 50 VU.
   Висновки одиночних прогонів про RPS виправлено (ADR 0064).
 
-## Етап 7. Документи (§3, §4)
+## Етап 7. Документи (§3, §4) — ✅
 
 - README «Лабораторна 8», `docs/lab8-guide.md` (теорія: Stampede / Thundering Herd / Avalanche / Penetration,
   Redlock, Bloom Filter, XFetch), `docs/about/lab8.md`.
 - Регресії: smoke, `cache-race-check`, `concurrency-checks`, `redis-outage-check`.
+- Зроблено: `docs/lab8-guide.md`, `docs/about/lab8.md`, README «Підсумок лаби 8»; діаграми Mermaid перевірено в браузері
+  (mermaid 11.4.0); прогін захисту з холодного старту — ≈ 3 хв. Лишилось: PR у `main`, репетиція, `labs/lab8-summary.md`.

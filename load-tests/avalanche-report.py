@@ -53,14 +53,20 @@ def main():
               f"median {statistics.median(r[5] for r in body):.0f} ms; active sessions max {max(r[4] for r in body)}")
     if mermaid and runs:
         secs = [r[0] for r in runs[0][2] if r[0] >= 2]  # секунди 0-1 — прогрів (усі ключі разом), він сплющив би шкалу
+        # Числова вісь (min --> max): підписи розставляє сам Mermaid. Список із 58 секунд налазив один на одного.
+        # Легенди xychart не має, тож кольори ліній задані явно (і читаються в світлій і темній темі) та названі під графіком.
+        palette = ["#e8590c", "#1c7ed6", "#2f9e44", "#ae3ec9"]
+        init = ('%%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "'
+                + ", ".join(palette[:len(runs)]) + '"}}}}%%')
         for title, col, unit in (("Звернення до БД за секунду", 3, "читань агрегату"), ("p95 за секунду", 5, "мс")):
-            print(f"\n```mermaid\nxychart-beta\n    title \"{title}\"\n    x-axis \"секунда\" [{', '.join(map(str, secs))}]"
+            print(f"\n```mermaid\n{init}\nxychart-beta\n    title \"{title}\"\n    x-axis \"секунда\" {secs[0]} --> {secs[-1]}"
                   f"\n    y-axis \"{unit}\"")
             for _, run, table in runs:
                 by = {r[0]: r[col] for r in table}
                 print(f"    line [{', '.join(str(round(by.get(s, 0))) for s in secs)}]")
             print("```")
-        print("Lines: " + ", ".join(run["tag"] for _, run, _ in runs))
+        names = ["помаранчева", "синя", "зелена", "фіолетова"]
+        print("Лінії: " + ", ".join(f"{names[i]} — {run['tag']}" for i, (_, run, _) in enumerate(runs)))
 
 
 if __name__ == "__main__":

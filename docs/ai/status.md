@@ -1,7 +1,7 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-11-17 by Participant 1 (lab 8 stages 0–6, see `log/2026-11-17-p1-lab8-stampede.md`; PR #17 review fixes — see `log/2026-11-17-p1-lab7-pr-review-fixes.md`; lab 7 stages in `log/2026-11-10-p2-lab7-hot-shard.md`).
+> Last updated: 2026-11-18 by Participant 1 (lab 8 stages 0–7, see `log/2026-11-17-p1-lab8-stampede.md`; PR #17 review fixes — see `log/2026-11-17-p1-lab7-pr-review-fixes.md`; lab 7 stages in `log/2026-11-10-p2-lab7-hot-shard.md`).
 
 ## Current lab: 8 — Resilience Engineering (stampede, avalanche, penetration)
 
@@ -19,8 +19,8 @@ generations (ADR 0041), single-flight per instance ≈ 2 DB loads per invalidati
 | 3. Distributed lock in Redis → 1 DB load per invalidation (2.4) | ✅ ADR 0061 (amends 0044): `Lock` mode, now the default — single-flight + `SET lock:{poll}:g{gen} token NX PX 1000`, value checked before / after, own-token Lua release, 2 s max wait; 500 VU: 1.0 DB load per invalidation (burst and sustained), sustained 3520 RPS vs 2467 single-flight; `scripts/lock-check.py` dead owner → 200 after ≈ 1 s, 1 load, no keys left; load 1.5 s > lease → 2 loads, 0 errors; smoke and all cache / vote regressions green. Committed `96845a2` |
 | 4. Avalanche, TTL jitter `Base ± Random` with a switch (2.3, 2.5) | ✅ ADR 0062 (amends 0041): `RESULTS_TTL_JITTER` (default 0.2 → TTL ± 20 %), `avalanche.sh` + `scenario-avalanche.js` + `avalanche-report.py` on `SEED_POLLS=1000` (832 keys); delay 50: jitter 0 → waves every 10 s up to 269 DB loads/s, 26 sessions, wave p95 370 vs 245 ms; ±20 % → peak 162, flat from the third cycle; real aggregate: DB waves only. Committed `27344dd` |
 | 5. Negative Caching (2.6) | ✅ ADR 0063: `not-found` in the generation value key, TTL 30 s ± jitter, Primary only; poll creation invalidates its id; `RESULTS_NEGATIVE_CACHING`; `scripts/negative-cache-check.py` ALL PASSED; `penetration.sh`: 100 missing ids 53.8 % → 0.39 % of requests reach the DB, RPS 744 → 1468; unique ids — 100 % both, +1 Redis key per request (limit, Bloom filter = theory). Committed `3eccd0b` |
-| 6. Comparison matrix, Failure Modes, Resilience Profile (2.7) | ✅ ADR 0064: `series-lab8.sh` + `series-lab8-report.py`, 3 interleaved repeats, 0 % errors; delay 50: None 124 loads / 1075 RPS → SingleFlight 2.2 / 3765 → Lock 1.0 / 3420; real aggregate: protection +50 % RPS, p95 ×2.4 lower; penetration 100 % → 0.15 %, 953 → 3217 RPS; scenario A control −7 % RPS at 50 VUs, 0 at 200; single-run claims of 0060 / 0061 corrected; `docs/lab8/resilience-profile.md` (Failure Modes + profile labs 2–8). Not committed |
-| 7. README, guide, lecturer page (§3, §4) | ⬜ |
+| 6. Comparison matrix, Failure Modes, Resilience Profile (2.7) | ✅ ADR 0064: `series-lab8.sh` + `series-lab8-report.py`, 3 interleaved repeats, 0 % errors; delay 50: None 124 loads / 1075 RPS → SingleFlight 2.2 / 3765 → Lock 1.0 / 3420; real aggregate: protection +50 % RPS, p95 ×2.4 lower; penetration 100 % → 0.15 %, 953 → 3217 RPS; scenario A control −7 % RPS at 50 VUs, 0 at 200; single-run claims of 0060 / 0061 corrected; `docs/lab8/resilience-profile.md` (Failure Modes + profile labs 2–8). Committed `5851ad3` |
+| 7. README, guide, lecturer page (§3, §4) | ✅ `docs/lab8-guide.md` (cheat sheet, script for the 4 procedure items, theory: four anomalies, Redlock, Bloom filter, XFetch, Q&A, troubleshooting), `docs/about/lab8.md`, README «Підсумок лаби 8» and header links, CLAUDE.md map; 3 lab 8 Mermaid diagrams rendered with mermaid 11.4.0 in light and dark themes, no overlapping text (avalanche chart: numeric x-axis and explicit line colours after the 58 per-second labels overlapped; GitHub itself not checked); defense dry run from a cold start ≈ 3 min: 500 → 2 → 1 DB loads, `lock-check` / `negative-cache-check` passed, penetration 100 % → 0.16 %. Not committed |
 
 ## Lab 7 — Data scaling: sharding & partitioning (merged via PR #17)
 
@@ -158,7 +158,7 @@ All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-
 | 5 Load Testing | ✅ defended (per Participant 1, 2026-11-08); `docs/lab5-guide.md`, `docs/about/lab5.md`; `labs/lab5-summary.md` was never written |
 | 6 Database Replication | 🟡 merged via PR #16 / #18 (Participant 1 alone); defense and `labs/lab6-summary.md` left |
 | 7 Sharding & Partitioning | 🟡 merged via PR #17 (Participant 2); defense and `labs/lab7-summary.md` left |
-| 8 Resilience Engineering | 🟡 in progress (Participant 1 alone), branch `lab8/resilience`, see the stage table above |
+| 8 Resilience Engineering | 🟡 all stages done (Participant 1 alone), branch `lab8/resilience` not pushed yet; PR, defense and `labs/lab8-summary.md` left |
 
 ## Repository state
 
@@ -183,7 +183,7 @@ All П1/П2 tasks of lab 2 are merged (PR #2, #4, #3) and were verified on 2026-
 
 ## Next steps
 
-- **Lab 8 (Participant 1):** stage 7 next — `docs/lab8-guide.md` (theory: Stampede / Herd / Avalanche / Penetration, Redlock, Bloom, XFetch), `docs/about/lab8.md`, README summary, Mermaid diagrams checked in a browser.
+- **Lab 8 (Participant 1):** all 7 stages done on `lab8/resilience`; left: push and PR into `main`, a defense rehearsal by `docs/lab8-guide.md`, `labs/lab8-summary.md` after the defense.
 - **Lab 6 (Participant 1):** rehearse by `docs/lab6-guide.md`, defend, then `labs/lab6-summary.md`.
 - Known web UI behaviour during a Primary outage: after a page reload the user looks logged out (`/me` answers 503, the token is kept and works again afterwards). Not fixed.
 - Known bug outside lab 6: `POST /api/polls` with a valid token and no `options` answers 500 instead of 422 (NullReferenceException in
