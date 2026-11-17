@@ -1,7 +1,7 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-11-10 by Participant 2 (lab 7 stages 3–7 — see `log/2026-11-10-p2-lab7-hot-shard.md`).
+> Last updated: 2026-11-17 by Participant 1 (PR #17 review fixes — see `log/2026-11-17-p1-lab7-pr-review-fixes.md`; lab 7 stages in `log/2026-11-10-p2-lab7-hot-shard.md`; lab 6 lecturer page in `log/2026-11-11-p1-lab6-lecturer-page.md`).
 
 ## Current lab: 7 — Data scaling: sharding & partitioning
 
