@@ -1,7 +1,7 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-11-08 by Participant 1 (lab 6 stages 1–6 — see `log/2026-11-08-p1-lab6-topology.md`).
+> Last updated: 2026-11-11 by Participant 1 (lab 6 lecturer page reworked — see `log/2026-11-11-p1-lab6-lecturer-page.md`; stages 1–6 in `log/2026-11-08-p1-lab6-topology.md`).
 
 ## Current lab: 6 — Database replication
 
