@@ -19,6 +19,13 @@ public sealed class ShardContexts(
 
     public int ShardOf(long pollId) => router.ShardFor(pollId);
 
+    /// <summary>Монітор не бачить живим жодного вузла шарду (лаба 7, ADR 0057).</summary>
+    public bool IsDown(int shard)
+    {
+        var monitor = shards[shard].Monitor;
+        return !monitor.PrimaryAvailable && !monitor.ReplicaAvailable;
+    }
+
     /// <summary>Primary шарду, якому належить опитування: усі записи і строгі читання.</summary>
     public AppDbContext PrimaryFor(long pollId) => Primary(ShardOf(pollId));
 

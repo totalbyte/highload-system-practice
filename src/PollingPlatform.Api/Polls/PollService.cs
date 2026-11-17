@@ -104,7 +104,9 @@ public class PollService(AppDbContext db, ShardContexts shards, ResultsCache res
         {
             return await shards.Read(shard).EventualAsync(currentUserId, source => LoadListPartAsync(source, query, currentUserId, ct));
         }
-        catch (Exception ex) when (ReadDb.IsUnavailable(ex))
+        // Шард пропускаємо, лише коли монітор справді бачить його мертвим (ADR 0057). Таймаут на живому, але перевантаженому
+        // шарді — це помилка запиту: інакше під навантаженням каталог мовчки віддавав би 200 без частини опитувань.
+        catch (Exception ex) when (ReadDb.IsUnavailable(ex) && shards.IsDown(shard))
         {
             return null;
         }

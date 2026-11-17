@@ -26,7 +26,7 @@ def shard_for(poll_id, strategy="Buckets", count=2, range_size=1000, buckets=64)
         return 0
     strategy = strategy.lower()
     if strategy == "range":
-        return min(poll_id // range_size, count - 1)
+        return max(0, min(poll_id // range_size, count - 1))
     if strategy == "modulo":
         return poll_id % count
     if strategy == "hash":

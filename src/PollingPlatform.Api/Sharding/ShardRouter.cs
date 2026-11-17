@@ -48,10 +48,12 @@ public class ShardRouter
 
         switch (Strategy)
         {
+            // Id з маршруту може бути довільним числом, зокрема від'ємним: шард завжди в межах 0..N-1, а такого опитування
+            // там просто немає (404), а не індекс поза масивом (500). Python-версія в scripts/shardlib.py дає той самий результат.
             case ShardStrategy.Range:
-                return (int)Math.Min(pollId / RangeSize, ShardCount - 1);
+                return (int)Math.Clamp(pollId / RangeSize, 0, ShardCount - 1);
             case ShardStrategy.Modulo:
-                return (int)(pollId % ShardCount);
+                return (int)(((pollId % ShardCount) + ShardCount) % ShardCount);
             case ShardStrategy.Hash:
                 return (int)(Hash(pollId) % (ulong)ShardCount);
             default:

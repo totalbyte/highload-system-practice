@@ -55,7 +55,7 @@ Update this file whenever the API, the schema, or code another participant depen
 - Errors are RFC 7807 `application/problem+json` with `traceId`; 422 adds `errors: {field: [messages]}`.
 - Enums in JSON are camelCase strings (`"draft"`, `"active"`, `"closed"`).
 - Create validation: title 1..200, description ≤2000, 2..20 options, unique case-insensitively, each 1..200,
-  `endsAt` > now, `startsAt` < `endsAt`. List: `page` ≥1, `pageSize` 1..100.
+  `endsAt` > now, `startsAt` < `endsAt`. List: `page` 1..10000, `pageSize` 1..100.
 - Visibility: someone else's draft → 404; `isPublic=false` → hidden from the list but reachable by id; authors see
   all their own polls in the list (ADR 0003).
 

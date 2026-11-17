@@ -33,7 +33,9 @@ public class PollListQueryValidator : AbstractValidator<PollListQuery>
 {
     public PollListQueryValidator()
     {
-        RuleFor(q => q.Page).GreaterThanOrEqualTo(1);
+        // Верхня межа: каталог читає з кожного шарду перші Page × PageSize рядків (лаба 7, ADR 0057), тож без неї глибока
+        // сторінка і переповнення int дають 500, а великий Page — зайву роботу всіх шардів.
+        RuleFor(q => q.Page).InclusiveBetween(1, 10_000);
         RuleFor(q => q.PageSize).InclusiveBetween(1, 100);
     }
 }

@@ -9,7 +9,8 @@ read (ADR 0055). Before this stage a fully stopped shard made the whole catalog 
 
 ## Decision
 - **Partial catalog:** `PollService.ListAsync` catches "node unavailable" per shard (`ReadDb.IsUnavailable`) and skips that
-  shard; the controller sets `X-Shard-Unavailable: B`. All shards down → 503 `Shard Unavailable`. The catalog is an
+  shard only when the monitor sees no live node in it (`ShardContexts.IsDown`): a timeout on a live shard stays an error
+  (503), so an overloaded shard never silently drops out of a 200 response; the controller sets `X-Shard-Unavailable: B`. All shards down → 503 `Shard Unavailable`. The catalog is an
   eventual read already (ADR 0050), so a list without one shard is acceptable and better than a 503 for everybody.
 - **Fail fast on a dead shard:** `ReadDb` throws `ShardUnavailableException` (503, title `Shard Unavailable`, not logged as
   an error) when the shard's monitor sees neither node alive, instead of trying to connect.
