@@ -22,7 +22,8 @@ public class ResultsService(ShardContexts shards, ResultsCache cache, ResultsSin
         // можна читати з репліки (ADR 0050): відповідь застаріє на затримку реплікації, але нікуди не збережеться.
         if (!cache.Enabled)
         {
-            var direct = await shards.ReadFor(pollId).EventualAsync(currentUserId, source => LoadAsync(source, pollId, cache.LoadDelay, timeProvider, ct));
+            var direct = await shards.ReadFor(pollId).EventualAsync(currentUserId, source => LoadAsync(source, pollId, cache.LoadDelay, timeProvider, ct))
+                ?? throw new PollNotFoundException(pollId);
             if (direct.Response.Status == PollStatus.Draft && direct.CreatorId != currentUserId)
                 throw new PollNotFoundException(pollId);
             return new PollResultsRead(direct.Response, CacheResult.Disabled);
@@ -32,6 +33,8 @@ public class ResultsService(ShardContexts shards, ResultsCache cache, ResultsSin
         var lookup = await cache.GetAsync(pollId);
         var (load, source) = lookup switch
         {
+            // Negative Caching (лаба 8, ADR 0063): опитування цього покоління немає — 404 без звернення до БД.
+            { NotFound: true } => throw new PollNotFoundException(pollId),
             { Entry: { } cached } => (new ResultsLoad(cached, DbNodes.None), CacheResult.Hit),
             // Промах: одночасні промахи інстансу по цьому поколінню чекають одне читання з Primary (ADR 0044) — воно ж
             // записує агрегат під поколінням, прочитаним до запиту в БД (ADR 0041). Не з репліки (ADR 0050): вона ще може
@@ -60,25 +63,32 @@ public class ResultsService(ShardContexts shards, ResultsCache cache, ResultsSin
     private async Task<ResultsLoad> LoadBypassAsync(long pollId, CancellationToken ct)
     {
         var (entry, node) = await shards.ReadFor(pollId).PrimaryPreferredAsync(source => LoadAsync(source, pollId, cache.LoadDelay, timeProvider, ct));
-        return new ResultsLoad(entry, node);
+        return new ResultsLoad(entry ?? throw new PollNotFoundException(pollId), node);
     }
 
     /// <summary>
     /// Читання для промаху: з Primary (ADR 0050), репліка — лише коли він лежить (ADR 0052): старі результати кращі за
     /// помилку. У кеш, під поколінням <paramref name="generation"/>, — лише дані Primary: якщо монітор помилився і голоси
-    /// ще йдуть, агрегат із репліки отруїв би кеш (ADR 0051).
+    /// ще йдуть, агрегат із репліки отруїв би кеш (ADR 0051). Так само і з «опитування немає» (ADR 0063): репліка могла ще
+    /// не отримати щойно створене опитування.
     /// </summary>
     internal static async Task<ResultsLoad> LoadAndCacheAsync(ShardContexts shards, ResultsCache cache, long pollId,
         long generation, TimeProvider timeProvider, CancellationToken ct)
     {
         var (entry, node) = await shards.ReadFor(pollId).PrimaryPreferredAsync(db => LoadAsync(db, pollId, cache.LoadDelay, timeProvider, ct));
+        if (entry is null)
+        {
+            if (node == DbNodes.Primary)
+                await cache.SetNotFoundAsync(pollId, generation);
+            throw new PollNotFoundException(pollId);
+        }
         if (node == DbNodes.Primary)
             await cache.SetAsync(pollId, generation, entry);
         return new ResultsLoad(entry, node);
     }
 
-    /// <summary>Агрегат з БД, без кешу. <c>GeneratedAt</c> — момент цього читання.</summary>
-    internal static async Task<CachedPollResults> LoadAsync(
+    /// <summary>Агрегат з БД, без кешу; null — опитування немає. <c>GeneratedAt</c> — момент цього читання.</summary>
+    internal static async Task<CachedPollResults?> LoadAsync(
         AppDbContext db, long pollId, TimeSpan delay, TimeProvider timeProvider, CancellationToken ct)
     {
         // Імітація важкого агрегату (лаба 8, ADR 0060): з'єднання зайняте, як під час довгого запиту, — саме так
@@ -102,7 +112,7 @@ public class ResultsService(ShardContexts shards, ResultsCache cache, ResultsSin
             .FirstOrDefaultAsync(ct);
 
         if (poll is null)
-            throw new PollNotFoundException(pollId);
+            return null;
 
         var totalVotes = poll.Options.Sum(o => o.VoteCount);
         var options = poll.Options

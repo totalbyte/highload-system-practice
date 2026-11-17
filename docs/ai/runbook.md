@@ -169,7 +169,8 @@ load with `Range` (boundary 51: all new polls on B) and `Buckets`, report with p
 
 Switches (backend restart, no `down -v`): `RESULTS_STAMPEDE_PROTECTION=None|SingleFlight|Lock` (default `Lock`, ADR 0061) and
 `RESULTS_LOAD_DELAY_MS` (default 0; > 0 adds `pg_sleep` to every DB read of the results aggregate — simulated expensive
-aggregate, ADR 0060), `RESULTS_TTL_JITTER` (default 0.2 = TTL ± 20 %; 0 only for the avalanche demo, ADR 0062). DB reads of the aggregate are counted by `pg_stat_statements` on both shard Primaries (statement
+aggregate, ADR 0060), `RESULTS_TTL_JITTER` (default 0.2 = TTL ± 20 %; 0 only for the avalanche demo, ADR 0062), `RESULTS_NEGATIVE_CACHING`
+(default true; false = every request to a missing poll reaches the DB, ADR 0063). DB reads of the aggregate are counted by `pg_stat_statements` on both shard Primaries (statement
 tagged `-- results-load`; extension from the migration `EnablePgStatStatements`, `shared_preload_libraries` in compose).
 
 ```bash
@@ -200,6 +201,13 @@ cache, samples both Primaries every second with psql `\watch i=1 c=N`, prints th
 `python load-tests/avalanche-report.py <run>.json [<run>.json] --mermaid` prints the charts again. Expected (2026-11-17):
 jitter 0 — waves every ≈ 10 s up to ≈ 270 DB loads/s with idle gaps; 0.2 — peak ≈ 160, flat from the third cycle.
 Back to the normal seed: `docker compose down -v && docker compose up -d`.
+
+**Negative caching (ADR 0063):** `python scripts/negative-cache-check.py [--missing 9999999]` (≈ 5 s, nobody else creating
+polls) — 150 reads of a missing id → 1 DB load and a `not-found` entry (PTTL ≤ 36 s); the next `poll_ids` id read
+before creation → 404, after creation the author gets 200; deleted draft → 404. Load: `bash load-tests/penetration.sh
+<true|false> [-e IDS=100|0]` (≈ 45 s; 100 missing ids in a loop or a new id per request; prints DB lookups, Redis keys
+and memory added). Expected (2026-11-17): 100 ids — off 53.8 %, on 0.39 % of requests reach the DB; IDS=0 — 100 % both,
++1 key (~106 B) per request with it on.
 
 ## Run the backend locally (without Docker for the backend)
 

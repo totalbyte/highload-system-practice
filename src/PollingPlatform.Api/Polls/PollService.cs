@@ -52,6 +52,9 @@ public class PollService(AppDbContext db, ShardContexts shards, ResultsCache res
         var shard = shards.PrimaryFor(pollId);
         shard.Polls.Add(poll);
         await shard.SaveChangesAsync(ct);
+        // Результатів нового опитування в кеші ще немає, але може бути негативний запис (лаба 8, ADR 0063): хтось уже
+        // питав цей id, поки його не існувало. Нове покоління робить той запис недосяжним.
+        await resultsCache.InvalidateAsync(pollId);
 
         return await LoadDetailsAsync(shard, poll.Id, userId, ct);
     }

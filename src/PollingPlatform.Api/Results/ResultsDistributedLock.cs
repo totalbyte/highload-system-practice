@@ -1,3 +1,4 @@
+using PollingPlatform.Api.Common.Exceptions;
 using PollingPlatform.Api.Data;
 using PollingPlatform.Api.Sharding;
 
@@ -34,8 +35,8 @@ public class ResultsDistributedLock(ResultsCache cache, TimeProvider timeProvide
         {
             // Спершу кеш, потім lock: запит, що запізнився (промахнувся за мить до запису), не бере вже вільний lock і
             // не читає БД вдруге — у ADR 0044 саме такі давали «2.2 замість 2».
-            if (await cache.GetEntryAsync(pollId, generation) is { } ready)
-                return new ResultsLoad(ready, DbNodes.None);
+            if (await CachedAsync(pollId, generation) is { } ready)
+                return ready;
 
             switch (await cache.TryLockAsync(pollId, generation, token, Lease))
             {
@@ -43,8 +44,8 @@ public class ResultsDistributedLock(ResultsCache cache, TimeProvider timeProvide
                     try
                     {
                         // Між перевіркою кешу і SET NX попередній власник міг записати агрегат і звільнити lock.
-                        if (await cache.GetEntryAsync(pollId, generation) is { } written)
-                            return new ResultsLoad(written, DbNodes.None);
+                        if (await CachedAsync(pollId, generation) is { } written)
+                            return written;
                         logger.LogDebug("Results lock acquired: poll {PollId}, generation {Generation}", pollId, generation);
                         return await LoadAndCacheAsync(shards, pollId, generation);
                     }
@@ -71,6 +72,15 @@ public class ResultsDistributedLock(ResultsCache cache, TimeProvider timeProvide
             // Розкид паузи: чекачі з різних інстансів не б'ють у Redis синхронно.
             await Task.Delay(PollInterval + TimeSpan.FromMilliseconds(Random.Shared.Next(10)), timeProvider);
         }
+    }
+
+    /// <summary>Значення цього покоління з кешу; негативний запис (ADR 0063) — 404 тим, хто чекав, без читання БД.</summary>
+    private async Task<ResultsLoad?> CachedAsync(long pollId, long generation)
+    {
+        var cached = await cache.GetEntryAsync(pollId, generation);
+        if (cached.NotFound)
+            throw new PollNotFoundException(pollId);
+        return cached.Entry is { } entry ? new ResultsLoad(entry, DbNodes.None) : null;
     }
 
     private Task<ResultsLoad> LoadAndCacheAsync(ShardContexts shards, long pollId, long generation) =>

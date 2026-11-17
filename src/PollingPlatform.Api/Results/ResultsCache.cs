@@ -8,8 +8,9 @@ namespace PollingPlatform.Api.Results;
 /// <summary>
 /// Результат пошуку в кеші: запис (null — промах) і покоління, під яким його треба записати після читання з БД.
 /// Покоління null — Redis недоступний: читаємо з БД і нічого не записуємо (ADR 0043).
+/// <paramref name="NotFound"/> — у кеші негативний запис: опитування цього покоління в БД немає (лаба 8, ADR 0063).
 /// </summary>
-public readonly record struct ResultsCacheLookup(CachedPollResults? Entry, long? Generation)
+public readonly record struct ResultsCacheLookup(CachedPollResults? Entry, long? Generation, bool NotFound = false)
 {
     public static ResultsCacheLookup Unavailable => new(null, null);
 }
@@ -43,6 +44,22 @@ public class ResultsCache(IConnectionMultiplexer redis, IConfiguration configura
     /// </summary>
     public TimeSpan LoadDelay { get; } =
         TimeSpan.FromMilliseconds(configuration.GetValue("Diagnostics:ResultsLoadDelayMs", 0));
+
+    /// <summary>
+    /// Negative Caching проти Cache Penetration (лаба 8, ADR 0063): «опитування немає» теж кешується, з коротким TTL, і
+    /// потік запитів до неіснуючих id не доходить до PostgreSQL. <c>ResultsCache:NegativeCaching=false</c> — режим «до».
+    /// </summary>
+    public bool NegativeCaching { get; } = configuration.GetValue("ResultsCache:NegativeCaching", true);
+
+    /// <summary>
+    /// Короткий, бо негативний запис — це і пам'ять Redis під кожен неіснуючий id, і (без інвалідації) час, поки нове
+    /// опитування з цим id лишалося б «неіснуючим». Друге закриває інвалідація при створенні; перше обмежує TTL:
+    /// пам'ять ≈ частота різних неіснуючих id × TTL.
+    /// </summary>
+    private static readonly TimeSpan NotFoundTtl = TimeSpan.FromSeconds(30);
+
+    /// <summary>Значення негативного запису. Не JSON (агрегат завжди починається з <c>{</c>), тож не сплутати.</summary>
+    private static readonly byte[] NotFoundMarker = "not-found"u8.ToArray();
 
     /// <summary>
     /// TTL — страховка на випадок втраченої інвалідації, а не механізм актуальності (ADR 0041).
@@ -102,12 +119,19 @@ public class ResultsCache(IConnectionMultiplexer redis, IConfiguration configura
         }
 
         var generation = (long)reply[0];
-        var entry = reply[1].IsNull ? null : JsonSerializer.Deserialize<CachedPollResults>((byte[])reply[1]!, Json);
+        var lookup = Parse(reply[1].IsNull ? null : (byte[])reply[1]!, generation);
         // Debug, а не Information: під навантаженням це рядок на кожне читання. Увімкнути — CACHE_LOG_LEVEL=Debug.
         logger.LogDebug("Results cache {Result}: poll {PollId}, generation {Generation}",
-            entry is null ? "MISS" : "HIT", pollId, generation);
-        return new ResultsCacheLookup(entry, generation);
+            lookup.NotFound ? "NEGATIVE HIT" : lookup.Entry is null ? "MISS" : "HIT", pollId, generation);
+        return lookup;
     }
+
+    private static ResultsCacheLookup Parse(byte[]? value, long generation) => value switch
+    {
+        null => new ResultsCacheLookup(null, generation),
+        _ when value.AsSpan().SequenceEqual(NotFoundMarker) => new ResultsCacheLookup(null, generation, NotFound: true),
+        _ => new ResultsCacheLookup(JsonSerializer.Deserialize<CachedPollResults>(value, Json), generation)
+    };
 
     /// <summary>
     /// Записує агрегат під поколінням, прочитаним <b>до</b> звернення до БД (<see cref="GetAsync"/>), а не під поточним.
@@ -126,6 +150,27 @@ public class ResultsCache(IConnectionMultiplexer redis, IConfiguration configura
         catch (Exception ex) when (IsUnavailable(ex))
         {
             logger.LogWarning("Results cache unavailable, poll {PollId} not cached: {Error}", pollId, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Негативний запис: опитування <paramref name="pollId"/> у БД немає (лаба 8, ADR 0063). Під тим самим поколінням, що
+    /// й агрегат: якщо опитування з цим id створять, створення збільшить покоління, і запис більше ніхто не прочитає.
+    /// </summary>
+    public async Task SetNotFoundAsync(long pollId, long generation)
+    {
+        if (!NegativeCaching)
+            return;
+        try
+        {
+            var ttl = NotFoundTtl * (1 + (2 * Random.Shared.NextDouble() - 1) * ttlJitter);
+            await redis.GetDatabase().StringSetAsync(ValueKey(pollId, generation), NotFoundMarker, new Expiration(ttl));
+            logger.LogDebug("Results cache STORE NOT FOUND: poll {PollId}, generation {Generation}, TTL {Ttl:0.0} s",
+                pollId, generation, ttl.TotalSeconds);
+        }
+        catch (Exception ex) when (IsUnavailable(ex))
+        {
+            logger.LogWarning("Results cache unavailable, missing poll {PollId} not cached: {Error}", pollId, ex.Message);
         }
     }
 
@@ -154,18 +199,18 @@ public class ResultsCache(IConnectionMultiplexer redis, IConfiguration configura
     /// <summary>
     /// Значення конкретного покоління — для тих, хто чекає чужого читання під lock (лаба 8, ADR 0061). Не перечитує
     /// лічильник покоління: чекач прийшов із поколінням, прочитаним до інвалідації, і бере лише агрегат цього покоління.
-    /// Null — значення ще немає або Redis недоступний.
+    /// Entry null без NotFound — значення ще немає або Redis недоступний.
     /// </summary>
-    public async Task<CachedPollResults?> GetEntryAsync(long pollId, long generation)
+    public async Task<ResultsCacheLookup> GetEntryAsync(long pollId, long generation)
     {
         try
         {
             var value = await redis.GetDatabase().StringGetAsync(ValueKey(pollId, generation));
-            return value.IsNull ? null : JsonSerializer.Deserialize<CachedPollResults>((byte[])value!, Json);
+            return Parse(value.IsNull ? null : (byte[])value!, generation);
         }
         catch (Exception ex) when (IsUnavailable(ex))
         {
-            return null;
+            return ResultsCacheLookup.Unavailable;
         }
     }
 

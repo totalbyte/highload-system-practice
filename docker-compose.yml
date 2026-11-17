@@ -41,6 +41,8 @@ x-backend: &backend
     Diagnostics__ResultsLoadDelayMs: ${RESULTS_LOAD_DELAY_MS:-0}
     # Розкид TTL кешу результатів, частка від базового: 0.2 → TTL = Base ± 20 % (лаба 8, ADR 0062); 0 — без розкиду, демо лавини.
     ResultsCache__TtlJitter: ${RESULTS_TTL_JITTER:-0.2}
+    # false — «опитування немає» не кешується, кожен запит до неіснуючого id іде в БД (лаба 8, ADR 0063; режим «до»).
+    ResultsCache__NegativeCaching: ${RESULTS_NEGATIVE_CACHING:-true}
   depends_on:
     postgres:
       condition: service_healthy
