@@ -4,6 +4,7 @@ using PollingPlatform.Api.Common.Exceptions;
 using PollingPlatform.Api.Data;
 using PollingPlatform.Api.Domain;
 using PollingPlatform.Api.Results;
+using PollingPlatform.Api.Sharding;
 
 namespace PollingPlatform.Api.Votes;
 
@@ -11,12 +12,15 @@ namespace PollingPlatform.Api.Votes;
 /// Голосування — пікова операція системи (High-Load сценарій: масовий наплив голосів в одне опитування).
 /// Вставка голосу і оновлення денормалізованого лічильника <c>options.vote_count</c> виконуються
 /// в одній транзакції, інакше лічильник розійдеться з кількістю рядків у <c>votes</c>.
+/// Голос, лічильник і опитування лежать на одному шарді (ключ poll_id, лаба 7, ADR 0054), тому ця транзакція лишається
+/// звичайною локальною ACID-транзакцією одного вузла, а UNIQUE(poll_id, user_id) — одним індексом.
 /// </summary>
-public class VoteService(AppDbContext db, ResultsCache resultsCache, TimeProvider timeProvider)
+public class VoteService(ShardContexts shards, ResultsCache resultsCache, TimeProvider timeProvider)
 {
     public async Task<CastVoteResult> CastAsync(long pollId, long userId, long optionId, CancellationToken ct)
     {
-        var allowVoteChange = await LoadVotablePollAsync(pollId, userId, ct);
+        var db = shards.PrimaryFor(pollId);
+        var allowVoteChange = await LoadVotablePollAsync(db, pollId, userId, ct);
 
         // Складеного FK (poll_id, option_id) у схемі немає, тому належність варіанта перевіряємо явно.
         var optionExists = await db.Options.AnyAsync(o => o.Id == optionId && o.PollId == pollId, ct);
@@ -26,7 +30,7 @@ public class VoteService(AppDbContext db, ResultsCache resultsCache, TimeProvide
         var now = timeProvider.GetUtcNow();
         var strategy = db.Database.CreateExecutionStrategy();
         var result = await strategy.ExecuteAsync(
-            token => CastOnceAsync(pollId, userId, optionId, allowVoteChange, now, token), ct);
+            token => CastOnceAsync(db, pollId, userId, optionId, allowVoteChange, now, token), ct);
 
         await resultsCache.InvalidateAsync(pollId);
         return result;
@@ -37,7 +41,7 @@ public class VoteService(AppDbContext db, ResultsCache resultsCache, TimeProvide
     /// без кешу і без перевірки видимості: голос може існувати лише в опитуванні, яке користувач бачив.
     /// </summary>
     public async Task<CastVoteResponse> GetMyVoteAsync(long pollId, long userId, CancellationToken ct) =>
-        await db.Votes.AsNoTracking()
+        await shards.PrimaryFor(pollId).Votes.AsNoTracking()
             .Where(v => v.PollId == pollId && v.UserId == userId)
             .Select(v => new CastVoteResponse(v.PollId, v.OptionId, v.CreatedAt))
             .FirstOrDefaultAsync(ct)
@@ -47,7 +51,7 @@ public class VoteService(AppDbContext db, ResultsCache resultsCache, TimeProvide
     /// Перевіряє, що опитування існує, видиме користувачу, активне і в межах часового вікна.
     /// Повертає <c>AllowVoteChange</c> — єдине, що потрібно далі.
     /// </summary>
-    private async Task<bool> LoadVotablePollAsync(long pollId, long userId, CancellationToken ct)
+    private async Task<bool> LoadVotablePollAsync(AppDbContext db, long pollId, long userId, CancellationToken ct)
     {
         var poll = await db.Polls.AsNoTracking()
             .Where(p => p.Id == pollId)
@@ -72,8 +76,8 @@ public class VoteService(AppDbContext db, ResultsCache resultsCache, TimeProvide
 
     private sealed record ExistingVote(long Id, long OptionId, DateTimeOffset CreatedAt);
 
-    private async Task<CastVoteResult> CastOnceAsync(
-        long pollId, long userId, long optionId, bool allowVoteChange, DateTimeOffset now, CancellationToken ct)
+    private static async Task<CastVoteResult> CastOnceAsync(
+        AppDbContext db, long pollId, long userId, long optionId, bool allowVoteChange, DateTimeOffset now, CancellationToken ct)
     {
         db.ChangeTracker.Clear(); // прибрати сутності з невдалої попередньої спроби retry-стратегії
         await using var tx = await db.Database.BeginTransactionAsync(ct);
@@ -86,7 +90,7 @@ public class VoteService(AppDbContext db, ResultsCache resultsCache, TimeProvide
         CastVoteResult result;
         if (existing is null)
         {
-            result = await InsertVoteAsync(pollId, userId, optionId, now, ct);
+            result = await InsertVoteAsync(db, pollId, userId, optionId, now, ct);
         }
         else if (!allowVoteChange)
         {
@@ -105,7 +109,7 @@ public class VoteService(AppDbContext db, ResultsCache resultsCache, TimeProvide
                     .SetProperty(v => v.CreatedAt, now), ct);
 
             foreach (var (id, delta) in new[] { (existing.OptionId, -1), (optionId, +1) }.OrderBy(c => c.Item1))
-                await ChangeVoteCountAsync(id, delta, ct);
+                await ChangeVoteCountAsync(db, id, delta, ct);
             result = new CastVoteResult(pollId, optionId, now, Created: false);
         }
 
@@ -113,8 +117,8 @@ public class VoteService(AppDbContext db, ResultsCache resultsCache, TimeProvide
         return result;
     }
 
-    private async Task<CastVoteResult> InsertVoteAsync(
-        long pollId, long userId, long optionId, DateTimeOffset now, CancellationToken ct)
+    private static async Task<CastVoteResult> InsertVoteAsync(
+        AppDbContext db, long pollId, long userId, long optionId, DateTimeOffset now, CancellationToken ct)
     {
         db.Votes.Add(new Vote { PollId = pollId, OptionId = optionId, UserId = userId, CreatedAt = now });
         try
@@ -129,7 +133,7 @@ public class VoteService(AppDbContext db, ResultsCache resultsCache, TimeProvide
             throw new DuplicateVoteException(pollId);
         }
 
-        await ChangeVoteCountAsync(optionId, +1, ct);
+        await ChangeVoteCountAsync(db, optionId, +1, ct);
         return new CastVoteResult(pollId, optionId, now, Created: true);
     }
 
@@ -137,7 +141,7 @@ public class VoteService(AppDbContext db, ResultsCache resultsCache, TimeProvide
     /// Інкремент на рівні SQL (<c>vote_count = vote_count + delta</c>), а не load-modify-save:
     /// паралельні голоси не перетирають чужі зміни (lost update).
     /// </summary>
-    private Task ChangeVoteCountAsync(long optionId, int delta, CancellationToken ct) =>
+    private static Task ChangeVoteCountAsync(AppDbContext db, long optionId, int delta, CancellationToken ct) =>
         db.Options.Where(o => o.Id == optionId)
             .ExecuteUpdateAsync(s => s.SetProperty(o => o.VoteCount, o => o.VoteCount + delta), ct);
 }

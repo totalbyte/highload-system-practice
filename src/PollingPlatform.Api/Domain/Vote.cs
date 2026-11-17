@@ -10,5 +10,4 @@ public class Vote
 
     public Poll? Poll { get; set; }
     public PollOption? Option { get; set; }
-    public User? User { get; set; }
 }

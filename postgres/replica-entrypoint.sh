@@ -4,11 +4,13 @@
 set -e
 
 PGDATA=/var/lib/postgresql/data
+# Хост Primary свого шарду (лаба 7): postgres для Shard A, postgres-shard-b для Shard B.
+PRIMARY_HOST="${PRIMARY_HOST:-postgres}"
 
 if [ ! -s "$PGDATA/PG_VERSION" ]; then
   # Перевірка по TCP, а не healthcheck з depends_on: під час першої ініціалізації Primary приймає лише локальні
   # підключення, і healthcheck через сокет уже зелений, хоча роль replicator і слот ще не створено.
-  until pg_isready -h postgres -p 5432 -q; do
+  until pg_isready -h "$PRIMARY_HOST" -p 5432 -q; do
     echo "replica: waiting for the primary..."
     sleep 1
   done
@@ -21,7 +23,7 @@ if [ ! -s "$PGDATA/PG_VERSION" ]; then
   # -S використовує слот із primary-init.sh, -X stream передає WAL, що з'явився під час копіювання.
   echo "replica: pg_basebackup from the primary..."
   PGPASSWORD="$REPLICATION_PASSWORD" gosu postgres pg_basebackup \
-    -h postgres -p 5432 -U replicator -D "$PGDATA" -S replica_1 -X stream -R -c fast
+    -h "$PRIMARY_HOST" -p 5432 -U replicator -D "$PGDATA" -S replica_1 -X stream -R -c fast
 fi
 
 exec docker-entrypoint.sh "$@"

@@ -52,3 +52,6 @@ public record PollDetailsResponse(
     IReadOnlyList<OptionResponse> Options);
 
 public record PagedResponse<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount);
+
+/// <summary>Каталог із шардів (лаба 7): сторінка і шарди, що не відповіли й не потрапили до неї.</summary>
+public record CatalogPage(PagedResponse<PollSummaryResponse> Page, IReadOnlyList<string> UnavailableShards);

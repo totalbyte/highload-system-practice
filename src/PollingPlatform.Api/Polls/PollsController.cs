@@ -26,6 +26,7 @@ public class PollsController(PollService pollService) : ControllerBase
     }
 
     /// <summary>Список опитувань з фільтрами за статусом та автором (з пагінацією).</summary>
+    /// <remarks>Збирається з усіх шардів. Заголовок <c>X-Shard-Unavailable</c> — шарди, що не відповіли: список без їхніх опитувань.</remarks>
     [HttpGet]
     [ProducesResponseType<PagedResponse<PollSummaryResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
@@ -33,7 +34,11 @@ public class PollsController(PollService pollService) : ControllerBase
         [FromQuery] PollListQuery query, [FromServices] IValidator<PollListQuery> validator, CancellationToken ct)
     {
         await validator.ValidateOrThrowAsync(query, ct);
-        return await pollService.ListAsync(query, User.FindUserId(), ct);
+        var catalog = await pollService.ListAsync(query, User.FindUserId(), ct);
+        // Неповний каталог (лаба 7, ADR 0057): клієнт бачить, опитувань яких шардів у списку немає.
+        if (catalog.UnavailableShards.Count > 0)
+            Response.Headers["X-Shard-Unavailable"] = string.Join(",", catalog.UnavailableShards);
+        return catalog.Page;
     }
 
     /// <summary>Деталі опитування та варіанти відповідей.</summary>

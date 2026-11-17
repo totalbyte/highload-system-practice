@@ -17,56 +17,60 @@ using PollingPlatform.Api.Data.Seeding;
 using PollingPlatform.Api.Domain;
 using PollingPlatform.Api.Polls;
 using PollingPlatform.Api.Results;
+using PollingPlatform.Api.Sharding;
 using PollingPlatform.Api.Votes;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // --- Persistence ---
-var postgresConnectionString = builder.Configuration.GetConnectionString("Postgres")
-    ?? throw new InvalidOperationException("Connection string 'Postgres' is not configured.");
-
 // Accessor лише читає статичний AsyncLocal, тому один екземпляр можна створити ще до побудови DI.
 var httpContextAccessor = new HttpContextAccessor();
 builder.Services.AddSingleton<IHttpContextAccessor>(httpContextAccessor);
 
-builder.Services.AddDbContext<AppDbContext>((services, options) => options
-    .UseNpgsql(
-        postgresConnectionString,
-        // Повтор при транзієнтних збоях (напр. «мертві» з'єднання в пулі після рестарту Postgres).
-        // Наслідок: явні транзакції треба загортати в db.Database.CreateExecutionStrategy().ExecuteAsync(...).
-        npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(2), errorCodesToAdd: null))
-    .UseSnakeCaseNamingConvention()
-    .AddInterceptors(
-        new DbNodeInterceptor(httpContextAccessor, DbNodes.Primary),
-        new DbNodeGuardInterceptor(services.GetRequiredService<DbNodeMonitor>(), DbNodes.Primary)));
+// Шарди опитувань (лаба 7, ADR 0054, 0055). Shard A — рядки Postgres / PostgresReplica, як у лабі 6; Shard B —
+// ShardB / ShardBReplica. Sharding:ShardCount=1 — конфігурація Single Node для порівняння: усе на Shard A.
+var shardRouter = new ShardRouter(builder.Configuration);
+builder.Services.AddSingleton(shardRouter);
 
-// Репліка для читань, що допускають відставання (лаба 6, ADR 0050). Без рядка підключення або з Enabled=false усі
-// читання лишаються на Primary — це конфігурація Single Primary для порівняння в 2.6.
-var replicaConnectionString = builder.Configuration.GetValue("ReadReplica:Enabled", true)
-    && builder.Configuration.GetConnectionString("PostgresReplica") is { Length: > 0 } configuredReplica
-        ? configuredReplica
-        : null;
+// Репліки для читань, що допускають відставання (лаба 6, ADR 0050). Enabled=false — усі читання на Primary свого шарду.
+var replicasEnabled = builder.Configuration.GetValue("ReadReplica:Enabled", true);
+var dbTimeout = TimeSpan.FromSeconds(builder.Configuration.GetValue("HealthChecks:DbTimeoutSeconds", 2));
 
-// Без повторів EF, на відміну від Primary: для читання є інший вузол (ADR 0052), тож 13–19 с очікування нічого не дають.
-builder.Services.AddSingleton(services => new ReplicaContextOptions(replicaConnectionString is null
-    ? null
-    : new DbContextOptionsBuilder<AppDbContext>()
-        .UseNpgsql(replicaConnectionString)
-        .UseSnakeCaseNamingConvention()
-        .AddInterceptors(
-            new DbNodeInterceptor(httpContextAccessor, DbNodes.Replica),
-            new DbNodeGuardInterceptor(services.GetRequiredService<DbNodeMonitor>(), DbNodes.Replica))
-        .Options));
+builder.Services.AddSingleton<IReadOnlyList<Shard>>(services =>
+{
+    var shards = new List<Shard>();
+    for (var index = 0; index < shardRouter.ShardCount; index++)
+    {
+        var name = ShardRouter.Name(index);
+        var connectionName = index == 0 ? "Postgres" : $"Shard{name}";
+        var primary = builder.Configuration.GetConnectionString(connectionName)
+            ?? throw new InvalidOperationException($"Connection string '{connectionName}' is not configured.");
+        var replica = replicasEnabled && builder.Configuration.GetConnectionString(connectionName + "Replica") is { Length: > 0 } configured
+            ? configured
+            : null;
+
+        var monitor = new DbNodeMonitor(name, primary, replica, dbTimeout, services.GetRequiredService<ILogger<DbNodeMonitor>>());
+        shards.Add(new Shard(
+            index,
+            ContextOptions(primary, DbNodes.Primary, name, monitor),
+            replica is null ? null : ContextOptions(replica, DbNodes.Replica, name, monitor),
+            monitor));
+    }
+    return shards;
+});
+
+// Один монітор вузлів на шард. AddSingleton<IHostedService>, а не AddHostedService: той не додає другий сервіс того самого типу.
+for (var index = 0; index < shardRouter.ShardCount; index++)
+{
+    var shard = index;
+    builder.Services.AddSingleton<IHostedService>(services => services.GetRequiredService<IReadOnlyList<Shard>>()[shard].Monitor);
+}
+
+// AppDbContext без шарду — це Primary Shard A: таблиця users і послідовність poll_ids (ADR 0054).
+builder.Services.AddScoped(services => new AppDbContext(services.GetRequiredService<IReadOnlyList<Shard>>()[0].PrimaryOptions));
 builder.Services.AddSingleton<StickySessions>();
-builder.Services.AddScoped<ReadDb>();
-
-builder.Services.AddSingleton(services => new DbNodeMonitor(
-    postgresConnectionString,
-    replicaConnectionString,
-    TimeSpan.FromSeconds(builder.Configuration.GetValue("HealthChecks:DbTimeoutSeconds", 2)),
-    services.GetRequiredService<ILogger<DbNodeMonitor>>()));
-builder.Services.AddHostedService(services => services.GetRequiredService<DbNodeMonitor>());
+builder.Services.AddScoped<ShardContexts>();
 
 builder.Services.Configure<SeedOptions>(builder.Configuration.GetSection(SeedOptions.SectionName));
 builder.Services.AddScoped<DataSeeder>();
@@ -198,6 +202,27 @@ app.MapHealthChecks("/health", new HealthCheckOptions
 
 await app.InitializeDatabaseAsync();
 await app.RunAsync();
+
+DbContextOptions<AppDbContext> ContextOptions(string connectionString, DbNodes node, string shard, DbNodeMonitor monitor)
+{
+    var options = new DbContextOptionsBuilder<AppDbContext>();
+    if (node == DbNodes.Primary)
+    {
+        // Повтор при транзієнтних збоях (напр. «мертві» з'єднання в пулі після рестарту Postgres).
+        // Наслідок: явні транзакції треба загортати в db.Database.CreateExecutionStrategy().ExecuteAsync(...).
+        options.UseNpgsql(connectionString,
+            npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(2), errorCodesToAdd: null));
+    }
+    else
+    {
+        // Без повторів EF, на відміну від Primary: для читання є інший вузол (ADR 0052), тож 13–19 с очікування нічого не дають.
+        options.UseNpgsql(connectionString);
+    }
+    return options
+        .UseSnakeCaseNamingConvention()
+        .AddInterceptors(new DbNodeInterceptor(httpContextAccessor, node, shard), new DbNodeGuardInterceptor(monitor, node))
+        .Options;
+}
 
 // Для WebApplicationFactory в інтеграційних тестах.
 public partial class Program;

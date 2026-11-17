@@ -7,6 +7,4 @@ public class User
     public required string Email { get; set; }
     public required string PasswordHash { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
-
-    public List<Poll> Polls { get; set; } = [];
 }

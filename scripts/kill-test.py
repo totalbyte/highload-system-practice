@@ -73,8 +73,27 @@ def compose(*args, check=True):
     return subprocess.run(["docker", "compose", *args], capture_output=True, text=True, check=check).stdout.strip()
 
 
-def sql(query):
-    return compose("exec", "-T", "postgres", "psql", "-U", "polling", "-d", "polling", "-tAc", query)
+# З лаби 7 опитування лежать на двох шардах (ADR 0054): дані опитування — на його шарді, лічильники — на обох.
+SHARDS = ["postgres", "postgres-shard-b"]
+
+
+def sql(query, service="postgres"):
+    return compose("exec", "-T", service, "psql", "-U", "polling", "-d", "polling", "-tAc", query)
+
+
+def shard_of(poll_id):
+    """Сервіс БД, на якому лежить опитування: питаємо обидва шарди напряму, повз роутер застосунку."""
+    for service in SHARDS:
+        if sql(f"SELECT count(*) FROM polls WHERE id = {poll_id}", service).strip() == "1":
+            return service
+    raise RuntimeError(f"poll {poll_id} is on no shard")
+
+
+def counter_mismatches():
+    """Варіанти, у яких vote_count не дорівнює кількості рядків votes, — на всіх шардах разом."""
+    return str(sum(int(sql("SELECT count(*) FROM options o WHERE o.vote_count <> "
+                           "(SELECT count(*) FROM votes v WHERE v.option_id = o.id)", service).strip())
+                   for service in SHARDS))
 
 
 def container_running(service):
@@ -126,7 +145,7 @@ def results_by_option(poll_id):
 
 def db_by_option(poll_id):
     return sql(f"SELECT string_agg((SELECT count(*) FROM votes v WHERE v.option_id = o.id)::text, ',' "
-               f"ORDER BY o.position) FROM options o WHERE o.poll_id = {poll_id}")
+               f"ORDER BY o.position) FROM options o WHERE o.poll_id = {poll_id}", shard_of(poll_id))
 
 
 def new_poll(author):
@@ -204,7 +223,7 @@ def main():
     print(f"  errors the client saw: {len(errors)} {dict(sorted(error_kinds.items(), key=str))}"
           + (f", {min(window):.1f}-{max(window):.1f}s after the {mode}" if window else ""))
 
-    pg = compose("logs", "--since", kill_info["wall"], "postgres")
+    pg = compose("logs", "--since", kill_info["wall"], *SHARDS)
     broken = pg.count("could not receive data from client") + pg.count("unexpected EOF on client connection")
     open_tx = pg.count("with an open transaction")
     print(f"  PostgreSQL saw {broken} client connection(s) break; of them with an open transaction "
@@ -222,11 +241,10 @@ def main():
           f"201x{list(final.values()).count(201)}, 409 after an HAProxy retry x{lb_409}, "
           f"409 on a client retry x{retry_409}, other={sorted(set(map(str, bad.values())))}")
     for poll_id, _ in polls:
-        rows = sql(f"SELECT count(*) FROM votes WHERE poll_id = {poll_id}")
+        rows = sql(f"SELECT count(*) FROM votes WHERE poll_id = {poll_id}", shard_of(poll_id))
         check(f"poll {poll_id}: vote rows = users (stored exactly once)", rows == str(len(tokens)), f"rows={rows}")
-    mismatches = sql("SELECT count(*) FROM options o WHERE o.vote_count <> "
-                     "(SELECT count(*) FROM votes v WHERE v.option_id = o.id)")
-    check("per-option counters = votes rows (whole DB)", mismatches == "0", f"mismatches={mismatches}")
+    mismatches = counter_mismatches()
+    check("per-option counters = votes rows (both shards)", mismatches == "0", f"mismatches={mismatches}")
     db = {poll_id: db_by_option(poll_id) for poll_id, _ in polls}
     seen = {poll_id: results_by_option(poll_id)[0] for poll_id, _ in polls}
     check("results through the balancer match the DB", seen == db, f"db={list(db.values())} lb={list(seen.values())}")

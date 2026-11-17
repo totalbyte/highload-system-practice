@@ -14,6 +14,16 @@ x-backend: &backend
     ReadReplica__Enabled: ${READ_REPLICA_ENABLED:-true}
     # Скільки секунд після запису користувач читає з Primary (Read-After-Write, ADR 0051); 0 — вимкнено, для демо.
     ReadAfterWrite__StickyTtlSeconds: ${STICKY_TTL_SECONDS:-5}
+    # Shard B (лаба 7, ADR 0055): опитування з голосами, які роутер за poll_id відправив на другий шард. Бюджет з'єднань
+    # той самий, що й на Shard A: кожен вузол БД отримує не більше instances × pool ≤ 90.
+    ConnectionStrings__ShardB: "Host=postgres-shard-b;Port=5432;Database=${POSTGRES_DB:-polling};Username=${POSTGRES_USER:-polling};Password=${POSTGRES_PASSWORD:-polling};Gss Encryption Mode=Disable;Maximum Pool Size=${DB_MAX_POOL_SIZE:-30}"
+    ConnectionStrings__ShardBReplica: "Host=postgres-shard-b-replica;Port=5432;Database=${POSTGRES_DB:-polling};Username=${POSTGRES_USER:-polling};Password=${POSTGRES_PASSWORD:-polling};Gss Encryption Mode=Disable;Maximum Pool Size=${DB_MAX_POOL_SIZE:-30}"
+    # 1 — Single Node: усі опитування на Shard A (для порівняння в 2.6). Стратегію не міняти на томі з даними: down -v.
+    Sharding__ShardCount: ${SHARD_COUNT:-2}
+    # Buckets | Hash | Modulo | Range (ADR 0055); RangeSize — межа id для Range, Buckets — кількість віртуальних бакетів.
+    Sharding__Strategy: ${SHARD_STRATEGY:-Buckets}
+    Sharding__RangeSize: ${SHARD_RANGE_SIZE:-1000}
+    Sharding__Buckets: ${SHARD_BUCKETS:-64}
     ConnectionStrings__Redis: "redis:6379,abortConnect=false"
     Jwt__Secret: ${JWT_SECRET:-local-dev-secret-change-me-0123456789abcdef}
     Jwt__LifetimeMinutes: ${JWT_LIFETIME_MINUTES:-60}
@@ -26,6 +36,8 @@ x-backend: &backend
     ResultsCache__Enabled: ${RESULTS_CACHE_ENABLED:-true}
   depends_on:
     postgres:
+      condition: service_healthy
+    postgres-shard-b:
       condition: service_healthy
     redis:
       condition: service_healthy
@@ -148,6 +160,71 @@ services:
     networks:
       - app-network
 
+  # Shard B (лаба 7, ADR 0054): другий незалежний шард опитувань — така сама пара Primary + Replica, як Shard A
+  # (postgres + postgres-replica) з лаби 6, і ті самі скрипти реплікації. Таблиця users і послідовність poll_ids живуть
+  # лише на Shard A.
+  postgres-shard-b:
+    image: postgres:17-alpine
+    command:
+      - postgres
+      - -c
+      - wal_level=replica
+      - -c
+      - max_wal_senders=10
+      - -c
+      - max_replication_slots=10
+      - -c
+      - max_slot_wal_keep_size=1GB
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-polling}
+      POSTGRES_USER: ${POSTGRES_USER:-polling}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-polling}
+      REPLICATION_PASSWORD: ${REPLICATION_PASSWORD:-replicator}
+    volumes:
+      - pgdata-shard-b:/var/lib/postgresql/data
+      - ./postgres/primary-init.sh:/docker-entrypoint-initdb.d/10-replication.sh:ro
+    ports:
+      - "${POSTGRES_SHARD_B_PORT:-5436}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  postgres-shard-b-replica:
+    image: postgres:17-alpine
+    entrypoint: ["sh", "/usr/local/bin/replica-entrypoint.sh"]
+    command:
+      - postgres
+      - -c
+      - hot_standby=on
+      - -c
+      - hot_standby_feedback=on
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-polling}
+      POSTGRES_USER: ${POSTGRES_USER:-polling}
+      REPLICATION_PASSWORD: ${REPLICATION_PASSWORD:-replicator}
+      PRIMARY_HOST: postgres-shard-b
+    volumes:
+      - pgdata-shard-b-replica:/var/lib/postgresql/data
+      - ./postgres/replica-entrypoint.sh:/usr/local/bin/replica-entrypoint.sh:ro
+    ports:
+      - "${POSTGRES_SHARD_B_REPLICA_PORT:-5437}:5432"
+    depends_on:
+      postgres-shard-b:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - app-network
+
   redis:
     image: redis:8.10.2-alpine
     # Чистий кеш: без збереження на диск (лаба 4, ADR 0043). Інакше після `docker compose stop/start redis` він
@@ -203,6 +280,8 @@ networks:
 volumes:
   pgdata:
   pgdata-replica:
+  pgdata-shard-b:
+  pgdata-shard-b-replica:
   pgadmin-data:
 
 configs:

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Npgsql;
 using PollingPlatform.Api.Common.Exceptions;
+using PollingPlatform.Api.Sharding;
 
 namespace PollingPlatform.Api.Data;
 
@@ -21,12 +22,13 @@ public sealed class DbNodeMonitor : BackgroundService
     private readonly Node primary;
     private readonly Node? replica;
 
-    public DbNodeMonitor(string primaryConnectionString, string? replicaConnectionString, TimeSpan timeout, ILogger<DbNodeMonitor> logger)
+    public DbNodeMonitor(string shard, string primaryConnectionString, string? replicaConnectionString, TimeSpan timeout, ILogger<DbNodeMonitor> logger)
     {
         this.logger = logger;
         this.timeout = timeout;
-        primary = new Node("primary", ProbeConnectionString(primaryConnectionString, timeout));
-        replica = replicaConnectionString is null ? null : new Node("replica", ProbeConnectionString(replicaConnectionString, timeout));
+        // Ім'я вузла з шардом (лаба 7): у лозі видно, який саме Primary лежить.
+        primary = new Node($"shard {shard} primary", ProbeConnectionString(primaryConnectionString, timeout));
+        replica = replicaConnectionString is null ? null : new Node($"shard {shard} replica", ProbeConnectionString(replicaConnectionString, timeout));
     }
 
     public bool HasReplica => replica is not null;
@@ -160,21 +162,35 @@ public sealed class DbNodeGuardInterceptor(DbNodeMonitor monitor, DbNodes node) 
 
 /// <summary>
 /// /health для балансувальника: вузол застосунку корисний, поки живий хоча б один вузол БД (ADR 0052). Втрата Primary не
-/// виключає backend із пулу, інакше разом із записами зникло б і читання з репліки. Відповідає зі стану монітора, миттєво.
+/// виключає backend із пулу, інакше разом із записами зникло б і читання з репліки. Відповідає зі стану моніторів, миттєво.
+/// З лаби 7 (ADR 0055) — по всіх шардах: 503 лише тоді, коли лежать усі вузли всіх шардів. Якщо впав цілий Shard B,
+/// опитування Shard A мають працювати далі, а всі backend-и однакові, тож 503 виключив би з пулу кожен із них.
 /// </summary>
-public sealed class DbNodesHealthCheck(DbNodeMonitor monitor) : IHealthCheck
+public sealed class DbNodesHealthCheck(IReadOnlyList<Shard> shards) : IHealthCheck
 {
     public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken)
     {
-        var replicaOk = monitor.HasReplica && monitor.ReplicaAvailable;
-        var result = (monitor.PrimaryAvailable, replicaOk) switch
+        var problems = new List<string>();
+        var anyNodeAlive = false;
+        foreach (var shard in shards)
         {
-            (true, true) => HealthCheckResult.Healthy(),
-            (true, false) when !monitor.HasReplica => HealthCheckResult.Healthy(),
-            (true, false) => HealthCheckResult.Degraded("The replica is down: reads go to the primary."),
-            (false, true) => HealthCheckResult.Degraded("The primary is down: read-only mode."),
-            (false, false) => HealthCheckResult.Unhealthy("No database node is available.")
-        };
+            var monitor = shard.Monitor;
+            var replicaOk = monitor.HasReplica && monitor.ReplicaAvailable;
+            if (monitor.PrimaryAvailable || replicaOk)
+                anyNodeAlive = true;
+
+            if (!monitor.PrimaryAvailable && !replicaOk)
+                problems.Add($"Shard {shard.Name}: no database node is available.");
+            else if (!monitor.PrimaryAvailable)
+                problems.Add($"Shard {shard.Name}: the primary is down, read-only mode.");
+            else if (monitor.HasReplica && !replicaOk)
+                problems.Add($"Shard {shard.Name}: the replica is down, reads go to the primary.");
+        }
+
+        var detail = string.Join(" ", problems);
+        var result = !anyNodeAlive ? HealthCheckResult.Unhealthy(detail)
+            : problems.Count > 0 ? HealthCheckResult.Degraded(detail)
+            : HealthCheckResult.Healthy();
         return Task.FromResult(result);
     }
 }

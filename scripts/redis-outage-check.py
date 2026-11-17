@@ -47,8 +47,27 @@ def compose(*args):
     return subprocess.run(["docker", "compose", *args], capture_output=True, text=True, check=True).stdout.strip()
 
 
-def sql(query):
-    return compose("exec", "-T", "postgres", "psql", "-U", "polling", "-d", "polling", "-tAc", query)
+# З лаби 7 опитування лежать на двох шардах (ADR 0054): дані опитування — на його шарді, лічильники — на обох.
+SHARDS = ["postgres", "postgres-shard-b"]
+
+
+def sql(query, service="postgres"):
+    return compose("exec", "-T", service, "psql", "-U", "polling", "-d", "polling", "-tAc", query)
+
+
+def shard_of(poll_id):
+    """Сервіс БД, на якому лежить опитування: питаємо обидва шарди напряму, повз роутер застосунку."""
+    for service in SHARDS:
+        if sql(f"SELECT count(*) FROM polls WHERE id = {poll_id}", service).strip() == "1":
+            return service
+    raise RuntimeError(f"poll {poll_id} is on no shard")
+
+
+def counter_mismatches():
+    """Варіанти, у яких vote_count не дорівнює кількості рядків votes, — на всіх шардах разом."""
+    return str(sum(int(sql("SELECT count(*) FROM options o WHERE o.vote_count <> "
+                           "(SELECT count(*) FROM votes v WHERE v.option_id = o.id)", service).strip())
+                   for service in SHARDS))
 
 
 def login(email):
@@ -114,7 +133,7 @@ def main():
         status, _, took, _ = call(API1, "POST", f"/api/polls/{pid}/vote", voter, {"optionId": option})
         check("POST vote -> 201 (committed vote not reported as failed)", status == 201,
               f"HTTP {status} in {took * 1000:.0f} ms")
-        rows = sql(f"SELECT count(*) FROM votes WHERE poll_id = {pid}")
+        rows = sql(f"SELECT count(*) FROM votes WHERE poll_id = {pid}", shard_of(pid))
         check("vote stored in PostgreSQL exactly once", rows == "1", f"rows={rows}")
         status, body, _, headers = call(API2, "GET", f"/api/polls/{pid}/results")
         check("next read sees the vote (BYPASS, totalVotes=1)", status == 200 and body["totalVotes"] == 1,
@@ -129,8 +148,7 @@ def main():
 
         status, body, _, _ = call(API1, "GET", "/health")
         check("/health 200 - nodes stay in the LB pool", status == 200, f"HTTP {status}")
-        bad = sql("SELECT count(*) FROM options o WHERE o.vote_count <> "
-                  "(SELECT count(*) FROM votes v WHERE v.option_id = o.id)")
+        bad = counter_mismatches()
         check("per-option counters consistent", bad == "0", f"mismatches={bad}")
     finally:
         print("\nRedis started again (docker compose start redis)")

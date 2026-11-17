@@ -22,14 +22,13 @@ namespace PollingPlatform.Api.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.HasSequence("poll_ids");
+
             modelBuilder.Entity("PollingPlatform.Api.Domain.Poll", b =>
                 {
                     b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("bigint")
                         .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<bool>("AllowVoteChange")
                         .HasColumnType("boolean")
@@ -44,6 +43,12 @@ namespace PollingPlatform.Api.Data.Migrations
                     b.Property<long>("CreatorId")
                         .HasColumnType("bigint")
                         .HasColumnName("creator_id");
+
+                    b.Property<string>("CreatorUsername")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("creator_username");
 
                     b.Property<string>("Description")
                         .HasMaxLength(2000)
@@ -213,26 +218,11 @@ namespace PollingPlatform.Api.Data.Migrations
                     b.HasIndex("OptionId")
                         .HasDatabaseName("ix_votes_option_id");
 
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_votes_user_id");
-
                     b.HasIndex("PollId", "UserId")
                         .IsUnique()
                         .HasDatabaseName("ix_votes_poll_id_user_id");
 
                     b.ToTable("votes", (string)null);
-                });
-
-            modelBuilder.Entity("PollingPlatform.Api.Domain.Poll", b =>
-                {
-                    b.HasOne("PollingPlatform.Api.Domain.User", "Creator")
-                        .WithMany("Polls")
-                        .HasForeignKey("CreatorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_polls_users_creator_id");
-
-                    b.Navigation("Creator");
                 });
 
             modelBuilder.Entity("PollingPlatform.Api.Domain.PollOption", b =>
@@ -263,18 +253,9 @@ namespace PollingPlatform.Api.Data.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_votes_polls_poll_id");
 
-                    b.HasOne("PollingPlatform.Api.Domain.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_votes_users_user_id");
-
                     b.Navigation("Option");
 
                     b.Navigation("Poll");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("PollingPlatform.Api.Domain.Poll", b =>
@@ -282,11 +263,6 @@ namespace PollingPlatform.Api.Data.Migrations
                     b.Navigation("Options");
 
                     b.Navigation("Votes");
-                });
-
-            modelBuilder.Entity("PollingPlatform.Api.Domain.User", b =>
-                {
-                    b.Navigation("Polls");
                 });
 #pragma warning restore 612, 618
         }

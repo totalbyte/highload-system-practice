@@ -22,10 +22,7 @@ public class VoteConfiguration : IEntityTypeConfiguration<Vote>
             .HasForeignKey(v => v.OptionId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(v => v.User)
-            .WithMany()
-            .HasForeignKey(v => v.UserId)
-            .OnDelete(DeleteBehavior.Restrict);
+        // FK votes.user_id → users прибрано в лабі 7 з тієї ж причини, що й polls.creator_id: users — на іншому вузлі.
 
         // Один голос від користувача на опитування. Індекс також покриває вибірки votes за poll_id.
         builder.HasIndex(v => new { v.PollId, v.UserId }).IsUnique();

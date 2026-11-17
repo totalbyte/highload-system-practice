@@ -21,8 +21,10 @@ import urllib.error
 import urllib.request
 
 API = os.environ.get("API", "http://127.0.0.1:8080")
-PRIMARY = "postgres"
-REPLICA = "postgres-replica"
+# Пара вузлів шарду, яку перевіряємо (лаба 7, ADR 0055): --shard A (як у лабі 6) або --shard B.
+PAIRS = {"A": ("postgres", "postgres-replica"), "B": ("postgres-shard-b", "postgres-shard-b-replica")}
+PRIMARY, REPLICA = PAIRS["A"]
+SHARD = "A"
 TABLES = ["users", "polls", "options", "votes", '"__EFMigrationsHistory"']
 REPLAY_TIMEOUT_S = 10
 
@@ -123,7 +125,9 @@ def initial_state():
     for table in TABLES:
         query = f"SELECT count(*) FROM {table}"
         on_primary, on_replica = scalar(PRIMARY, query), scalar(REPLICA, query)
-        check(on_primary == on_replica and int(on_primary) > 0, f"{table}: primary {on_primary}, replica {on_replica}")
+        # users — глобальна таблиця лише на Shard A (ADR 0054): на Shard B вона порожня на обох вузлах.
+        filled = int(on_primary) > 0 if (table != "users" or SHARD == "A") else on_primary == "0"
+        check(on_primary == on_replica and filled, f"{table}: primary {on_primary}, replica {on_replica}")
 
 
 def mutations():
@@ -135,11 +139,17 @@ def mutations():
     token = body["accessToken"]
 
     def create(title):
-        code, poll = call("POST", "/api/polls", token, {
-            "title": title, "options": ["A", "B"], "endsAt": "2035-01-01T00:00:00Z"})
-        if code != 201:
-            raise RuntimeError(f"create poll returned {code}")
-        return poll["id"]
+        # Шард вибирає роутер за id (лаба 7), тож створюємо, доки опитування не ляже на перевірюваний шард; чужі
+        # чернетки одразу видаляємо.
+        for _ in range(30):
+            code, poll = call("POST", "/api/polls", token, {
+                "title": title, "options": ["A", "B"], "endsAt": "2035-01-01T00:00:00Z"})
+            if code != 201:
+                raise RuntimeError(f"create poll returned {code}")
+            if scalar(PRIMARY, f"SELECT count(*) FROM polls WHERE id = {poll['id']}") == "1":
+                return poll["id"]
+            call("DELETE", f"/api/polls/{poll['id']}", token)
+        raise RuntimeError(f"no new poll landed on shard {SHARD}")
 
     title = f"Replication check {int(time.time())}"
     poll_id = create(title)
@@ -163,10 +173,15 @@ def read_only():
 
 
 def main():
-    global pause
+    global pause, PRIMARY, REPLICA, SHARD
     parser = argparse.ArgumentParser(description="Lab 6: check primary / replica replication")
     parser.add_argument("--pause", action="store_true", help="wait for Enter before each step")
-    pause = parser.parse_args().pause
+    parser.add_argument("--shard", choices=sorted(PAIRS), default="A", help="which shard's pair to check (lab 7)")
+    args = parser.parse_args()
+    pause = args.pause
+    SHARD = args.shard
+    PRIMARY, REPLICA = PAIRS[SHARD]
+    print(f"shard {SHARD}: primary {PRIMARY}, replica {REPLICA}")
 
     try:
         topology()

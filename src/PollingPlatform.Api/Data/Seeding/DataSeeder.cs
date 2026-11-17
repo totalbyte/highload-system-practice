@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using PollingPlatform.Api.Domain;
+using PollingPlatform.Api.Sharding;
 
 namespace PollingPlatform.Api.Data.Seeding;
 
@@ -9,9 +10,12 @@ namespace PollingPlatform.Api.Data.Seeding;
 /// Генерує тестові дані для демо та навантажувальних тестів (лаба 5):
 /// пул користувачів userNNN@example.com зі спільним паролем та набір опитувань з голосами.
 /// Опитування #1 («гаряче») — активне, без голосів, з allowVoteChange: ціль для write-сценарію.
+/// Лаба 7: користувачі — на Shard A (<paramref name="db"/>), кожне опитування з голосами — на шард, який вибрав роутер за
+/// його id; id беруться з глобальної послідовності, як і при створенні через API.
 /// </summary>
 public class DataSeeder(
     AppDbContext db,
+    ShardContexts shards,
     IPasswordHasher<User> passwordHasher,
     IOptions<SeedOptions> options,
     TimeProvider timeProvider,
@@ -47,6 +51,8 @@ public class DataSeeder(
     {
         var o = options.Value;
         db.ChangeTracker.Clear(); // прибрати сутності з невдалої попередньої спроби
+        for (var shard = 1; shard < shards.Count; shard++)
+            shards.Primary(shard).ChangeTracker.Clear();
 
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         await db.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock({SeedLockKey})", ct);
@@ -78,18 +84,40 @@ public class DataSeeder(
         for (var i = 1; i < o.Polls; i++)
             polls.Add(CreateRandomPoll(i, users, random, now));
 
-        db.Polls.AddRange(polls);
-        await db.SaveChangesAsync(ct);
+        // Id з послідовності по порядку: на чистій БД гаряче опитування отримує id 1, як і до лаби 7 (на нього
+        // спираються скрипти навантаження).
+        var ids = await db.Database
+            .SqlQueryRaw<long>($"SELECT nextval('{AppDbContext.PollIdSequence}') AS \"Value\" FROM generate_series(1, {polls.Count})")
+            .ToListAsync(ct);
+        ids.Sort();
+        for (var i = 0; i < polls.Count; i++)
+            polls[i].Id = ids[i];
 
-        var votes = new List<Vote>();
-        foreach (var poll in polls.Skip(1).Where(p => p.Status != PollStatus.Draft))
-            votes.AddRange(CreateVotes(poll, users, random, now));
+        // Кожен шард отримує свої опитування. Shard A пише в ту саму транзакцію, що й користувачі; інші шарди комітять
+        // одразу, а транзакція Shard A — останньою: її users і є позначкою «сід уже виконано».
+        var votesCount = 0;
+        for (var shard = 0; shard < shards.Count; shard++)
+        {
+            var shardPolls = polls.Where(p => shards.ShardOf(p.Id) == shard).ToList();
+            if (shardPolls.Count == 0)
+                continue;
 
-        db.Votes.AddRange(votes);
-        await db.SaveChangesAsync(ct);
+            var shardDb = shards.Primary(shard);
+            shardDb.Polls.AddRange(shardPolls);
+            await shardDb.SaveChangesAsync(ct);
+
+            var votes = new List<Vote>();
+            foreach (var poll in shardPolls.Where(p => p.Id != polls[0].Id && p.Status != PollStatus.Draft))
+                votes.AddRange(CreateVotes(poll, users, random, now));
+
+            shardDb.Votes.AddRange(votes);
+            await shardDb.SaveChangesAsync(ct);
+            votesCount += votes.Count;
+            logger.LogInformation("Seeded shard {Shard}: {Polls} polls, {Votes} votes", ShardRouter.Name(shard), shardPolls.Count, votes.Count);
+        }
         await tx.CommitAsync(ct);
 
-        logger.LogInformation("Seeded {Users} users, {Polls} polls, {Votes} votes", users.Count, polls.Count, votes.Count);
+        logger.LogInformation("Seeded {Users} users, {Polls} polls, {Votes} votes", users.Count, polls.Count, votesCount);
     }
 
     private static Poll CreateHotPoll(User creator, DateTimeOffset now) => new()
@@ -97,6 +125,7 @@ public class DataSeeder(
         Title = "Гаряче опитування: яка лаба найцікавіша?",
         Description = "Ціль для навантажувального write-сценарію (POST /vote).",
         CreatorId = creator.Id,
+        CreatorUsername = creator.Username,
         Status = PollStatus.Active,
         IsPublic = true,
         AllowVoteChange = true,
@@ -116,13 +145,15 @@ public class DataSeeder(
         var createdAt = now.AddDays(-random.Next(1, 30)).AddMinutes(-random.Next(0, 1440));
 
         var topic = Topics[random.Next(Topics.Length)];
+        // Автори — перші 20 користувачів, щоб фільтр за creatorId повертав змістовні списки.
+        var creator = users[random.Next(Math.Min(20, users.Count))];
 
         return new Poll
         {
             Title = $"{topic.Title} #{index}",
             Description = random.NextDouble() < 0.5 ? "Згенероване опитування для тестування." : null,
-            // Автори — перші 20 користувачів, щоб фільтр за creatorId повертав змістовні списки.
-            CreatorId = users[random.Next(Math.Min(20, users.Count))].Id,
+            CreatorId = creator.Id,
+            CreatorUsername = creator.Username,
             Status = status,
             IsPublic = random.NextDouble() < 0.9,
             AllowVoteChange = random.NextDouble() < 0.3,

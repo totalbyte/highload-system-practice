@@ -28,14 +28,18 @@ echo "ResultsCache__Enabled=$(docker compose exec -T backend-1 printenv ResultsC
 echo "ReadReplica__Enabled=$(docker compose exec -T backend-1 printenv ReadReplica__Enabled)"
 echo "ReadAfterWrite__StickyTtlSeconds=$(docker compose exec -T backend-1 printenv ReadAfterWrite__StickyTtlSeconds)"
 echo "postgres-replica running: $(docker compose ps --status running --services | grep -c '^postgres-replica$')"
+echo "Sharding: count $(docker compose exec -T backend-1 printenv Sharding__ShardCount), strategy $(docker compose exec -T backend-1 printenv Sharding__Strategy), range $(docker compose exec -T backend-1 printenv Sharding__RangeSize), buckets $(docker compose exec -T backend-1 printenv Sharding__Buckets)"
 echo "Diagnostics__ArtificialDelayMs=$(docker compose exec -T backend-1 printenv Diagnostics__ArtificialDelayMs || echo unset)"
 
 echo
 echo "=== PostgreSQL ==="
 docker compose exec -T postgres psql -U polling -d polling -tAc \
   "SELECT 'version ' || current_setting('server_version') || ', max_connections ' || current_setting('max_connections') || ', shared_buffers ' || current_setting('shared_buffers')"
-docker compose exec -T postgres psql -U polling -d polling -tAc \
-  "SELECT 'users ' || (SELECT count(*) FROM users) || ', polls ' || (SELECT count(*) FROM polls) || ', votes ' || (SELECT count(*) FROM votes)"
+# Лаба 7: дані по шардах (users — лише на Shard A).
+for db in postgres postgres-shard-b; do
+  docker compose exec -T $db psql -U polling -d polling -tAc \
+    "SELECT '$db: users ' || (SELECT count(*) FROM users) || ', polls ' || (SELECT count(*) FROM polls) || ', votes ' || (SELECT count(*) FROM votes)"
+done
 
 echo
 echo "=== Redis ==="

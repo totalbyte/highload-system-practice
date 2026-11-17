@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using PollingPlatform.Api.Data.Seeding;
+using PollingPlatform.Api.Sharding;
 
 namespace PollingPlatform.Api.Data;
 
@@ -19,8 +20,13 @@ public static class DatabaseInitializer
 
         if (app.Configuration.GetValue("Database:MigrateOnStartup", true))
         {
-            logger.LogInformation("Applying database migrations...");
-            await services.GetRequiredService<AppDbContext>().Database.MigrateAsync();
+            // Схема однакова на всіх шардах (лаба 7): кожен отримує ті самі міграції.
+            var shards = services.GetRequiredService<ShardContexts>();
+            for (var shard = 0; shard < shards.Count; shard++)
+            {
+                logger.LogInformation("Applying database migrations to shard {Shard}...", ShardRouter.Name(shard));
+                await shards.Primary(shard).Database.MigrateAsync();
+            }
         }
 
         if (services.GetRequiredService<IOptions<SeedOptions>>().Value.Enabled)

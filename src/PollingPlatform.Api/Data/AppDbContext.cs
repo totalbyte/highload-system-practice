@@ -5,6 +5,8 @@ namespace PollingPlatform.Api.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    public const string PollIdSequence = "poll_ids";
+
     public DbSet<User> Users => Set<User>();
     public DbSet<Poll> Polls => Set<Poll>();
     public DbSet<PollOption> Options => Set<PollOption>();
@@ -13,5 +15,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
+        // Глобальні id опитувань (лаба 7, ADR 0054). Схема однакова на всіх шардах, але nextval викликається лише на Shard A.
+        modelBuilder.HasSequence<long>(PollIdSequence);
     }
 }
