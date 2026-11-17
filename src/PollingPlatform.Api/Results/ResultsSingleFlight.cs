@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using PollingPlatform.Api.Data;
 using PollingPlatform.Api.Sharding;
 
 namespace PollingPlatform.Api.Results;
@@ -12,8 +11,8 @@ namespace PollingPlatform.Api.Results;
 /// він сам прочитав g, тож гарантія «читання після мутації бачить мутацію» (ADR 0041) зберігається.
 /// Стан тут — лише запити, що виконуються в цю мить; падіння інстансу нічого не губить, тому singleton безпечний.
 /// </summary>
-public class ResultsSingleFlight(
-    IServiceScopeFactory scopes, ResultsCache cache, TimeProvider timeProvider, ILogger<ResultsSingleFlight> logger)
+public class ResultsSingleFlight(IServiceScopeFactory scopes, ResultsCache cache, ResultsDistributedLock distributedLock,
+    TimeProvider timeProvider, ILogger<ResultsSingleFlight> logger)
 {
     private readonly ConcurrentDictionary<(long PollId, long Generation), Lazy<Task<ResultsLoad>>> inFlight = new();
 
@@ -42,15 +41,13 @@ public class ResultsSingleFlight(
         try
         {
             await using var scope = scopes.CreateAsyncScope();
-            var readDb = scope.ServiceProvider.GetRequiredService<ShardContexts>().ReadFor(key.PollId);
-            // Читання з Primary (ADR 0050). Репліка — лише коли він лежить (ADR 0052): старі результати кращі за помилку.
-            var (entry, node) = await readDb.PrimaryPreferredAsync(
-                db => ResultsService.LoadAsync(db, key.PollId, timeProvider, CancellationToken.None));
-            // Запис у кеш — до виходу з польоту: хто прочитає кеш після цього, отримає HIT, а не почне новий політ.
-            // У кеш лише дані Primary: якщо монітор помилився і голоси ще йдуть, агрегат із репліки отруїв би кеш (ADR 0051).
-            if (node == DbNodes.Primary)
-                await cache.SetAsync(key.PollId, key.Generation, entry);
-            return new ResultsLoad(entry, node);
+            var shards = scope.ServiceProvider.GetRequiredService<ShardContexts>();
+            // Запис у кеш — всередині, до виходу з польоту: хто прочитає кеш після цього, отримає HIT, а не почне новий політ.
+            // У режимі Lock політ інстансу ще й домовляється з іншими інстансами через Redis (лаба 8, ADR 0061).
+            return cache.Protection == StampedeProtection.Lock
+                ? await distributedLock.LoadAsync(shards, key.PollId, key.Generation)
+                : await ResultsService.LoadAndCacheAsync(shards, cache, key.PollId, key.Generation, timeProvider,
+                    CancellationToken.None);
         }
         finally
         {

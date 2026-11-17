@@ -1,5 +1,5 @@
 # 0044. Lab 4: single-flight per instance against Cache Stampede
-**Status:** Accepted · **Date:** 2026-11-02 · **Author:** Participant 1
+**Status:** Accepted, amended by 0061 (lab 8: a Redis lock behind it, one load per cluster) · **Date:** 2026-11-02 · **Author:** Participant 1
 
 ## Context
 In our high-load scenario every vote to the hot poll bumps its generation (ADR 0041), so right after each vote every

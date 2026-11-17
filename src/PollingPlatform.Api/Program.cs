@@ -134,6 +134,8 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddSingleton<ResultsCache>();
 // Об'єднання одночасних промахів проти Cache Stampede (ADR 0044); тримає лише запити, що виконуються зараз.
 builder.Services.AddSingleton<ResultsSingleFlight>();
+// Distributed lock між інстансами (лаба 8, ADR 0061): стану в процесі немає, лише ключі в Redis з lease.
+builder.Services.AddSingleton<ResultsDistributedLock>();
 
 // --- API ---
 builder.Services

@@ -81,7 +81,7 @@ served; the cache entry also holds `CreatorId`, so visibility is decided without
 
 ## Database schema
 
-Defined by EF migrations in `src/PollingPlatform.Api/Data/Migrations` (current: `ShardPollAggregate`). Since lab 7 the same
+Defined by EF migrations in `src/PollingPlatform.Api/Data/Migrations` (current: `EnablePgStatStatements` — lab 8, only creates the `pg_stat_statements` extension, ADR 0060). Since lab 7 the same
 schema is applied to every shard, but `users` and `nextval('poll_ids')` are used only on Shard A, and each poll with its
 options and votes lives on one shard (ADR 0054, 0055).
 

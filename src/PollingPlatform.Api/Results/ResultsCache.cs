@@ -30,6 +30,21 @@ public class ResultsCache(IConnectionMultiplexer redis, IConfiguration configura
     public bool Enabled { get; } = configuration.GetValue("ResultsCache:Enabled", true);
 
     /// <summary>
+    /// Як промахи йдуть у БД (лаба 8, ADR 0060, 0061): <c>None</c> — кожен сам, щоб відтворити Cache Stampede для
+    /// порівняння; <c>SingleFlight</c> — захист лаби 4 (одне читання на інстанс); за замовчуванням <c>Lock</c> — одне на кластер.
+    /// </summary>
+    public StampedeProtection Protection { get; } =
+        configuration.GetValue("ResultsCache:StampedeProtection", StampedeProtection.Lock);
+
+    /// <summary>
+    /// Діагностика лаби 8 (ADR 0060): наш агрегат дешевий (1–2 мс з денормалізованого <c>vote_count</c>), тож вікно
+    /// промаху коротке і stampede ледь помітний. <c>Diagnostics:ResultsLoadDelayMs</c> &gt; 0 імітує важкий агрегат —
+    /// кожне читання з БД додатково тримає з'єднання стільки мілісекунд. За замовчуванням 0, як затримка лаби 3 (ADR 0036).
+    /// </summary>
+    public TimeSpan LoadDelay { get; } =
+        TimeSpan.FromMilliseconds(configuration.GetValue("Diagnostics:ResultsLoadDelayMs", 0));
+
+    /// <summary>
     /// TTL — страховка на випадок втраченої інвалідації, а не механізм актуальності (ADR 0041).
     /// Активне опитування і чернетка можуть змінитися — застарілість обмежена секундами.
     /// </summary>
@@ -133,6 +148,66 @@ public class ResultsCache(IConnectionMultiplexer redis, IConfiguration configura
     }
 
     /// <summary>
+    /// Значення конкретного покоління — для тих, хто чекає чужого читання під lock (лаба 8, ADR 0061). Не перечитує
+    /// лічильник покоління: чекач прийшов із поколінням, прочитаним до інвалідації, і бере лише агрегат цього покоління.
+    /// Null — значення ще немає або Redis недоступний.
+    /// </summary>
+    public async Task<CachedPollResults?> GetEntryAsync(long pollId, long generation)
+    {
+        try
+        {
+            var value = await redis.GetDatabase().StringGetAsync(ValueKey(pollId, generation));
+            return value.IsNull ? null : JsonSerializer.Deserialize<CachedPollResults>((byte[])value!, Json);
+        }
+        catch (Exception ex) when (IsUnavailable(ex))
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Distributed lock на читання агрегату (лаба 8, ADR 0061): <c>SET key token NX PX lease</c>. Ключ містить покоління —
+    /// так само, як single-flight (ADR 0044), щоб читання після мутації не чекало агрегату, порахованого до неї.
+    /// Lease обмежує час: власник, що впав чи завис, звільняє lock сам, без deadlock.
+    /// </summary>
+    public async Task<LockAttempt> TryLockAsync(long pollId, long generation, string token, TimeSpan lease)
+    {
+        try
+        {
+            return await redis.GetDatabase().StringSetAsync(LockKey(pollId, generation), token, lease, When.NotExists)
+                ? LockAttempt.Acquired
+                : LockAttempt.Busy;
+        }
+        catch (Exception ex) when (IsUnavailable(ex))
+        {
+            logger.LogWarning("Results lock unavailable, poll {PollId}: loading without the lock: {Error}", pollId, ex.Message);
+            return LockAttempt.Unavailable;
+        }
+    }
+
+    // Видаляє lock, лише якщо він досі наш: після спливу lease ключ міг уже взяти інший інстанс, і простий DEL зняв би
+    // чужий lock — третій запит пішов би в БД паралельно з другим.
+    private const string ReleaseScript = """
+        if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) end
+        return 0
+        """;
+
+    /// <summary>False — lock уже не наш: lease сплив, поки йшло читання (його бачить лог, а не клієнт).</summary>
+    public async Task<bool> ReleaseLockAsync(long pollId, long generation, string token)
+    {
+        try
+        {
+            return (long)await redis.GetDatabase().ScriptEvaluateAsync(
+                ReleaseScript, [LockKey(pollId, generation)], [token]) == 1;
+        }
+        catch (Exception ex) when (IsUnavailable(ex))
+        {
+            // Не звільнили — lock зникне сам за lease.
+            return false;
+        }
+    }
+
+    /// <summary>
     /// TTL за статусом, з яким агрегат порахований: довгий — лише для даних, що вже не зміняться. Запис, зроблений
     /// поки опитування було активним, лишається з коротким TTL, навіть якщо опитування закрили мить потому.
     /// </summary>
@@ -148,4 +223,6 @@ public class ResultsCache(IConnectionMultiplexer redis, IConfiguration configura
     private static string ValueKeyPrefix(long pollId) => $"polling:results:v1:{pollId}:g";
 
     private static string ValueKey(long pollId, long generation) => $"{ValueKeyPrefix(pollId)}{generation}";
+
+    private static string LockKey(long pollId, long generation) => $"polling:results:lock:{pollId}:g{generation}";
 }

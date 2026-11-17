@@ -33,6 +33,9 @@ Results/                    ResultsController (GET /api/polls/{id}/results), Res
                             keys and TTL by poll status, ADR 0041); X-Cache: HIT | MISS | BYPASS set by the controller (ADR 0042, 0043);
                             ResultsSingleFlight — one shared DB load per (poll, generation) per instance on a
                             miss, against Cache Stampede (ADR 0044)
+                            lab 8 (ADR 0060, 0061): `ResultsCache:StampedeProtection` None | SingleFlight | Lock (default),
+                            ResultsDistributedLock — Redis lock per (poll, generation) inside the flight, `Diagnostics:ResultsLoadDelayMs`
+                            (pg_sleep before the aggregate), the aggregate query is tagged `results-load` for pg_stat_statements
 Common/
   Exceptions/               AppException (carries StatusCode) + NotFound/Conflict/Unauthorized/Forbidden/Validation;
                             PollNotFoundException, InvalidPollStateException; VoteExceptions.cs (option not in poll,
@@ -83,6 +86,8 @@ Common/
   calls, and don't make invalidation throw. The client is fail-fast (`Program.cs`) — don't put the backlog back.
 - Misses go through `ResultsSingleFlight` keyed by (poll, generation) — never key it by poll alone and never use it for
   BYPASS: either would let a read that started after a mutation's response join an older DB load (ADR 0044).
+  The same holds for the Redis lock key (`polling:results:lock:{poll}:g{gen}`, ADR 0061); release it only with the own-token
+  Lua script, and keep both time bounds (lease, max wait) — they are what makes a dead owner harmless.
 - Inject `AppDbContext` (the Primary) by default. Use `ReadDb.EventualAsync(userId, read)` only for a read that may lag and
   is not stored anywhere: never for a check before a write, a response after a write, authentication, or a results MISS /
   BYPASS, which puts stale aggregates into the shared cache (ADR 0050; measured in 0051). Pass the current user: that is what

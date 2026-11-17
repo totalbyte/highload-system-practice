@@ -165,6 +165,34 @@ for all strategies, then a generated dataset with the Data Distribution Matrix (
 the same first vote). `bash load-tests/hot-shard.sh` (≈ 8 min, `down -v` inside, restores the default stack) — the same k6
 load with `Range` (boundary 51: all new polls on B) and `Buckets`, report with per-shard p95 / CPU / RAM and Mermaid charts.
 
+## Cache resilience (lab 8)
+
+Switches (backend restart, no `down -v`): `RESULTS_STAMPEDE_PROTECTION=None|SingleFlight|Lock` (default `Lock`, ADR 0061) and
+`RESULTS_LOAD_DELAY_MS` (default 0; > 0 adds `pg_sleep` to every DB read of the results aggregate — simulated expensive
+aggregate, ADR 0060). DB reads of the aggregate are counted by `pg_stat_statements` on both shard Primaries (statement
+tagged `-- results-load`; extension from the migration `EnablePgStatStatements`, `shared_preload_libraries` in compose).
+
+```bash
+export MSYS_NO_PATHCONV=1
+docker compose -f docker-compose.yml -f load-tests/docker-compose.loadtest-lab8.yml up -d --build   # 8-thread layout + k6
+bash load-tests/stampede.sh None burst                       # 500 VUs at once after each of 5 invalidations, ≈ 40 s
+RESULTS_LOAD_DELAY_MS=50 bash load-tests/stampede.sh SingleFlight sustained   # 500 VUs, invalidation every 200 ms, 30 s
+docker compose exec -T postgres psql -U polling -d polling -c \
+  "SELECT calls, mean_exec_time FROM pg_stat_statements WHERE query LIKE '%results-load%'"   # by hand
+```
+
+`stampede.sh` recreates `backend-1/2` with the given switches (and checks they took effect), waits for both behind the
+LB, resets `pg_stat_statements` on both Primaries, runs `scenario-stampede.js` (`-e VUS= ROUNDS= PERIOD= DURATION=
+INTERVAL= POLL=`), prints `RESULT … DB loads per invalidation` (warm-up loads subtracted). After the experiments bring the
+backends back to the defaults: `docker compose up -d backend-1 backend-2`. Expected (2026-11-17): delay 50 burst — None ≈ 434,
+SingleFlight 2.0, Lock 1.0 per invalidation; real aggregate burst — None ≈ 21 (≈ 140 right after a cold start), SingleFlight 2.2,
+Lock 1.0.
+
+**Lock failure modes (ADR 0061):** `python scripts/lock-check.py [--readers 50]` (≈ 3 s, backends in `Lock` mode) — plants a
+dead owner's lock (`PX 1000`, foreign token), expects all readers 200 after ≈ 1 s, exactly 1 DB load, no lock keys left.
+Load longer than the lease: `RESULTS_LOAD_DELAY_MS=1500 bash load-tests/stampede.sh Lock burst -e PERIOD=5` → 2.0 loads per
+invalidation, 0 errors, Warning "lease … expired before the load" in both backends' logs.
+
 ## Run the backend locally (without Docker for the backend)
 
 ```bash
