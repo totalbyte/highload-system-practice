@@ -1,5 +1,5 @@
 # 2026-11-17 — Participant 1 — lab 8 stages 0–5: plan, stampede, distributed lock, avalanche, negative caching
-**Lab:** 8 · **Commits:** `5169a77` (stage 0), `96845a2` (stages 1–3), stage 4 not committed yet
+**Lab:** 8 · **Commits:** `5169a77` (stage 0), `96845a2` (stages 1–3), `27344dd` (stage 4), `3eccd0b` (stage 5)
 
 ## Goal
 Read the lab 8 assignment (Resilience Engineering), plan it strictly by the assignment (Participant 1 does lab 8 alone,
