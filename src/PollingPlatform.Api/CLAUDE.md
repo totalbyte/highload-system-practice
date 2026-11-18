@@ -33,6 +33,11 @@ Results/                    ResultsController (GET /api/polls/{id}/results), Res
                             keys and TTL by poll status, ADR 0041); X-Cache: HIT | MISS | BYPASS set by the controller (ADR 0042, 0043);
                             ResultsSingleFlight — one shared DB load per (poll, generation) per instance on a
                             miss, against Cache Stampede (ADR 0044)
+                            lab 8 (ADR 0060, 0061): `ResultsCache:StampedeProtection` None | SingleFlight | Lock (default),
+                            ResultsDistributedLock — Redis lock per (poll, generation) inside the flight, `Diagnostics:ResultsLoadDelayMs`
+                            (pg_sleep before the aggregate), the aggregate query is tagged `results-load` for pg_stat_statements;
+                            `ResultsCache:TtlJitter` — TTL = Base ± j (default 0.2, ADR 0062); `ResultsCache:NegativeCaching` —
+                            `not-found` entry for a missing poll, 30 s (ADR 0063)
 Common/
   Exceptions/               AppException (carries StatusCode) + NotFound/Conflict/Unauthorized/Forbidden/Validation;
                             PollNotFoundException, InvalidPollStateException; VoteExceptions.cs (option not in poll,
@@ -73,7 +78,8 @@ Common/
 - In the vote transaction the user's existing vote is read `FOR UPDATE`, and when a vote moves, the two `options`
   rows are updated in ascending id order (ADR 0017). Removing either reintroduces the counter race / deadlocks.
   Check counters **per option**, not by `SUM(vote_count) = COUNT(votes)` — the SUM hides the race.
-- Anything that changes votes or a poll's status (vote, publish, close, delete) must
+- Anything that changes votes or a poll's status (vote, publish, close, delete) — and poll creation, which may follow a
+  cached `not-found` for its predictable id (ADR 0063) — must
   `await resultsCache.InvalidateAsync(pollId)` — the cache is shared by all instances (ADR 0026). On a miss, write
   with the generation returned by `GetAsync` (read **before** the DB query), never re-read it — that is what keeps
   a pre-commit aggregate out of the cache (ADR 0041).
@@ -83,6 +89,8 @@ Common/
   calls, and don't make invalidation throw. The client is fail-fast (`Program.cs`) — don't put the backlog back.
 - Misses go through `ResultsSingleFlight` keyed by (poll, generation) — never key it by poll alone and never use it for
   BYPASS: either would let a read that started after a mutation's response join an older DB load (ADR 0044).
+  The same holds for the Redis lock key (`polling:results:lock:{poll}:g{gen}`, ADR 0061); release it only with the own-token
+  Lua script, and keep both time bounds (lease, max wait) — they are what makes a dead owner harmless.
 - Inject `AppDbContext` (the Primary) by default. Use `ReadDb.EventualAsync(userId, read)` only for a read that may lag and
   is not stored anywhere: never for a check before a write, a response after a write, authentication, or a results MISS /
   BYPASS, which puts stale aggregates into the shared cache (ADR 0050; measured in 0051). Pass the current user: that is what

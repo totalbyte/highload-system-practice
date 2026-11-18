@@ -8,8 +8,9 @@ namespace PollingPlatform.Api.Results;
 /// <summary>
 /// Результат пошуку в кеші: запис (null — промах) і покоління, під яким його треба записати після читання з БД.
 /// Покоління null — Redis недоступний: читаємо з БД і нічого не записуємо (ADR 0043).
+/// <paramref name="NotFound"/> — у кеші негативний запис: опитування цього покоління в БД немає (лаба 8, ADR 0063).
 /// </summary>
-public readonly record struct ResultsCacheLookup(CachedPollResults? Entry, long? Generation)
+public readonly record struct ResultsCacheLookup(CachedPollResults? Entry, long? Generation, bool NotFound = false)
 {
     public static ResultsCacheLookup Unavailable => new(null, null);
 }
@@ -30,6 +31,37 @@ public class ResultsCache(IConnectionMultiplexer redis, IConfiguration configura
     public bool Enabled { get; } = configuration.GetValue("ResultsCache:Enabled", true);
 
     /// <summary>
+    /// Як промахи йдуть у БД (лаба 8, ADR 0060, 0061): <c>None</c> — кожен сам, щоб відтворити Cache Stampede для
+    /// порівняння; <c>SingleFlight</c> — захист лаби 4 (одне читання на інстанс); за замовчуванням <c>Lock</c> — одне на кластер.
+    /// </summary>
+    public StampedeProtection Protection { get; } =
+        configuration.GetValue("ResultsCache:StampedeProtection", StampedeProtection.Lock);
+
+    /// <summary>
+    /// Діагностика лаби 8 (ADR 0060): наш агрегат дешевий (1–2 мс з денормалізованого <c>vote_count</c>), тож вікно
+    /// промаху коротке і stampede ледь помітний. <c>Diagnostics:ResultsLoadDelayMs</c> &gt; 0 імітує важкий агрегат —
+    /// кожне читання з БД додатково тримає з'єднання стільки мілісекунд. За замовчуванням 0, як затримка лаби 3 (ADR 0036).
+    /// </summary>
+    public TimeSpan LoadDelay { get; } =
+        TimeSpan.FromMilliseconds(configuration.GetValue("Diagnostics:ResultsLoadDelayMs", 0));
+
+    /// <summary>
+    /// Negative Caching проти Cache Penetration (лаба 8, ADR 0063): «опитування немає» теж кешується, з коротким TTL, і
+    /// потік запитів до неіснуючих id не доходить до PostgreSQL. <c>ResultsCache:NegativeCaching=false</c> — режим «до».
+    /// </summary>
+    public bool NegativeCaching { get; } = configuration.GetValue("ResultsCache:NegativeCaching", true);
+
+    /// <summary>
+    /// Короткий, бо негативний запис — це і пам'ять Redis під кожен неіснуючий id, і (без інвалідації) час, поки нове
+    /// опитування з цим id лишалося б «неіснуючим». Друге закриває інвалідація при створенні; перше обмежує TTL:
+    /// пам'ять ≈ частота різних неіснуючих id × TTL.
+    /// </summary>
+    private static readonly TimeSpan NotFoundTtl = TimeSpan.FromSeconds(30);
+
+    /// <summary>Значення негативного запису. Не JSON (агрегат завжди починається з <c>{</c>), тож не сплутати.</summary>
+    private static readonly byte[] NotFoundMarker = "not-found"u8.ToArray();
+
+    /// <summary>
     /// TTL — страховка на випадок втраченої інвалідації, а не механізм актуальності (ADR 0041).
     /// Активне опитування і чернетка можуть змінитися — застарілість обмежена секундами.
     /// </summary>
@@ -38,8 +70,12 @@ public class ResultsCache(IConnectionMultiplexer redis, IConfiguration configura
     /// <summary>Закрите опитування вже не зміниться: голосувати можна лише в активному, а з closed переходів немає.</summary>
     private static readonly TimeSpan ClosedTtl = TimeSpan.FromHours(1);
 
-    /// <summary>Розкид TTL проти Cache Avalanche: записи, створені в одну секунду, не спливають в одну секунду.</summary>
-    private const double TtlJitter = 0.2;
+    /// <summary>
+    /// Розкид TTL проти Cache Avalanche (лаба 4; формула <c>Base ± Random</c> — лаба 8, ADR 0062): записи, створені в одну
+    /// секунду, не спливають в одну секунду. Частка від базового TTL, 0.2 → ±20 %. <c>ResultsCache:TtlJitter=0</c> вимикає
+    /// розкид — лише для демонстрації лавини.
+    /// </summary>
+    private readonly double ttlJitter = Math.Clamp(configuration.GetValue("ResultsCache:TtlJitter", 0.2), 0, 0.9);
 
     // Покоління і значення за один round-trip. Ключ значення будується зі значення лічильника всередині скрипта —
     // на одному вузлі Redis це коректно; для Redis Cluster знадобився б hash tag (ADR 0041).
@@ -83,12 +119,19 @@ public class ResultsCache(IConnectionMultiplexer redis, IConfiguration configura
         }
 
         var generation = (long)reply[0];
-        var entry = reply[1].IsNull ? null : JsonSerializer.Deserialize<CachedPollResults>((byte[])reply[1]!, Json);
+        var lookup = Parse(reply[1].IsNull ? null : (byte[])reply[1]!, generation);
         // Debug, а не Information: під навантаженням це рядок на кожне читання. Увімкнути — CACHE_LOG_LEVEL=Debug.
         logger.LogDebug("Results cache {Result}: poll {PollId}, generation {Generation}",
-            entry is null ? "MISS" : "HIT", pollId, generation);
-        return new ResultsCacheLookup(entry, generation);
+            lookup.NotFound ? "NEGATIVE HIT" : lookup.Entry is null ? "MISS" : "HIT", pollId, generation);
+        return lookup;
     }
+
+    private static ResultsCacheLookup Parse(byte[]? value, long generation) => value switch
+    {
+        null => new ResultsCacheLookup(null, generation),
+        _ when value.AsSpan().SequenceEqual(NotFoundMarker) => new ResultsCacheLookup(null, generation, NotFound: true),
+        _ => new ResultsCacheLookup(JsonSerializer.Deserialize<CachedPollResults>(value, Json), generation)
+    };
 
     /// <summary>
     /// Записує агрегат під поколінням, прочитаним <b>до</b> звернення до БД (<see cref="GetAsync"/>), а не під поточним.
@@ -111,6 +154,27 @@ public class ResultsCache(IConnectionMultiplexer redis, IConfiguration configura
     }
 
     /// <summary>
+    /// Негативний запис: опитування <paramref name="pollId"/> у БД немає (лаба 8, ADR 0063). Під тим самим поколінням, що
+    /// й агрегат: якщо опитування з цим id створять, створення збільшить покоління, і запис більше ніхто не прочитає.
+    /// </summary>
+    public async Task SetNotFoundAsync(long pollId, long generation)
+    {
+        if (!NegativeCaching)
+            return;
+        try
+        {
+            var ttl = NotFoundTtl * (1 + (2 * Random.Shared.NextDouble() - 1) * ttlJitter);
+            await redis.GetDatabase().StringSetAsync(ValueKey(pollId, generation), NotFoundMarker, new Expiration(ttl));
+            logger.LogDebug("Results cache STORE NOT FOUND: poll {PollId}, generation {Generation}, TTL {Ttl:0.0} s",
+                pollId, generation, ttl.TotalSeconds);
+        }
+        catch (Exception ex) when (IsUnavailable(ex))
+        {
+            logger.LogWarning("Results cache unavailable, missing poll {PollId} not cached: {Error}", pollId, ex.Message);
+        }
+    }
+
+    /// <summary>
     /// Best-effort: викликається вже після коміту зміни в БД, тож збій кешу не повинен перетворювати успішний
     /// голос чи publish на помилку для клієнта (той би повторив запит і отримав 409 на записаний голос).
     /// Застарілий запис, якщо він уцілів (короткий збій без рестарту Redis), зникне за TTL активного опитування;
@@ -128,7 +192,67 @@ public class ResultsCache(IConnectionMultiplexer redis, IConfiguration configura
         catch (Exception ex) when (IsUnavailable(ex))
         {
             logger.LogWarning("Results cache unavailable, poll {PollId} not invalidated; a stale entry expires within {Ttl} s: {Error}",
-                pollId, OpenTtl.TotalSeconds * (1 + TtlJitter), ex.Message);
+                pollId, OpenTtl.TotalSeconds * (1 + ttlJitter), ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Значення конкретного покоління — для тих, хто чекає чужого читання під lock (лаба 8, ADR 0061). Не перечитує
+    /// лічильник покоління: чекач прийшов із поколінням, прочитаним до інвалідації, і бере лише агрегат цього покоління.
+    /// Entry null без NotFound — значення ще немає або Redis недоступний.
+    /// </summary>
+    public async Task<ResultsCacheLookup> GetEntryAsync(long pollId, long generation)
+    {
+        try
+        {
+            var value = await redis.GetDatabase().StringGetAsync(ValueKey(pollId, generation));
+            return Parse(value.IsNull ? null : (byte[])value!, generation);
+        }
+        catch (Exception ex) when (IsUnavailable(ex))
+        {
+            return ResultsCacheLookup.Unavailable;
+        }
+    }
+
+    /// <summary>
+    /// Distributed lock на читання агрегату (лаба 8, ADR 0061): <c>SET key token NX PX lease</c>. Ключ містить покоління —
+    /// так само, як single-flight (ADR 0044), щоб читання після мутації не чекало агрегату, порахованого до неї.
+    /// Lease обмежує час: власник, що впав чи завис, звільняє lock сам, без deadlock.
+    /// </summary>
+    public async Task<LockAttempt> TryLockAsync(long pollId, long generation, string token, TimeSpan lease)
+    {
+        try
+        {
+            return await redis.GetDatabase().StringSetAsync(LockKey(pollId, generation), token, lease, When.NotExists)
+                ? LockAttempt.Acquired
+                : LockAttempt.Busy;
+        }
+        catch (Exception ex) when (IsUnavailable(ex))
+        {
+            logger.LogWarning("Results lock unavailable, poll {PollId}: loading without the lock: {Error}", pollId, ex.Message);
+            return LockAttempt.Unavailable;
+        }
+    }
+
+    // Видаляє lock, лише якщо він досі наш: після спливу lease ключ міг уже взяти інший інстанс, і простий DEL зняв би
+    // чужий lock — третій запит пішов би в БД паралельно з другим.
+    private const string ReleaseScript = """
+        if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) end
+        return 0
+        """;
+
+    /// <summary>False — lock уже не наш: lease сплив, поки йшло читання (його бачить лог, а не клієнт).</summary>
+    public async Task<bool> ReleaseLockAsync(long pollId, long generation, string token)
+    {
+        try
+        {
+            return (long)await redis.GetDatabase().ScriptEvaluateAsync(
+                ReleaseScript, [LockKey(pollId, generation)], [token]) == 1;
+        }
+        catch (Exception ex) when (IsUnavailable(ex))
+        {
+            // Не звільнили — lock зникне сам за lease.
+            return false;
         }
     }
 
@@ -136,8 +260,8 @@ public class ResultsCache(IConnectionMultiplexer redis, IConfiguration configura
     /// TTL за статусом, з яким агрегат порахований: довгий — лише для даних, що вже не зміняться. Запис, зроблений
     /// поки опитування було активним, лишається з коротким TTL, навіть якщо опитування закрили мить потому.
     /// </summary>
-    private static TimeSpan TtlFor(PollStatus status) =>
-        (status == PollStatus.Closed ? ClosedTtl : OpenTtl) * (1 + Random.Shared.NextDouble() * TtlJitter);
+    private TimeSpan TtlFor(PollStatus status) =>
+        (status == PollStatus.Closed ? ClosedTtl : OpenTtl) * (1 + (2 * Random.Shared.NextDouble() - 1) * ttlJitter);
 
     private static bool IsUnavailable(Exception ex) => ex is RedisConnectionException or RedisTimeoutException;
 
@@ -148,4 +272,6 @@ public class ResultsCache(IConnectionMultiplexer redis, IConfiguration configura
     private static string ValueKeyPrefix(long pollId) => $"polling:results:v1:{pollId}:g";
 
     private static string ValueKey(long pollId, long generation) => $"{ValueKeyPrefix(pollId)}{generation}";
+
+    private static string LockKey(long pollId, long generation) => $"polling:results:lock:{pollId}:g{generation}";
 }

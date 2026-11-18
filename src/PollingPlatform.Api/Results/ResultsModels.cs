@@ -36,6 +36,34 @@ public enum CacheResult
     Disabled
 }
 
+/// <summary>Захист від Cache Stampede при промаху — перемикач <c>ResultsCache:StampedeProtection</c> (лаба 8, ADR 0060).</summary>
+public enum StampedeProtection
+{
+    /// <summary>Без захисту: кожен промах сам читає БД і пише в кеш. Режим «до» для порівняння (лаба 8, 2.2).</summary>
+    None,
+
+    /// <summary>Одночасні промахи інстансу чекають одне читання з БД (лаба 4, ADR 0044).</summary>
+    SingleFlight,
+
+    /// <summary>
+    /// Single-flight на інстансі + distributed lock у Redis між інстансами: одне читання з БД на весь кластер
+    /// (лаба 8, ADR 0061).
+    /// </summary>
+    Lock
+}
+
+/// <summary>Результат спроби взяти distributed lock на читання агрегату (лаба 8, ADR 0061).</summary>
+public enum LockAttempt
+{
+    Acquired,
+
+    /// <summary>Lock тримає інший запит — він читає БД і запише агрегат у кеш.</summary>
+    Busy,
+
+    /// <summary>Redis недоступний — читаємо без lock, як BYPASS (ADR 0043).</summary>
+    Unavailable
+}
+
 /// <summary><paramref name="Node"/> — вузол БД, що дав дані, якщо читання йшло в обхід кешу чи об'єднувалося з чужим.</summary>
 public record PollResultsRead(PollResultsResponse Response, CacheResult Cache, DbNodes Node = DbNodes.None);
 
