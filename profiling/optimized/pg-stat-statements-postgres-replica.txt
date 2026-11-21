@@ -1,0 +1,10 @@
+ calls  | plan_ms | exec_ms | plan_per_call_ms | exec_per_call_ms | plan_pct |                                                          query                                                           
+--------+---------+---------+------------------+------------------+----------+--------------------------------------------------------------------------------------------------------------------------
+  55673 |      71 |   23600 |            0.001 |            0.424 |      0.3 | SELECT p.id, p.title, p.status, p.is_public, p.creator_id, p.creator_username, ( SELECT count(*)::int FROM options AS o 
+  55671 |     115 |    5089 |            0.002 |            0.091 |      2.2 | SELECT count(*)::int FROM polls AS p WHERE p.is_public AND p.status <> 'draft' AND p.status = $1
+ 111324 |    2701 |    1143 |            0.024 |            0.010 |     70.3 | SELECT pg_advisory_unlock_all()
+ 111324 |       0 |    1354 |            0.000 |            0.012 |      0.0 | SET SESSION AUTHORIZATION DEFAULT
+ 111324 |       0 |     964 |            0.000 |            0.009 |      0.0 | RESET ALL
+     10 |     156 |      24 |           15.611 |            2.373 |     86.8 | SELECT extract($1 FROM now())::int, coalesce(state, $2), coalesce(wait_event_type, $3), coalesce(wait_event, $4), count(
+(6 rows)
+

@@ -23,3 +23,8 @@ docker-compose.override.yml
 
 # Load-test results (k6 summaries, env specs) — generated, kept out of Git except the curated ones in README
 load-tests/results/
+
+# Сирі профілі лаби 9: великі (десятки МБ); у репозиторії — flame graph (SVG), топ функцій, знімки купи і зведення (ADR 0067).
+profiling/**/*.nettrace
+profiling/**/*.speedscope.json
+profiling/**/*.folded

@@ -213,6 +213,22 @@ before creation → 404, after creation the author gets 200; deleted draft → 4
 and memory added). Expected (2026-11-17): 100 ids — off 53.8 %, on 0.39 % of requests reach the DB; IDS=0 — 100 % both,
 +1 key (~106 B) per request with it on.
 
+## Profiling (lab 9)
+
+Evidence under the same catalog load (one core per database node): `bash profiling/collect.sh <label>` (≈ 4 min, fresh stack,
+`DB_MAX_AUTO_PREPARE=0` in the environment for the "before" configuration) → `profiling/<label>/` with `summary.md`, flame graphs,
+counters, heap snapshots, EXPLAIN, `pg_stat_statements`. A/B: `bash profiling/ab-series.sh` (≈ 45 min, 10 fresh-stack runs,
+restores the default stack) → `python profiling/ab-report.py` → `profiling/ab-report.md`; short: `REPEATS=1 LEVELS=50 STEP=20
+ONLY_CATALOG=1 bash profiling/ab-series.sh`. `bash profiling/pgbench/run.sh` (needs the one-core overlay up) — simple / extended /
+prepared on replica A.
+
+Tools inside a backend: `docker compose exec backend-1 dotnet-counters collect -p 1 ...` (the app is PID 1; `ps` does not list
+it), `dotnet-trace collect -p 1 --profile dotnet-common,dotnet-sampled-thread-time`, `dotnet-gcdump collect -p 1`. Tracing:
+`TRACING_ENABLED=true docker compose --profile tracing up -d`, Jaeger http://localhost:16686, service `polling-api`;
+`python profiling/traces.py profiling/<label>` for the decomposition. `pg_stat_statements` (with `track_planning`) is on all
+four nodes; a replica container created before lab 9 needs `docker compose up -d postgres-replica postgres-shard-b-replica`.
+`DB_MAX_AUTO_PREPARE` (default 20) is Npgsql's `Max Auto Prepare`; 0 restores the configuration before lab 9.
+
 ## Run the backend locally (without Docker for the backend)
 
 ```bash

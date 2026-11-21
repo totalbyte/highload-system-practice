@@ -1,0 +1,13 @@
+                                                                QUERY PLAN                                                                 
+-------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=8.16..8.17 rows=1 width=4) (actual time=0.108..0.109 rows=1 loops=1)
+   Buffers: shared hit=2
+   ->  Index Scan using ix_polls_status_created_at on polls p  (cost=0.14..8.16 rows=1 width=0) (actual time=0.093..0.101 rows=13 loops=1)
+         Index Cond: ((status)::text = 'active'::text)
+         Filter: is_public
+         Rows Removed by Filter: 1
+         Buffers: shared hit=2
+ Planning Time: 0.153 ms
+ Execution Time: 0.184 ms
+(9 rows)
+

@@ -1,0 +1,10 @@
+ calls | plan_ms | exec_ms | plan_per_call_ms | exec_per_call_ms | plan_pct |                                                          query                                                           
+-------+---------+---------+------------------+------------------+----------+--------------------------------------------------------------------------------------------------------------------------
+ 36826 |   16124 |   66968 |            0.438 |            1.818 |     19.4 | SELECT p.id, p.title, p.status, p.is_public, p.creator_id, p.creator_username, ( SELECT count(*)::int FROM options AS o 
+ 36801 |    4837 |    3792 |            0.131 |            0.103 |     56.1 | SELECT count(*)::int FROM polls AS p WHERE p.is_public AND p.status <> $2 AND p.status = $1
+ 73626 |       0 |    1575 |            0.000 |            0.021 |      0.0 | DISCARD ALL
+   217 |      11 |       4 |            0.049 |            0.020 |     70.7 | SELECT $1
+     0 |       0 |       0 |            0.413 |            0.000 |    100.0 | SELECT calls, round(total_plan_time::numeric) AS plan_ms, round(total_exec_time::numeric) AS exec_ms, round((total_plan_
+     1 |       0 |       0 |            0.000 |            0.166 |      0.0 | SELECT pg_stat_statements_reset()
+(6 rows)
+
