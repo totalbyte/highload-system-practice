@@ -1,0 +1,31 @@
+Top 30 Functions (Exclusive)                                                  Inclusive           Exclusive           
+1.  WaitHandle.WaitOneNoCheck(int32,bool,class System.Object,value class W    24.75%              24.75%              
+2.  LowLevelLifoSemaphore.WaitForSignal(int32)                                17.69%              17.62%              
+3.  Monitor.Wait(class System.Object,int32)                                   16.49%              16.49%              
+4.  Missing Symbol                                                            9.92%               9.71%               
+5.  Watcher!Interop+Sys.Read(class System.Runtime.InteropServices.SafeHand    8.25%               8.25%               
+6.  ManualResetEventSlim.Wait(int32,value class System.Threading.Cancellat    16.49%              8.25%               
+7.  Thread.<PollGC>g__PollGCWorker|67_0()                                     4.21%               4.21%               
+8.  PortableThreadPool+WorkerThread.WorkerThreadStart()                       32.51%              2.51%               
+9.  LowLevelLifoSemaphore.Wait(int32,bool)                                    19.66%              1.81%               
+10. Monitor.Enter_Slowpath(class System.Object)                               1.54%               1.54%               
+11. GC.RunFinalizers()                                                        1.04%               1.04%               
+12. PortableThreadPool+WorkerThread.MaybeAddWorkingWorker(class System.Thr    0.57%               0.57%               
+13. SocketPal.SysSend(class System.Net.Sockets.SafeSocketHandle,value clas    0.42%               0.42%               
+14. DynamicMethod.CreateDelegate(class System.Type,class System.Object)       0.24%               0.24%               
+15. .ctor(class Microsoft.EntityFrameworkCore.DbContextOptions)               0.24%               0.13%               
+16. CustomAttribute.IsDefined(class System.RuntimeType,class System.Runtim    0.17%               0.12%               
+17. Delegate.GetMethodImpl()                                                  0.11%               0.1%                
+18. RuntimeHelpers.<GetHashCode>g__GetHashCodeWorker|15_0(class System.Obj    0.09%               0.09%               
+19. RuntimeMethodInfo.get_ContainsGenericParameters()                         0.48%               0.08%               
+20. DependencyInjection!dynamicClass.ResolveService(pMT: 0x73e7be4201d8,pM    1.79%               0.08%               
+21. RuntimeType.MakeGenericType(class System.Type[])                          0.2%                0.08%               
+22. Rfc2898DeriveBytes.Pbkdf2Core(value class System.ReadOnlySpan`1<wchar>    0.07%               0.07%               
+23. NameResolution!Interop+Sys.GetHostEntryForName(class System.String,val    0.07%               0.07%               
+24. Delegate.DelegateConstruct(class System.Object,int)                       0.06%               0.06%               
+25. RuntimeMethodHandle.<GetStubIfNeeded>g__GetStubIfNeededWorker|47_0(val    0.05%               0.05%               
+26. PollService+<LoadListPartAsync>d__8.MoveNext()                            6.59%               0.03%               
+27. CastHelpers.IsInstanceOfClass(void*,class System.Object)                  0.03%               0.03%               
+28. ExpressionEqualityComparer+ExpressionComparer.Compare(class System.Lin    0.09%               0.03%               
+29. CastHelpers.IsInstanceOfAny(void*,class System.Object)                    0.03%               0.03%               
+30. RuntimeCustomAttributeData.GetCustomAttributeRecords(class System.Refl    0.03%               0.03%               

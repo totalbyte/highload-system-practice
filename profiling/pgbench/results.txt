@@ -1,0 +1,11 @@
+pgbench on postgres-replica, 20 clients, 4 threads, 15 s per mode, one catalog request on one shard = 2 statements
+1 100000 100000 
+== simple
+latency average = 24.332 ms
+tps = 821.961010 (without initial connection time)
+== extended
+latency average = 27.894 ms
+tps = 716.991998 (without initial connection time)
+== prepared
+latency average = 11.609 ms
+tps = 1722.742883 (without initial connection time)

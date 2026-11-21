@@ -46,6 +46,8 @@ Common/
                             transient DB failures → 503 (ADR 0016)
   Validation/               validator.ValidateOrThrowAsync() → 422
   InstanceIdentity.cs       X-Instance-ID response header
+  Diagnostics/              lab 9: Tracing.AddTracing — OpenTelemetry (ASP.NET Core, Npgsql, Redis) → OTLP → Jaeger, only with
+                            Tracing:Enabled; HTTP-rooted sampler (ADR 0066)
   Diagnostics/              ArtificialDelay: UseArtificialDelay() — lab 3 slow-node experiment, off unless
                             Diagnostics:ArtificialDelayMs > 0; /health is never delayed (ADR 0036)
 ```

@@ -1,0 +1,31 @@
+Top 30 Functions (Inclusive)                                                  Inclusive           Exclusive           
+1.  (Non-Activities)                                                          100%                0%                  
+2.  Threads                                                                   100%                0%                  
+3.  Thread.StartCallback()                                                    91.41%              0%                  
+4.  PortableThreadPool+WorkerThread.WorkerThreadStart()                       33.08%              1.74%               
+5.  WaitHandle.WaitOneNoCheck(int32,bool,class System.Object,value class W    25%                 25%                 
+6.  LowLevelLifoSemaphore.Wait(int32,bool)                                    24.78%              1.91%               
+7.  LowLevelLifoSemaphore.WaitForSignal(int32)                                22.63%              22.54%              
+8.  ManualResetEventSlim.Wait(int32,value class System.Threading.Cancellat    16.67%              8.33%               
+9.  Monitor.Wait(class System.Object,int32)                                   16.67%              16.67%              
+10. Missing Symbol                                                            9.31%               9.19%               
+11. Watcher!Interop+Sys.Read(class System.Runtime.InteropServices.SafeHand    8.33%               8.33%               
+12. FileSystemWatcher+RunningInstance.TryReadEvent(value class NotifyEvent    8.33%               0%                  
+13. Api!Program.<Main>(class System.String[])                                 8.33%               0%                  
+14. Task.InternalWait(int32,value class System.Threading.CancellationToken    8.33%               0%                  
+15. Task.InternalWaitCore(int32,value class System.Threading.CancellationT    8.33%               0%                  
+16. Task.SpinThenBlockingWait(int32,value class System.Threading.Cancellat    8.33%               0%                  
+17. TaskAwaiter.HandleNonSuccessAndDebuggerNotification(class System.Threa    8.33%               0%                  
+18. SocketAsyncEngine.EventLoop()                                             8.33%               0%                  
+19. PortableThreadPool+GateThread.GateThreadStart()                           8.33%               0%                  
+20. TimerQueue.TimerThread()                                                  8.33%               0%                  
+21. Heartbeat.TimerLoop()                                                     8.33%               0%                  
+22. CounterGroup.PollForValues()                                              8.33%               0%                  
+23. ThreadPoolWorkQueue.Dispatch()                                            6.53%               0%                  
+24. AsyncMethodBuilderCore.Start(!!0&)                                        4.21%               0%                  
+25. PollService+<LoadListPartAsync>d__8.MoveNext()                            3.92%               0%                  
+26. ExecutionContext.RunFromThreadPoolDispatchLoop(class System.Threading.    3.33%               0%                  
+27. StatusCodePagesMiddleware+<Invoke>d__3.MoveNext()                         3.23%               0%                  
+28. SwaggerUIMiddleware+<Invoke>d__7.MoveNext()                               3.21%               0%                  
+29. ResourceInvoker.Next(value class State&,value class Scope&,class Syste    3.21%               0%                  
+30. SwaggerMiddleware+<Invoke>d__8.MoveNext()                                 3.21%               0%                  

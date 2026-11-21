@@ -1,0 +1,17 @@
+epoch_s	state	wait_event_type	wait_event	sessions
+1795003771	idle	Client	ClientRead	53
+1795003778	idle	Client	ClientRead	52
+1795003778	idle	CPU	-	1
+1795003785	idle	Client	ClientRead	53
+1795003791	idle	Client	ClientRead	53
+1795003798	idle	Client	ClientRead	52
+1795003798	active	Client	ClientRead	1
+1795003805	idle	Client	ClientRead	53
+1795003812	idle	Client	ClientRead	52
+1795003812	idle	CPU	-	1
+1795003819	idle	Client	ClientRead	53
+1795003825	idle	Client	ClientRead	53
+1795003825	active	CPU	-	1
+1795003833	idle	Client	ClientRead	53
+1795003833	active	CPU	-	2
+1795003833	idle	CPU	-	1
