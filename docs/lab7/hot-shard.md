@@ -61,17 +61,19 @@ Range ділить дані порівну, але майже всі запис�
 На тих самих 10–50 VU p95 менший: 23 проти 35, 56 проти 85, 127 проти 177 мс.
 
 ```mermaid
+%%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#dc2626, #2563eb"}}}}%%
 xychart-beta
-    title "Пропускна здатність, RPS: Range (1) і Buckets (2)"
+    title "Пропускна здатність, RPS. Червона — Range, синя — Buckets"
     x-axis "VUs" [10, 25, 50, 100]
     y-axis "RPS" 0 --> 1100
-    bar [504, 525, 512, 556]
-    bar [757, 971, 1004, 1012]
+    line [504, 525, 512, 556]
+    line [757, 971, 1004, 1012]
 ```
 
 ```mermaid
+%%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#dc2626, #2563eb"}}}}%%
 xychart-beta
-    title "p95 найгарячішого шарду, мс: Range (1) і Buckets (2)"
+    title "p95 найгарячішого шарду, мс. Червона — Range, синя — Buckets"
     x-axis "VUs" [10, 25, 50, 100]
     y-axis "p95, мс"
     line [35, 85, 177, 331]

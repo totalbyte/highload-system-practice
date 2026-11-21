@@ -91,12 +91,16 @@ def main():
                                                        if point else "not reached up to the last step"))
 
     for mode, (single, sharded) in results.items():
-        print(f"\n```mermaid\nxychart-beta\n    title \"{MODES[mode]}: RPS, Single (1) vs Sharded (2)\"")
+        # Лінії з явними кольорами, а не два ряди стовпчиків: xychart малює їх один поверх одного, і вищий закриває нижчий.
+        print("\n```mermaid")
+        print('%%{init: {"themeVariables": {"xyChart": {"plotColorPalette": "#dc2626, #2563eb"}}}}%%')
+        print(f"xychart-beta\n    title \"{MODES[mode]}: RPS. Red — Single, blue — Sharded\"")
         print(f"    x-axis \"VUs\" [{', '.join(str(r['vus']) for r in single)}]")
-        print("    y-axis \"RPS\"")
+        top = max(r["rps"] for r in single + sharded)
+        print(f"    y-axis \"RPS\" 0 --> {int(top * 1.15 / 100 + 1) * 100}")
         for rows in (single, sharded):
             values = ", ".join(str(round(r["rps"])) for r in rows)
-            print(f"    bar [{values}]")
+            print(f"    line [{values}]")
         print("```")
 
 
