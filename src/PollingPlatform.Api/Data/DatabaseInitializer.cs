@@ -49,10 +49,13 @@ public static class DatabaseInitializer
         {
             await db.Database.ExecuteSqlAsync($"SELECT pg_advisory_lock({MigrationLockKey})");
             await db.Database.MigrateAsync();
+            await db.Database.ExecuteSqlAsync($"SELECT pg_advisory_unlock({MigrationLockKey})");
         }
         finally
         {
-            await db.Database.ExecuteSqlAsync($"SELECT pg_advisory_unlock({MigrationLockKey})");
+            // Unlock — лише після вдалої міграції: якби він стояв тут і теж кинув виняток (зв'язок уже обірвано), він сховав
+            // би справжню причину падіння. Якщо міграція впала, lock однаково знімається: при поверненні з'єднання в пул Npgsql
+            // скидає сесію (DISCARD ALL або pg_advisory_unlock_all()), а при падінні процесу PostgreSQL закриває сесію сам.
             await db.Database.CloseConnectionAsync();
         }
     }
