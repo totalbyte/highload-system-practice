@@ -1,0 +1,5 @@
+
+scenario-shards-catalog: per-step results (closed model, 100s per step)
+step        VUs   RPS     avg ms  p50 ms  p95 ms  p99 ms  max ms  errors %
+warmup         -    377   133.1   114.7   209.9  1032.8  1465.5     0.00
+vus_050       50    411   121.4   117.5   196.6   245.3  1509.5     0.00

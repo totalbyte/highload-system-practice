@@ -1,0 +1,10 @@
+ calls | plan_ms | exec_ms | plan_per_call_ms | exec_per_call_ms | plan_pct |                                                          query                                                           
+-------+---------+---------+------------------+------------------+----------+--------------------------------------------------------------------------------------------------------------------------
+ 38958 |   14734 |   15866 |            0.378 |            0.407 |     48.2 | SELECT p.id, p.title, p.status, p.is_public, p.creator_id, p.creator_username, ( SELECT count(*)::int FROM options AS o 
+ 38948 |    5687 |    3687 |            0.146 |            0.095 |     60.7 | SELECT count(*)::int FROM polls AS p WHERE p.is_public AND p.status <> $2 AND p.status = $1
+ 77904 |       0 |    1991 |            0.000 |            0.026 |      0.0 | DISCARD ALL
+    10 |     224 |     218 |           22.359 |           21.778 |     50.7 | SELECT extract($1 FROM now())::int, coalesce(state, $2), coalesce(wait_event_type, $3), coalesce(wait_event, $4), count(
+   224 |      18 |       9 |            0.082 |            0.039 |     68.1 | SELECT $1
+     1 |       0 |       0 |            0.309 |            0.064 |     82.8 | SELECT pg_stat_reset()
+(6 rows)
+

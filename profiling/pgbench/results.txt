@@ -1,0 +1,11 @@
+pgbench, 20 clients, 4 threads, 15 s per run, 3 runs per mode interleaved; one catalog request on one shard = 2 statements
+
+== postgres-replica: cpu.max 100000 100000, 12 active public polls
+simple:   tps median   4337   min   4269   max   4368   runs: 4337 4368 4269
+extended: tps median   3749   min   3608   max   3797   runs: 3749 3608 3797
+prepared: tps median   9194   min   9054   max   9205   runs: 9205 9194 9054
+
+== postgres-shard-b-replica: cpu.max 100000 100000, 20 active public polls
+simple:   tps median   3326   min   3076   max   3425   runs: 3076 3326 3425
+extended: tps median   3055   min   2954   max   3100   runs: 2954 3100 3055
+prepared: tps median   6443   min   6295   max   6552   runs: 6443 6552 6295

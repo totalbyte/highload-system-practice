@@ -1,9 +1,26 @@
 # Project status
 
 > Snapshot of the current state. **Rewrite outdated lines in place** — history belongs in `log/`.
-> Last updated: 2026-11-18 by Participant 1 (lab 8 stages 0–7, see `log/2026-11-17-p1-lab8-stampede.md`; PR #17 review fixes — see `log/2026-11-17-p1-lab7-pr-review-fixes.md`; lab 7 stages in `log/2026-11-10-p2-lab7-hot-shard.md`).
+> Last updated: 2026-11-23 by Participant 2 (lab 9 PR #20 review fixes — see `log/2026-11-23-p2-lab9-review-fixes.md`).
 
-## Current lab: 8 — Resilience Engineering (stampede, avalanche, penetration)
+## Current lab: 9 — Performance Profiling & Bottleneck Diagnostics
+
+**Participant 2 does lab 9.** Branch `lab9/profiling` from `main` (`f6c4075`, labs 6–8 merged). ADRs 0065–0070. Plan by
+stages (Ukrainian): [`docs/lab9/plan.md`](../lab9/plan.md); artifacts and the formal cycle: [`profiling/README.md`](../../profiling/README.md).
+
+| Stage | Status |
+|---|---|
+| 1. Symptom, hypotheses (2.1) | ✅ ADR 0065: catalog fan-out saturates the replicas (lab 7: ≈ 410 RPS at 10 VUs, replicas 98–101 %); H1–H5; `pg_stat_statements` + `track_planning` on all four nodes |
+| 2. Instruments | ✅ ADR 0066 (OpenTelemetry → Jaeger 2.12, profile `tracing`, `TRACING_ENABLED`), ADR 0067 (dotnet-trace / counters / gcdump 10.0.750501 in the image, `profiling/collect.sh`, `flamegraph.py`, `summary.py`, `traces.py`, `pgbench/`) |
+| 3. Evidence, root cause (2.2) | ✅ H1 refuted (index scan), H2 cheap (20 × 0.017 ms), H4 consequence, H5 refuted (GC 0.94 %, heap 10.2 → 10.7 MB); **H3 root cause**: planning ≈ 48–61 % of statement time, `prepared_ratio` 0, pgbench 717 extended vs 1723 prepared tps |
+| 4. Optimization (2.3) | ✅ ADR 0068: `Max Auto Prepare=20` (`DB_MAX_AUTO_PREPARE`, 0 = before); first check 411 → 588 RPS, p95 197 → 139 ms at 50 VUs; ADR 0070: startup migrations under an advisory lock (lab 7 cold-start crash) |
+| 5. A/B, regression (2.4) | ✅ ADR 0069: `profiling/ab-series.sh` (3 interleaved catalog repeats + write / read once, fresh stacks), `ab-report.py` → `profiling/ab-report.md`; catalog +41 … +58 % RPS, p95 −17 … −35 %, writes +31 … +81 %, reads +44 … +136 % (backend becomes their bottleneck), 0 % errors; `pgbench/results.txt` 717 → 1723 tps |
+| 6. README, guide, lecturer page | ✅ README «Лабораторна 9», `profiling/README.md`, `docs/lab9-guide.md`, `docs/about/lab9.md`; Mermaid charts with two bar series overlapped (taller hid the other) — lab 7 and 9 charts switched to coloured lines / one bar series, 12 diagrams rendered with mermaid 11.4.0; smoke, `shard-routing-check`, `concurrency-checks` green. `docs/about/lab7.md` rewritten with plain explanations in the text |
+| 7. PR #20 review fixes | ✅ Shard B explained (full page 20 vs 12 rows → B saturates first, its statements queue for the CPU); `pgbench/run.sh` on both replicas, 3 interleaved runs (A ×2.45, B ×2.1); traces under 50 VUs + results trace with Redis; A/B spread and worst … best delta (≈ +41 %, not less than +35 %), raw results in `profiling/ab-results/`, CPU sampling caveat; 2 × 2 planner-statistics check (6–9 %, `stats-check.md`); day-to-day level difference documented; migration unlock no longer hides the original exception |
+
+Not committed.
+
+## Lab 8 — Resilience Engineering (merged via PR #19)
 
 **Participant 1 does lab 8 alone** (agreed by both participants), strictly by the assignment. Branch `lab8/resilience`
 from `main` (`b77ea93`, labs 6 and 7 merged). ADRs from 0060. Assignment: `docs/labs/Lab8 - Resilience Engineering.md`;

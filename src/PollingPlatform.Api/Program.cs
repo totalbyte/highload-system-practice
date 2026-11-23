@@ -92,6 +92,9 @@ redisOptions.SyncTimeout = redisOptions.AsyncTimeout = 1000;
 var redis = ConnectionMultiplexer.Connect(redisOptions);
 builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
 
+// Розподілене трасування (лаба 9, ADR 0066): вмикається Tracing:Enabled, спани йдуть у Jaeger.
+builder.Services.AddTracing(builder.Configuration, redis);
+
 // Ключі DataProtection за замовчуванням лежать у файловій системі контейнера — у кожного інстансу свої, і
 // захищене одним інстансом (cookie, antiforgery) не розшифрує інший. Спільне сховище і однакова назва застосунку
 // дають усім інстансам один набір ключів (аудит стану лаби 2, ADR 0023).

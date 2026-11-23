@@ -1,0 +1,27 @@
+                                                                            QUERY PLAN                                                                            
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=8.17..11.93 rows=2 width=631) (actual time=0.129..0.260 rows=13 loops=1)
+   Buffers: shared hit=16
+   ->  Result  (cost=8.17..11.93 rows=2 width=631) (actual time=0.128..0.256 rows=13 loops=1)
+         Buffers: shared hit=16
+         ->  Incremental Sort  (cost=8.17..8.21 rows=2 width=627) (actual time=0.070..0.072 rows=13 loops=1)
+               Sort Key: p.created_at DESC, p.id DESC
+               Presorted Key: p.created_at
+               Full-sort Groups: 1  Sort Method: quicksort  Average Memory: 27kB  Peak Memory: 27kB
+               Buffers: shared hit=3
+               ->  Index Scan Backward using ix_polls_status_created_at on polls p  (cost=0.14..8.16 rows=1 width=627) (actual time=0.031..0.042 rows=13 loops=1)
+                     Index Cond: ((status)::text = 'active'::text)
+                     Filter: is_public
+                     Rows Removed by Filter: 1
+                     Buffers: shared hit=3
+         SubPlan 1
+           ->  Aggregate  (cost=1.83..1.85 rows=1 width=4) (actual time=0.013..0.013 rows=1 loops=13)
+                 Buffers: shared hit=13
+                 ->  Seq Scan on options o  (cost=0.00..1.83 rows=3 width=0) (actual time=0.009..0.011 rows=3 loops=13)
+                       Filter: (p.id = poll_id)
+                       Rows Removed by Filter: 63
+                       Buffers: shared hit=13
+ Planning Time: 0.191 ms
+ Execution Time: 0.375 ms
+(23 rows)
+

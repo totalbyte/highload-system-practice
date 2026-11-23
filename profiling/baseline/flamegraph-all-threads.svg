@@ -1,0 +1,1484 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1774" font-family="monospace" font-size="11">
+<rect width="100%" height="100%" fill="#fdfdf6"/><text x="6" y="16" font-size="13">backend-1, catalog, baseline — all thread time: 180.5 s of 180.5 s sampled (100.0 %)</text>
+<g><title>all (100.0%)</title><rect x="0.0" y="1757" width="1600.0" height="16" fill="#c9c38a" rx="2"/>
+<text x="3.0" y="1769">all (100.0%)</text>
+</g>
+<g><title>PollingPlatform.Api!Program.&lt;Main&gt;(class System.String[]) (8.3%)</title><rect x="0.0" y="1740" width="133.3" height="16" fill="#6cbf6a" rx="2"/>
+<text x="3.0" y="1752">PollingPlatform.Ap..</text>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(class System.Threading.Tasks.Task,value class System.Threading.Tasks.ConfigureAwaitOptions) (8.3%)</title><rect x="0.0" y="1723" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="3.0" y="1735">System.Private.Cor..</text>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.InternalWait(int32,value class System.Threading.CancellationToken) (8.3%)</title><rect x="0.0" y="1706" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="3.0" y="1718">System.Private.Cor..</text>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.InternalWaitCore(int32,value class System.Threading.CancellationToken) (8.3%)</title><rect x="0.0" y="1689" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="3.0" y="1701">System.Private.Cor..</text>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.SpinThenBlockingWait(int32,value class System.Threading.CancellationToken) (8.3%)</title><rect x="0.0" y="1672" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="3.0" y="1684">System.Private.Cor..</text>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ManualResetEventSlim.Wait(int32,value class System.Threading.CancellationToken) (8.3%)</title><rect x="0.0" y="1655" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="3.0" y="1667">System.Private.Cor..</text>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Monitor.Wait(class System.Object,int32) (8.3%)</title><rect x="0.0" y="1638" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="3.0" y="1650">System.Private.Cor..</text>
+</g>
+<g><title>UNMANAGED_CODE_TIME (8.3%)</title><rect x="0.0" y="1621" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="3.0" y="1633">UNMANAGED_CODE_TIM..</text>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.0%)</title><rect x="133.3" y="1740" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.1%)</title><rect x="134.0" y="1740" width="1.2" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;InitializeReaderAsync&gt;d__21[System.__Canon]].MoveNext() (0.1%)</title><rect x="134.0" y="1723" width="1.1" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="134.0" y="1706" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;InitializeReaderAsync&gt;d__21[System.__Canon].MoveNext() (0.1%)</title><rect x="134.0" y="1689" width="1.1" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.Boolean].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.1%)</title><rect x="134.0" y="1672" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.1%)</title><rect x="134.0" y="1655" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.1%)</title><rect x="134.0" y="1638" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy+&lt;ExecuteAsync&gt;d__7`2[System.__Canon,System.Boolean]].MoveNext() (0.1%)</title><rect x="134.0" y="1621" width="1.1" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="134.0" y="1604" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Npgsql.EntityFrameworkCore.PostgreSQL!Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy+&lt;ExecuteAsync&gt;d__7`2[System.__Canon,System.Boolean].MoveNext() (0.1%)</title><rect x="134.0" y="1587" width="1.1" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.1%)</title><rect x="134.0" y="1570" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.1%)</title><rect x="134.0" y="1553" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;MoveNextAsync&gt;d__20[System.__Canon]].MoveNext() (0.1%)</title><rect x="134.0" y="1536" width="1.1" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="134.0" y="1519" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;MoveNextAsync&gt;d__20[System.__Canon].MoveNext() (0.1%)</title><rect x="134.0" y="1502" width="1.1" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.Boolean].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.1%)</title><rect x="134.0" y="1485" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.1%)</title><rect x="134.0" y="1468" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.1%)</title><rect x="134.0" y="1451" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions+&lt;ToListAsync&gt;d__68`1[System.__Canon]].MoveNext() (0.1%)</title><rect x="134.0" y="1434" width="1.1" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="134.0" y="1417" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions+&lt;ToListAsync&gt;d__68`1[System.__Canon].MoveNext() (0.1%)</title><rect x="134.0" y="1400" width="1.1" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.__Canon].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.1%)</title><rect x="134.0" y="1383" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.1%)</title><rect x="134.0" y="1366" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.1%)</title><rect x="134.0" y="1349" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.ValueTuple`2[System.Int32,System.__Canon],PollingPlatform.Api.Polls.PollService+&lt;LoadListPartAsync&gt;d__8].MoveNext() (0.1%)</title><rect x="134.0" y="1332" width="1.1" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="134.0" y="1315" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Polls.PollService+&lt;LoadListPartAsync&gt;d__8.MoveNext() (0.1%)</title><rect x="134.0" y="1298" width="1.1" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.1%)</title><rect x="134.0" y="1281" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.1%)</title><rect x="134.0" y="1264" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.ValueTuple`2[System.ValueTuple`2[System.Int32,System.__Canon],PollingPlatform.Api.Data.DbNodes],PollingPlatform.Api.Data.ReadDb+&lt;ReadAsync&gt;d__9`1[System.ValueTuple`2[System.Int32,System.__Canon]]].MoveNext() (0.1%)</title><rect x="134.0" y="1247" width="1.1" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="134.0" y="1230" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Data.ReadDb+&lt;ReadAsync&gt;d__9`1[System.ValueTuple`2[System.Int32,System.__Canon]].MoveNext() (0.1%)</title><rect x="134.0" y="1213" width="1.1" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.1%)</title><rect x="134.0" y="1196" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.1%)</title><rect x="134.0" y="1179" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.ValueTuple`2[System.Int32,System.__Canon],PollingPlatform.Api.Data.ReadDb+&lt;EventualAsync&gt;d__7`1[System.ValueTuple`2[System.Int32,System.__Canon]]].MoveNext() (0.1%)</title><rect x="134.0" y="1162" width="1.1" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="134.0" y="1145" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Data.ReadDb+&lt;EventualAsync&gt;d__7`1[System.ValueTuple`2[System.Int32,System.__Canon]].MoveNext() (0.1%)</title><rect x="134.0" y="1128" width="1.1" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.1%)</title><rect x="134.0" y="1111" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.1%)</title><rect x="134.0" y="1094" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Nullable`1[System.ValueTuple`2[System.Int32,System.__Canon]],PollingPlatform.Api.Polls.PollService+&lt;LoadShardPartAsync&gt;d__7].MoveNext() (0.1%)</title><rect x="134.0" y="1077" width="1.1" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="134.0" y="1060" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Polls.PollService+&lt;LoadShardPartAsync&gt;d__7.MoveNext() (0.1%)</title><rect x="134.0" y="1043" width="1.1" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.1%)</title><rect x="134.0" y="1026" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task+WhenAllPromise`1[System.Nullable`1[System.ValueTuple`2[System.Int32,System.__Canon]]].Invoke(class System.Threading.Tasks.Task) (0.1%)</title><rect x="134.0" y="1009" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.1%)</title><rect x="134.0" y="992" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.1%)</title><rect x="134.0" y="975" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,PollingPlatform.Api.Polls.PollService+&lt;ListAsync&gt;d__6].MoveNext() (0.1%)</title><rect x="134.0" y="958" width="1.1" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="134.0" y="941" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Polls.PollService+&lt;ListAsync&gt;d__6.MoveNext() (0.1%)</title><rect x="134.0" y="924" width="1.1" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.__Canon].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.1%)</title><rect x="134.0" y="907" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.1%)</title><rect x="134.0" y="890" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.1%)</title><rect x="134.0" y="873" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,PollingPlatform.Api.Polls.PollsController+&lt;List&gt;d__3].MoveNext() (0.1%)</title><rect x="134.0" y="856" width="1.1" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="134.0" y="839" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Polls.PollsController+&lt;List&gt;d__3.MoveNext() (0.1%)</title><rect x="134.0" y="822" width="1.1" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.__Canon].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.1%)</title><rect x="134.0" y="805" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.1%)</title><rect x="134.0" y="788" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Action,bool) (0.1%)</title><rect x="134.0" y="771" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="134.0" y="754" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor+AwaitableObjectResultExecutor+&lt;Execute&gt;d__0.MoveNext() (0.1%)</title><rect x="134.0" y="737" width="1.1" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.1%)</title><rect x="134.0" y="720" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.1%)</title><rect x="134.0" y="703" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker+&lt;&lt;InvokeActionMethodAsync&gt;g__Awaited|12_0&gt;d].MoveNext() (0.1%)</title><rect x="134.0" y="686" width="1.1" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="134.0" y="669" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker+&lt;&lt;InvokeActionMethodAsync&gt;g__Awaited|12_0&gt;d.MoveNext() (0.1%)</title><rect x="134.0" y="652" width="1.1" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.1%)</title><rect x="134.0" y="635" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.1%)</title><rect x="134.0" y="618" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker+&lt;&lt;InvokeNextActionFilterAsync&gt;g__Awaited|10_0&gt;d].MoveNext() (0.1%)</title><rect x="134.0" y="601" width="1.1" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="134.0" y="584" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker+&lt;&lt;InvokeNextActionFilterAsync&gt;g__Awaited|10_0&gt;d.MoveNext() (0.1%)</title><rect x="134.0" y="567" width="1.1" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.1%)</title><rect x="134.0" y="550" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.1%)</title><rect x="134.0" y="533" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker+&lt;&lt;InvokeNextActionFilterAsync&gt;g__Awaited|10_0&gt;d].MoveNext() (0.1%)</title><rect x="134.0" y="516" width="1.1" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="134.0" y="499" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker+&lt;&lt;InvokeNextActionFilterAsync&gt;g__Awaited|10_0&gt;d.MoveNext() (0.1%)</title><rect x="134.0" y="482" width="1.1" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.1%)</title><rect x="134.0" y="465" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.1%)</title><rect x="134.0" y="448" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker+&lt;&lt;InvokeInnerFilterAsync&gt;g__Awaited|13_0&gt;d].MoveNext() (0.1%)</title><rect x="134.0" y="431" width="1.1" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="134.0" y="414" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker+&lt;&lt;InvokeInnerFilterAsync&gt;g__Awaited|13_0&gt;d.MoveNext() (0.1%)</title><rect x="134.0" y="397" width="1.1" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.1%)</title><rect x="134.0" y="380" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.1%)</title><rect x="134.0" y="363" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker+&lt;&lt;InvokeFilterPipelineAsync&gt;g__Awaited|20_0&gt;d].MoveNext() (0.1%)</title><rect x="134.0" y="346" width="1.1" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="134.0" y="329" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker+&lt;&lt;InvokeFilterPipelineAsync&gt;g__Awaited|20_0&gt;d.MoveNext() (0.1%)</title><rect x="134.0" y="312" width="1.1" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(value class State&amp;,value class Scope&amp;,class System.Object&amp;,bool&amp;) (0.1%)</title><rect x="134.0" y="295" width="1.1" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeResultFilters() (0.1%)</title><rect x="134.0" y="278" width="1.1" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeNextResultFilterAsync() (0.1%)</title><rect x="134.0" y="261" width="1.1" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeNextResultFilterAsync() (0.1%)</title><rect x="134.0" y="244" width="1.1" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ObjectResultExecutor.ExecuteAsyncCore(class Microsoft.AspNetCore.Mvc.ActionContext,class Microsoft.AspNetCore.Mvc.ObjectResult,class System.Type,class System.Object) (0.1%)</title><rect x="134.0" y="227" width="1.1" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Formatters.TextOutputFormatter.WriteAsync(class Microsoft.AspNetCore.Mvc.Formatters.OutputFormatterWriteContext) (0.1%)</title><rect x="134.0" y="210" width="1.1" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter+&lt;WriteResponseBodyAsync&gt;d__5.MoveNext() (0.1%)</title><rect x="134.0" y="193" width="1.1" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Text.Json!System.Text.Json.Serialization.Metadata.JsonTypeInfo`1[System.__Canon].SerializeAsObjectAsync(class System.IO.Pipelines.PipeWriter,class System.Object,value class System.Threading.CancellationToken) (0.1%)</title><rect x="134.0" y="176" width="1.1" height="16" fill="#b48ad6" rx="2"/>
+</g>
+<g><title>System.Text.Json!System.Text.Json.Serialization.Metadata.JsonTypeInfo`1+&lt;SerializeAsync&gt;d__15[System.__Canon].MoveNext() (0.1%)</title><rect x="134.0" y="159" width="1.1" height="16" fill="#b48ad6" rx="2"/>
+</g>
+<g><title>System.Text.Json!System.Text.Json.Serialization.JsonConverter`1[System.__Canon].WriteCore(class System.Text.Json.Utf8JsonWriter,!0&amp;,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.WriteStack&amp;) (0.1%)</title><rect x="134.0" y="142" width="1.1" height="16" fill="#b48ad6" rx="2"/>
+</g>
+<g><title>System.Text.Json!System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1[System.__Canon].OnTryWrite(class System.Text.Json.Utf8JsonWriter,!0,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.WriteStack&amp;) (0.1%)</title><rect x="134.0" y="125" width="1.1" height="16" fill="#b48ad6" rx="2"/>
+</g>
+<g><title>System.Text.Json!System.Text.Json.Serialization.Metadata.JsonPropertyInfo`1[System.__Canon].GetMemberAndWriteJson(class System.Object,value class System.Text.Json.WriteStack&amp;,class System.Text.Json.Utf8JsonWriter) (0.1%)</title><rect x="134.0" y="108" width="1.1" height="16" fill="#b48ad6" rx="2"/>
+</g>
+<g><title>System.Text.Json!System.Text.Json.Serialization.JsonCollectionConverter`2[System.__Canon,System.__Canon].OnTryWrite(class System.Text.Json.Utf8JsonWriter,!0,class System.Text.Json.JsonSerializerOptions,value class System.Text.Json.WriteStack&amp;) (0.1%)</title><rect x="134.0" y="91" width="0.8" height="16" fill="#b48ad6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Buffer.BulkMoveWithWriteBarrier(unsigned int8&amp;,unsigned int8&amp;,unsigned int) (0.0%)</title><rect x="134.0" y="74" width="0.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Thread.&lt;PollGC&gt;g__PollGCWorker|67_0() (0.0%)</title><rect x="134.0" y="57" width="0.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.0%)</title><rect x="134.0" y="40" width="0.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.1%)</title><rect x="135.2" y="1740" width="0.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.1%)</title><rect x="135.2" y="1723" width="0.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,Microsoft.EntityFrameworkCore.Storage.RelationalCommand+&lt;ExecuteReaderAsync&gt;d__22].MoveNext() (0.0%)</title><rect x="135.2" y="1706" width="0.6" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.0%)</title><rect x="135.2" y="1689" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Storage.RelationalCommand+&lt;ExecuteReaderAsync&gt;d__22.MoveNext() (0.0%)</title><rect x="135.2" y="1672" width="0.6" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.__Canon].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.0%)</title><rect x="135.2" y="1655" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.0%)</title><rect x="135.2" y="1638" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.0%)</title><rect x="135.2" y="1621" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;InitializeReaderAsync&gt;d__21[System.__Canon]].MoveNext() (0.0%)</title><rect x="135.2" y="1604" width="0.6" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.0%)</title><rect x="135.2" y="1587" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;InitializeReaderAsync&gt;d__21[System.__Canon].MoveNext() (0.0%)</title><rect x="135.2" y="1570" width="0.6" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.Boolean].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.0%)</title><rect x="135.2" y="1553" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.0%)</title><rect x="135.2" y="1536" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.0%)</title><rect x="135.2" y="1519" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy+&lt;ExecuteAsync&gt;d__7`2[System.__Canon,System.Boolean]].MoveNext() (0.0%)</title><rect x="135.2" y="1502" width="0.6" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.0%)</title><rect x="135.2" y="1485" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Npgsql.EntityFrameworkCore.PostgreSQL!Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy+&lt;ExecuteAsync&gt;d__7`2[System.__Canon,System.Boolean].MoveNext() (0.0%)</title><rect x="135.2" y="1468" width="0.6" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.0%)</title><rect x="135.2" y="1451" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.0%)</title><rect x="135.2" y="1434" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;MoveNextAsync&gt;d__20[System.__Canon]].MoveNext() (0.0%)</title><rect x="135.2" y="1417" width="0.6" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.0%)</title><rect x="135.2" y="1400" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;MoveNextAsync&gt;d__20[System.__Canon].MoveNext() (0.0%)</title><rect x="135.2" y="1383" width="0.6" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.Boolean].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.0%)</title><rect x="135.2" y="1366" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.0%)</title><rect x="135.2" y="1349" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.0%)</title><rect x="135.2" y="1332" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions+&lt;ToListAsync&gt;d__68`1[System.__Canon]].MoveNext() (0.0%)</title><rect x="135.2" y="1315" width="0.6" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.0%)</title><rect x="135.2" y="1298" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions+&lt;ToListAsync&gt;d__68`1[System.__Canon].MoveNext() (0.0%)</title><rect x="135.2" y="1281" width="0.6" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.__Canon].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.0%)</title><rect x="135.2" y="1264" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.0%)</title><rect x="135.2" y="1247" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.0%)</title><rect x="135.2" y="1230" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.ValueTuple`2[System.Int32,System.__Canon],PollingPlatform.Api.Polls.PollService+&lt;LoadListPartAsync&gt;d__8].MoveNext() (0.0%)</title><rect x="135.2" y="1213" width="0.6" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.0%)</title><rect x="135.2" y="1196" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Polls.PollService+&lt;LoadListPartAsync&gt;d__8.MoveNext() (0.0%)</title><rect x="135.2" y="1179" width="0.6" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.0%)</title><rect x="135.2" y="1162" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.0%)</title><rect x="135.2" y="1145" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.ValueTuple`2[System.ValueTuple`2[System.Int32,System.__Canon],PollingPlatform.Api.Data.DbNodes],PollingPlatform.Api.Data.ReadDb+&lt;ReadAsync&gt;d__9`1[System.ValueTuple`2[System.Int32,System.__Canon]]].MoveNext() (0.0%)</title><rect x="135.2" y="1128" width="0.6" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.0%)</title><rect x="135.2" y="1111" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Data.ReadDb+&lt;ReadAsync&gt;d__9`1[System.ValueTuple`2[System.Int32,System.__Canon]].MoveNext() (0.0%)</title><rect x="135.2" y="1094" width="0.6" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.0%)</title><rect x="135.2" y="1077" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.0%)</title><rect x="135.2" y="1060" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.ValueTuple`2[System.Int32,System.__Canon],PollingPlatform.Api.Data.ReadDb+&lt;EventualAsync&gt;d__7`1[System.ValueTuple`2[System.Int32,System.__Canon]]].MoveNext() (0.0%)</title><rect x="135.2" y="1043" width="0.6" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.0%)</title><rect x="135.2" y="1026" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Data.ReadDb+&lt;EventualAsync&gt;d__7`1[System.ValueTuple`2[System.Int32,System.__Canon]].MoveNext() (0.0%)</title><rect x="135.2" y="1009" width="0.6" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.0%)</title><rect x="135.2" y="992" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.0%)</title><rect x="135.2" y="975" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Nullable`1[System.ValueTuple`2[System.Int32,System.__Canon]],PollingPlatform.Api.Polls.PollService+&lt;LoadShardPartAsync&gt;d__7].MoveNext() (0.0%)</title><rect x="135.2" y="958" width="0.6" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.0%)</title><rect x="135.2" y="941" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Polls.PollService+&lt;LoadShardPartAsync&gt;d__7.MoveNext() (0.0%)</title><rect x="135.2" y="924" width="0.6" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.0%)</title><rect x="135.2" y="907" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task+WhenAllPromise`1[System.Nullable`1[System.ValueTuple`2[System.Int32,System.__Canon]]].Invoke(class System.Threading.Tasks.Task) (0.0%)</title><rect x="135.2" y="890" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.0%)</title><rect x="135.2" y="873" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.0%)</title><rect x="135.2" y="856" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,PollingPlatform.Api.Polls.PollService+&lt;ListAsync&gt;d__6].MoveNext() (0.0%)</title><rect x="135.2" y="839" width="0.6" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.0%)</title><rect x="135.2" y="822" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Polls.PollService+&lt;ListAsync&gt;d__6.MoveNext() (0.0%)</title><rect x="135.2" y="805" width="0.6" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.__Canon].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.0%)</title><rect x="135.2" y="788" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.0%)</title><rect x="135.2" y="771" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.0%)</title><rect x="135.2" y="754" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,PollingPlatform.Api.Polls.PollsController+&lt;List&gt;d__3].MoveNext() (0.0%)</title><rect x="135.2" y="737" width="0.6" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.0%)</title><rect x="135.2" y="720" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Polls.PollsController+&lt;List&gt;d__3.MoveNext() (0.0%)</title><rect x="135.2" y="703" width="0.6" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.__Canon].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.0%)</title><rect x="135.2" y="686" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.0%)</title><rect x="135.2" y="669" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Action,bool) (0.0%)</title><rect x="135.2" y="652" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.0%)</title><rect x="135.2" y="635" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor+AwaitableObjectResultExecutor+&lt;Execute&gt;d__0.MoveNext() (0.0%)</title><rect x="135.2" y="618" width="0.6" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.0%)</title><rect x="135.2" y="601" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.0%)</title><rect x="135.2" y="584" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker+&lt;&lt;InvokeActionMethodAsync&gt;g__Awaited|12_0&gt;d].MoveNext() (0.0%)</title><rect x="135.2" y="567" width="0.6" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.0%)</title><rect x="135.2" y="550" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker+&lt;&lt;InvokeActionMethodAsync&gt;g__Awaited|12_0&gt;d.MoveNext() (0.0%)</title><rect x="135.2" y="533" width="0.6" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.0%)</title><rect x="135.2" y="516" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.0%)</title><rect x="135.2" y="499" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker+&lt;&lt;InvokeNextActionFilterAsync&gt;g__Awaited|10_0&gt;d].MoveNext() (0.0%)</title><rect x="135.2" y="482" width="0.6" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.0%)</title><rect x="135.2" y="465" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker+&lt;&lt;InvokeNextActionFilterAsync&gt;g__Awaited|10_0&gt;d.MoveNext() (0.0%)</title><rect x="135.2" y="448" width="0.6" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.0%)</title><rect x="135.2" y="431" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.0%)</title><rect x="135.2" y="414" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker+&lt;&lt;InvokeNextActionFilterAsync&gt;g__Awaited|10_0&gt;d].MoveNext() (0.0%)</title><rect x="135.2" y="397" width="0.6" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.0%)</title><rect x="135.2" y="380" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker+&lt;&lt;InvokeNextActionFilterAsync&gt;g__Awaited|10_0&gt;d.MoveNext() (0.0%)</title><rect x="135.2" y="363" width="0.6" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.0%)</title><rect x="135.2" y="346" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.0%)</title><rect x="135.2" y="329" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker+&lt;&lt;InvokeInnerFilterAsync&gt;g__Awaited|13_0&gt;d].MoveNext() (0.0%)</title><rect x="135.2" y="312" width="0.6" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.0%)</title><rect x="135.2" y="295" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker+&lt;&lt;InvokeInnerFilterAsync&gt;g__Awaited|13_0&gt;d.MoveNext() (0.0%)</title><rect x="135.2" y="278" width="0.6" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.0%)</title><rect x="135.2" y="261" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.0%)</title><rect x="135.2" y="244" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker+&lt;&lt;InvokeFilterPipelineAsync&gt;g__Awaited|20_0&gt;d].MoveNext() (0.0%)</title><rect x="135.2" y="227" width="0.6" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.0%)</title><rect x="135.2" y="210" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker+&lt;&lt;InvokeFilterPipelineAsync&gt;g__Awaited|20_0&gt;d.MoveNext() (0.0%)</title><rect x="135.2" y="193" width="0.6" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(value class State&amp;,value class Scope&amp;,class System.Object&amp;,bool&amp;) (0.0%)</title><rect x="135.2" y="176" width="0.6" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeResultFilters() (0.0%)</title><rect x="135.2" y="159" width="0.6" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeNextResultFilterAsync() (0.0%)</title><rect x="135.2" y="142" width="0.6" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeNextResultFilterAsync() (0.0%)</title><rect x="135.2" y="125" width="0.6" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ObjectResultExecutor.ExecuteAsyncCore(class Microsoft.AspNetCore.Mvc.ActionContext,class Microsoft.AspNetCore.Mvc.ObjectResult,class System.Type,class System.Object) (0.0%)</title><rect x="135.2" y="108" width="0.6" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Formatters.TextOutputFormatter.WriteAsync(class Microsoft.AspNetCore.Mvc.Formatters.OutputFormatterWriteContext) (0.0%)</title><rect x="135.2" y="91" width="0.6" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Formatters.SystemTextJsonOutputFormatter+&lt;WriteResponseBodyAsync&gt;d__5.MoveNext() (0.0%)</title><rect x="135.2" y="74" width="0.6" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Thread.&lt;PollGC&gt;g__PollGCWorker|67_0() (0.0%)</title><rect x="135.2" y="57" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.0%)</title><rect x="135.2" y="40" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Thread.StartCallback() (91.4%)</title><rect x="136.1" y="1740" width="1462.5" height="16" fill="#c9c38a" rx="2"/>
+<text x="139.1" y="1752">System.Private.CoreLib!System.Threading.Thread.StartCallback() (91.4%)</text>
+</g>
+<g><title>Microsoft.AspNetCore.Server.Kestrel.Core!Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.Heartbeat.TimerLoop() (8.3%)</title><rect x="136.1" y="1723" width="133.3" height="16" fill="#7aa7d6" rx="2"/>
+<text x="139.1" y="1735">Microsoft.AspNetCo..</text>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ManualResetEventSlim.Wait(int32,value class System.Threading.CancellationToken) (8.3%)</title><rect x="136.1" y="1706" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="139.1" y="1718">System.Private.Cor..</text>
+</g>
+<g><title>UNMANAGED_CODE_TIME (8.3%)</title><rect x="136.1" y="1689" width="133.2" height="16" fill="#c9c38a" rx="2"/>
+<text x="139.1" y="1701">UNMANAGED_CODE_TIM..</text>
+</g>
+<g><title>Microsoft.Extensions.Logging.Console!Microsoft.Extensions.Logging.Console.ConsoleLoggerProcessor.ProcessLogQueue() (8.3%)</title><rect x="269.4" y="1723" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="272.4" y="1735">Microsoft.Extensio..</text>
+</g>
+<g><title>Microsoft.Extensions.Logging.Console!Microsoft.Extensions.Logging.Console.ConsoleLoggerProcessor.TryDequeue(value class Microsoft.Extensions.Logging.Console.LogMessageEntry&amp;) (8.3%)</title><rect x="269.4" y="1706" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="272.4" y="1718">Microsoft.Extensio..</text>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Monitor.Wait(class System.Object,int32) (8.3%)</title><rect x="269.4" y="1689" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="272.4" y="1701">System.Private.Cor..</text>
+</g>
+<g><title>UNMANAGED_CODE_TIME (8.3%)</title><rect x="269.4" y="1672" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="272.4" y="1684">UNMANAGED_CODE_TIM..</text>
+</g>
+<g><title>System.IO.FileSystem.Watcher!System.IO.FileSystemWatcher+RunningInstance.ProcessEvents() (8.3%)</title><rect x="402.7" y="1723" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="405.7" y="1735">System.IO.FileSyst..</text>
+</g>
+<g><title>System.IO.FileSystem.Watcher!System.IO.FileSystemWatcher+RunningInstance.TryReadEvent(value class NotifyEvent&amp;) (8.3%)</title><rect x="402.7" y="1706" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="405.7" y="1718">System.IO.FileSyst..</text>
+</g>
+<g><title>System.IO.FileSystem.Watcher!Interop+Sys.Read(class System.Runtime.InteropServices.SafeHandle,unsigned int8*,int32) (8.3%)</title><rect x="402.7" y="1689" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="405.7" y="1701">System.IO.FileSyst..</text>
+</g>
+<g><title>UNMANAGED_CODE_TIME (8.3%)</title><rect x="402.7" y="1672" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="405.7" y="1684">UNMANAGED_CODE_TIM..</text>
+</g>
+<g><title>System.Net.Sockets!System.Net.Sockets.SocketAsyncEngine.EventLoop() (8.3%)</title><rect x="536.1" y="1723" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="539.1" y="1735">System.Net.Sockets..</text>
+</g>
+<g><title>?!? (8.2%)</title><rect x="536.1" y="1706" width="130.6" height="16" fill="#c9c38a" rx="2"/>
+<text x="539.1" y="1718">?!? (8.2%)</text>
+</g>
+<g><title>CPU_TIME (1.6%)</title><rect x="536.1" y="1689" width="25.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>UNMANAGED_CODE_TIME (6.5%)</title><rect x="561.9" y="1689" width="104.7" height="16" fill="#c9c38a" rx="2"/>
+<text x="564.9" y="1701">UNMANAGED_COD..</text>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ThreadPool.UnsafeQueueUserWorkItem(class System.Threading.IThreadPoolWorkItem,bool) (0.2%)</title><rect x="666.7" y="1706" width="2.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.PortableThreadPool+WorkerThread.MaybeAddWorkingWorker(class System.Threading.PortableThreadPool) (0.2%)</title><rect x="666.7" y="1689" width="2.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.1%)</title><rect x="666.7" y="1672" width="2.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Diagnostics.Tracing.CounterGroup.PollForValues() (8.3%)</title><rect x="669.4" y="1723" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="672.4" y="1735">System.Private.Cor..</text>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.WaitHandle.WaitOneNoCheck(int32,bool,class System.Object,value class WaitHandleWaitSourceMap) (8.3%)</title><rect x="669.4" y="1706" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="672.4" y="1718">System.Private.Cor..</text>
+</g>
+<g><title>UNMANAGED_CODE_TIME (8.3%)</title><rect x="669.4" y="1689" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="672.4" y="1701">UNMANAGED_CODE_TIM..</text>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.PortableThreadPool+GateThread.GateThreadStart() (8.3%)</title><rect x="802.7" y="1723" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="805.7" y="1735">System.Private.Cor..</text>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.WaitHandle.WaitOneNoCheck(int32,bool,class System.Object,value class WaitHandleWaitSourceMap) (8.3%)</title><rect x="802.7" y="1706" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="805.7" y="1718">System.Private.Cor..</text>
+</g>
+<g><title>UNMANAGED_CODE_TIME (8.3%)</title><rect x="802.7" y="1689" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="805.7" y="1701">UNMANAGED_CODE_TIM..</text>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.PortableThreadPool+WorkerThread.WorkerThreadStart() (33.1%)</title><rect x="936.1" y="1723" width="529.2" height="16" fill="#c9c38a" rx="2"/>
+<text x="939.1" y="1735">System.Private.CoreLib!System.Threading.PortableThreadPool+WorkerThread.Worker..</text>
+</g>
+<g><title>CPU_TIME (0.6%)</title><rect x="936.1" y="1706" width="8.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.LowLevelLifoSemaphore.Wait(int32,bool) (24.8%)</title><rect x="944.9" y="1706" width="396.5" height="16" fill="#c9c38a" rx="2"/>
+<text x="947.9" y="1718">System.Private.CoreLib!System.Threading.LowLevelLifoSemaph..</text>
+</g>
+<g><title>CPU_TIME (0.8%)</title><rect x="944.9" y="1689" width="13.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.LowLevelLifoSemaphore.WaitForSignal(int32) (22.6%)</title><rect x="958.3" y="1689" width="362.2" height="16" fill="#c9c38a" rx="2"/>
+<text x="961.3" y="1701">System.Private.CoreLib!System.Threading.LowLevelLifo..</text>
+</g>
+<g><title>CPU_TIME (1.1%)</title><rect x="958.3" y="1672" width="17.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Diagnostics.Tracing.NativeRuntimeEventSource.ThreadPoolWorkerThreadWait(unsigned int32,unsigned int32,unsigned int16) (0.1%)</title><rect x="975.9" y="1672" width="1.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>?!? (0.1%)</title><rect x="975.9" y="1655" width="1.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.1%)</title><rect x="975.9" y="1638" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>UNMANAGED_CODE_TIME (21.4%)</title><rect x="977.2" y="1672" width="343.0" height="16" fill="#c9c38a" rx="2"/>
+<text x="980.2" y="1684">UNMANAGED_CODE_TIME (21.4%)</text>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Thread.&lt;PollGC&gt;g__PollGCWorker|67_0() (0.2%)</title><rect x="1320.4" y="1689" width="3.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.2%)</title><rect x="1320.4" y="1672" width="3.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>UNMANAGED_CODE_TIME (1.1%)</title><rect x="1324.1" y="1689" width="17.2" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ThreadPoolWorkQueue.Dispatch() (6.5%)</title><rect x="1341.4" y="1706" width="104.4" height="16" fill="#c9c38a" rx="2"/>
+<text x="1344.4" y="1718">System.Privat..</text>
+</g>
+<g><title>Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets!Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.Internal.IOQueue.System.Threading.IThreadPoolWorkItem.Execute() (0.3%)</title><rect x="1341.4" y="1689" width="5.3" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.Internal.SocketConnection+&lt;DoSend&gt;d__28].MoveNext() (0.3%)</title><rect x="1341.4" y="1672" width="5.3" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.3%)</title><rect x="1341.4" y="1655" width="5.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets!Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.Internal.SocketConnection+&lt;DoSend&gt;d__28.MoveNext() (0.3%)</title><rect x="1341.4" y="1638" width="5.3" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Net.Sockets!System.Net.Sockets.Socket.SendAsync(class System.Net.Sockets.SocketAsyncEventArgs,value class System.Threading.CancellationToken) (0.3%)</title><rect x="1341.4" y="1621" width="4.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Net.Sockets!System.Net.Sockets.SocketAsyncContext.SendToAsync(class System.Collections.Generic.IList`1&lt;value class System.ArraySegment`1&lt;unsigned int8&gt;&gt;,value class System.Net.Sockets.SocketFlags,value class System.Memory`1&lt;unsigned int8&gt;,int32&amp;,class System.Action`4&lt;int32,value class System.Memory`1&lt;unsigned int8&gt;,value class System.Net.Sockets.SocketFlags,value class System.Net.Sockets.SocketError&gt;) (0.3%)</title><rect x="1341.4" y="1604" width="4.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Net.Sockets!System.Net.Sockets.SocketPal.TryCompleteSendTo(class System.Net.Sockets.SafeSocketHandle,value class System.ReadOnlySpan`1&lt;unsigned int8&gt;,class System.Collections.Generic.IList`1&lt;value class System.ArraySegment`1&lt;unsigned int8&gt;&gt;,int32&amp;,int32&amp;,int32&amp;,value class System.Net.Sockets.SocketFlags,value class System.ReadOnlySpan`1&lt;unsigned int8&gt;,int32&amp;,value class System.Net.Sockets.SocketError&amp;) (0.3%)</title><rect x="1341.4" y="1587" width="4.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Net.Sockets!System.Net.Sockets.SocketPal.SysSend(class System.Net.Sockets.SafeSocketHandle,value class System.Net.Sockets.SocketFlags,class System.Collections.Generic.IList`1&lt;value class System.ArraySegment`1&lt;unsigned int8&gt;&gt;,int32&amp;,int32&amp;,value class System.ReadOnlySpan`1&lt;unsigned int8&gt;,value class Error&amp;) (0.3%)</title><rect x="1341.4" y="1570" width="4.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.2%)</title><rect x="1341.4" y="1553" width="3.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>UNMANAGED_CODE_TIME (0.1%)</title><rect x="1344.7" y="1553" width="1.4" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Net.Sockets!System.Net.Sockets.SocketAsyncEngine.System.Threading.IThreadPoolWorkItem.Execute() (2.5%)</title><rect x="1346.7" y="1689" width="40.6" height="16" fill="#c9c38a" rx="2"/>
+<text x="1349.7" y="1701">Syst..</text>
+</g>
+<g><title>System.Net.Sockets!System.Net.Sockets.SocketAsyncContext+OperationQueue`1[System.__Canon].ProcessQueuedOperation(!0) (0.3%)</title><rect x="1346.7" y="1672" width="4.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Net.Sockets!System.Net.Sockets.SocketAsyncContext+BufferMemoryReceiveOperation.DoTryComplete(class System.Net.Sockets.SocketAsyncContext) (0.3%)</title><rect x="1346.7" y="1655" width="4.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Net.Sockets!System.Net.Sockets.SocketPal.TryCompleteReceive(class System.Net.Sockets.SafeSocketHandle,value class System.Span`1&lt;unsigned int8&gt;,value class System.Net.Sockets.SocketFlags,int32&amp;,value class System.Net.Sockets.SocketError&amp;) (0.3%)</title><rect x="1346.7" y="1638" width="4.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>?!? (0.3%)</title><rect x="1346.7" y="1621" width="4.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.3%)</title><rect x="1346.7" y="1604" width="4.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>UNMANAGED_CODE_TIME (0.0%)</title><rect x="1350.8" y="1604" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.Internal.SocketConnection+&lt;DoReceive&gt;d__27].MoveNext() (0.1%)</title><rect x="1351.6" y="1672" width="1.8" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="1351.6" y="1655" width="1.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets!Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.Internal.SocketConnection+&lt;DoReceive&gt;d__27.MoveNext() (0.1%)</title><rect x="1351.6" y="1638" width="1.8" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets!Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.Internal.SocketReceiver.ReceiveAsync(class System.Net.Sockets.Socket,value class System.Memory`1&lt;unsigned int8&gt;) (0.0%)</title><rect x="1351.6" y="1621" width="0.6" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Net.Sockets!System.Net.Sockets.Socket.ReceiveAsync(class System.Net.Sockets.SocketAsyncEventArgs,value class System.Threading.CancellationToken) (0.0%)</title><rect x="1351.6" y="1604" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Net.Sockets!System.Net.Sockets.SocketAsyncContext.ReceiveAsync(value class System.Memory`1&lt;unsigned int8&gt;,value class System.Net.Sockets.SocketFlags,int32&amp;,class System.Action`4&lt;int32,value class System.Memory`1&lt;unsigned int8&gt;,value class System.Net.Sockets.SocketFlags,value class System.Net.Sockets.SocketError&gt;,value class System.Threading.CancellationToken) (0.0%)</title><rect x="1351.6" y="1587" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Net.Sockets!System.Net.Sockets.SocketPal.TryCompleteReceive(class System.Net.Sockets.SafeSocketHandle,value class System.Span`1&lt;unsigned int8&gt;,value class System.Net.Sockets.SocketFlags,int32&amp;,value class System.Net.Sockets.SocketError&amp;) (0.0%)</title><rect x="1351.6" y="1570" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>?!? (0.0%)</title><rect x="1351.6" y="1553" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.0%)</title><rect x="1351.6" y="1536" width="0.5" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.IO.Pipelines!System.IO.Pipelines.Pipe.FlushAsync(value class System.Threading.CancellationToken) (0.0%)</title><rect x="1352.2" y="1621" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.IO.Pipelines!System.IO.Pipelines.ThreadPoolScheduler.UnsafeSchedule(class System.Action`1&lt;class System.Object&gt;,class System.Object) (0.0%)</title><rect x="1352.2" y="1604" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.PortableThreadPool+WorkerThread.MaybeAddWorkingWorker(class System.Threading.PortableThreadPool) (0.0%)</title><rect x="1352.2" y="1587" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (2.0%)</title><rect x="1353.4" y="1672" width="31.5" height="16" fill="#c9c38a" rx="2"/>
+<text x="1356.4" y="1684">Sy..</text>
+</g>
+<g><title>Npgsql!Npgsql.Internal.NpgsqlReadBuffer+&lt;&lt;Ensure&gt;g__EnsureLong|54_0&gt;d.MoveNext() (2.0%)</title><rect x="1353.4" y="1655" width="31.5" height="16" fill="#e7a14b" rx="2"/>
+<text x="1356.4" y="1667">Np..</text>
+</g>
+<g><title>Npgsql!Npgsql.Util.ResettableCancellationTokenSource.Stop() (0.0%)</title><rect x="1353.4" y="1638" width="0.6" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Monitor.Enter_Slowpath(class System.Object) (0.0%)</title><rect x="1353.4" y="1621" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.0%)</title><rect x="1353.4" y="1604" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (1.9%)</title><rect x="1354.0" y="1638" width="30.8" height="16" fill="#c9c38a" rx="2"/>
+<text x="1357.0" y="1650">Sy..</text>
+</g>
+<g><title>Npgsql!Npgsql.Internal.NpgsqlConnector+&lt;ReadMessageLong&gt;d__234.MoveNext() (1.9%)</title><rect x="1354.0" y="1621" width="30.8" height="16" fill="#e7a14b" rx="2"/>
+<text x="1357.0" y="1633">Np..</text>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,Npgsql.NpgsqlDataReader+&lt;NextResult&gt;d__52].MoveNext() (1.1%)</title><rect x="1354.0" y="1604" width="17.7" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (1.1%)</title><rect x="1354.0" y="1587" width="17.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.NpgsqlDataReader+&lt;NextResult&gt;d__52.MoveNext() (1.1%)</title><rect x="1354.0" y="1570" width="17.7" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.Boolean].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (1.1%)</title><rect x="1354.0" y="1553" width="17.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (1.1%)</title><rect x="1354.0" y="1536" width="17.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (1.1%)</title><rect x="1354.0" y="1519" width="17.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,Npgsql.NpgsqlCommand+&lt;ExecuteReader&gt;d__122].MoveNext() (1.1%)</title><rect x="1354.0" y="1502" width="17.3" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (1.1%)</title><rect x="1354.0" y="1485" width="17.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.NpgsqlCommand+&lt;ExecuteReader&gt;d__122.MoveNext() (1.1%)</title><rect x="1354.0" y="1468" width="17.3" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (1.1%)</title><rect x="1354.0" y="1451" width="17.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (1.1%)</title><rect x="1354.0" y="1434" width="17.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,Npgsql.NpgsqlCommand+&lt;ExecuteDbDataReaderAsync&gt;d__115].MoveNext() (1.1%)</title><rect x="1354.0" y="1417" width="17.2" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (1.1%)</title><rect x="1354.0" y="1400" width="17.2" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.NpgsqlCommand+&lt;ExecuteDbDataReaderAsync&gt;d__115.MoveNext() (1.1%)</title><rect x="1354.0" y="1383" width="17.2" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.__Canon].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (1.1%)</title><rect x="1354.0" y="1366" width="17.2" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (1.1%)</title><rect x="1354.0" y="1349" width="17.2" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (1.1%)</title><rect x="1354.0" y="1332" width="17.2" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,Microsoft.EntityFrameworkCore.Storage.RelationalCommand+&lt;ExecuteReaderAsync&gt;d__22].MoveNext() (1.1%)</title><rect x="1354.0" y="1315" width="17.2" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (1.1%)</title><rect x="1354.0" y="1298" width="17.2" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Storage.RelationalCommand+&lt;ExecuteReaderAsync&gt;d__22.MoveNext() (1.1%)</title><rect x="1354.0" y="1281" width="17.2" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.DateTime.get_UtcNow() (0.1%)</title><rect x="1354.0" y="1264" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Thread.&lt;PollGC&gt;g__PollGCWorker|67_0() (0.1%)</title><rect x="1354.0" y="1247" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.1%)</title><rect x="1354.0" y="1230" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.__Canon].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (1.0%)</title><rect x="1355.1" y="1264" width="15.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (1.0%)</title><rect x="1355.1" y="1247" width="15.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (1.0%)</title><rect x="1355.1" y="1230" width="15.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;InitializeReaderAsync&gt;d__21[System.Int32]].MoveNext() (0.7%)</title><rect x="1355.1" y="1213" width="11.8" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.7%)</title><rect x="1355.1" y="1196" width="11.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;InitializeReaderAsync&gt;d__21[System.Int32].MoveNext() (0.7%)</title><rect x="1355.1" y="1179" width="11.8" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.Boolean].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.7%)</title><rect x="1355.1" y="1162" width="11.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.7%)</title><rect x="1355.1" y="1145" width="11.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.7%)</title><rect x="1355.1" y="1128" width="11.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy+&lt;ExecuteAsync&gt;d__7`2[System.__Canon,System.Boolean]].MoveNext() (0.7%)</title><rect x="1355.1" y="1111" width="11.8" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.7%)</title><rect x="1355.1" y="1094" width="11.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Npgsql.EntityFrameworkCore.PostgreSQL!Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy+&lt;ExecuteAsync&gt;d__7`2[System.__Canon,System.Boolean].MoveNext() (0.7%)</title><rect x="1355.1" y="1077" width="11.8" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.7%)</title><rect x="1355.1" y="1060" width="11.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.7%)</title><rect x="1355.1" y="1043" width="11.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;MoveNextAsync&gt;d__20[System.Int32]].MoveNext() (0.7%)</title><rect x="1355.1" y="1026" width="11.8" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.7%)</title><rect x="1355.1" y="1009" width="11.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;MoveNextAsync&gt;d__20[System.Int32].MoveNext() (0.7%)</title><rect x="1355.1" y="992" width="11.8" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.Boolean].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.7%)</title><rect x="1355.1" y="975" width="11.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.7%)</title><rect x="1355.1" y="958" width="11.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.7%)</title><rect x="1355.1" y="941" width="11.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Int32,Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor+&lt;SingleAsync&gt;d__15`1[System.Int32]].MoveNext() (0.7%)</title><rect x="1355.1" y="924" width="11.8" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.7%)</title><rect x="1355.1" y="907" width="11.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor+&lt;SingleAsync&gt;d__15`1[System.Int32].MoveNext() (0.7%)</title><rect x="1355.1" y="890" width="11.8" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator[System.Int32].DisposeAsync() (0.1%)</title><rect x="1355.1" y="873" width="0.9" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Storage.RelationalDataReader+&lt;DisposeAsync&gt;d__24.MoveNext() (0.1%)</title><rect x="1355.1" y="856" width="0.9" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.7%)</title><rect x="1356.0" y="873" width="10.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.7%)</title><rect x="1356.0" y="856" width="10.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.ValueTuple`2[System.Int32,System.__Canon],PollingPlatform.Api.Polls.PollService+&lt;LoadListPartAsync&gt;d__8].MoveNext() (0.7%)</title><rect x="1356.0" y="839" width="10.8" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.7%)</title><rect x="1356.0" y="822" width="10.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Polls.PollService+&lt;LoadListPartAsync&gt;d__8.MoveNext() (0.7%)</title><rect x="1356.0" y="805" width="10.8" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Linq.Expressions!System.Linq.Expressions.Expression.Property(class System.Linq.Expressions.Expression,class System.Reflection.PropertyInfo) (0.0%)</title><rect x="1356.0" y="788" width="0.5" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start(!!0&amp;) (0.5%)</title><rect x="1356.5" y="788" width="8.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions+&lt;ToListAsync&gt;d__68`1[System.__Canon].MoveNext() (0.5%)</title><rect x="1356.5" y="771" width="8.7" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.QueryCompiler.ExecuteAsync(class System.Linq.Expressions.Expression,value class System.Threading.CancellationToken) (0.3%)</title><rect x="1356.5" y="754" width="4.8" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Anonymously Hosted DynamicMethods Assembly!dynamicClass.lambda_method154(pMT: 0x7fef8e12e008,pMT: 0x7fef8ff43f90) (0.0%)</title><rect x="1356.5" y="737" width="0.5" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Reflection.Emit.DynamicMethod.CreateDelegate(class System.Type,class System.Object) (0.0%)</title><rect x="1356.5" y="720" width="0.5" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.0%)</title><rect x="1356.5" y="703" width="0.5" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.CompiledQueryCache.GetOrAddQuery(class System.Object,class System.Func`1&lt;class System.Func`2&lt;class Microsoft.EntityFrameworkCore.Query.QueryContext,!!0&gt;&gt;) (0.1%)</title><rect x="1357.0" y="737" width="1.5" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Thread.&lt;PollGC&gt;g__PollGCWorker|67_0() (0.1%)</title><rect x="1357.0" y="720" width="1.0" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.1%)</title><rect x="1357.0" y="703" width="1.0" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.Visit(class System.Linq.Expressions.Expression,value class State&amp;) (0.2%)</title><rect x="1358.5" y="737" width="2.5" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitMethodCall(class System.Linq.Expressions.MethodCallExpression) (0.2%)</title><rect x="1358.5" y="720" width="2.5" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitMethodCall(class System.Linq.Expressions.MethodCallExpression) (0.2%)</title><rect x="1358.5" y="703" width="2.5" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitMethodCall(class System.Linq.Expressions.MethodCallExpression) (0.1%)</title><rect x="1358.5" y="686" width="2.1" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitMethodCall(class System.Linq.Expressions.MethodCallExpression) (0.1%)</title><rect x="1358.5" y="669" width="2.1" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitMethodCall(class System.Linq.Expressions.MethodCallExpression) (0.1%)</title><rect x="1358.5" y="652" width="1.9" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitMethodCall(class System.Linq.Expressions.MethodCallExpression) (0.1%)</title><rect x="1358.5" y="635" width="1.4" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitUnary(class System.Linq.Expressions.UnaryExpression) (0.1%)</title><rect x="1358.5" y="618" width="1.0" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitLambda(class System.Linq.Expressions.Expression`1&lt;!!0&gt;) (0.1%)</title><rect x="1358.5" y="601" width="1.0" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitBinary(class System.Linq.Expressions.BinaryExpression) (0.1%)</title><rect x="1358.5" y="584" width="0.9" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitBinary(class System.Linq.Expressions.BinaryExpression) (0.1%)</title><rect x="1358.5" y="567" width="0.9" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;MoveNextAsync&gt;d__20[System.__Canon].MoveNext() (0.2%)</title><rect x="1361.3" y="754" width="3.9" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Npgsql.EntityFrameworkCore.PostgreSQL!Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync(!!0,class System.Func`4&lt;class Microsoft.EntityFrameworkCore.DbContext,!!0,value class System.Threading.CancellationToken,class System.Threading.Tasks.Task`1&lt;!!1&gt;&gt;,class System.Func`4&lt;class Microsoft.EntityFrameworkCore.DbContext,!!0,value class System.Threading.CancellationToken,class System.Threading.Tasks.Task`1&lt;class Microsoft.EntityFrameworkCore.Storage.ExecutionResult`1&lt;!!1&gt;&gt;&gt;,value class System.Threading.CancellationToken) (0.2%)</title><rect x="1361.3" y="737" width="3.7" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Npgsql.EntityFrameworkCore.PostgreSQL!Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy+&lt;ExecuteAsync&gt;d__7`2[System.__Canon,System.Boolean].MoveNext() (0.2%)</title><rect x="1361.3" y="720" width="3.7" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator[System.__Canon].InitializeReaderAsync(class AsyncEnumerator&lt;!0&gt;,value class System.Threading.CancellationToken) (0.2%)</title><rect x="1361.3" y="703" width="3.7" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;InitializeReaderAsync&gt;d__21[System.__Canon].MoveNext() (0.2%)</title><rect x="1361.3" y="686" width="3.7" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start(!!0&amp;) (0.2%)</title><rect x="1361.3" y="669" width="3.4" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Storage.RelationalCommand+&lt;ExecuteReaderAsync&gt;d__22.MoveNext() (0.2%)</title><rect x="1361.3" y="652" width="3.4" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.NpgsqlCommand.ExecuteDbDataReaderAsync(value class System.Data.CommandBehavior,value class System.Threading.CancellationToken) (0.2%)</title><rect x="1361.3" y="635" width="2.9" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.NpgsqlCommand+&lt;ExecuteDbDataReaderAsync&gt;d__115.MoveNext() (0.2%)</title><rect x="1361.3" y="618" width="2.9" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.NpgsqlCommand+&lt;ExecuteReader&gt;d__122.MoveNext() (0.2%)</title><rect x="1361.3" y="601" width="2.8" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.NpgsqlCommand+&lt;&lt;Write&gt;g__WriteExecute|103_0&gt;d.MoveNext() (0.1%)</title><rect x="1361.3" y="584" width="1.8" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.Internal.NpgsqlWriteBuffer+&lt;Flush&gt;d__40.MoveNext() (0.1%)</title><rect x="1361.3" y="567" width="1.8" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Net.Sockets!System.Net.Sockets.Socket.SendAsync(class System.Net.Sockets.SocketAsyncEventArgs,value class System.Threading.CancellationToken) (0.1%)</title><rect x="1361.3" y="550" width="1.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Net.Sockets!System.Net.Sockets.SocketPal.TryCompleteSendTo(class System.Net.Sockets.SafeSocketHandle,value class System.ReadOnlySpan`1&lt;unsigned int8&gt;,class System.Collections.Generic.IList`1&lt;value class System.ArraySegment`1&lt;unsigned int8&gt;&gt;,int32&amp;,int32&amp;,int32&amp;,value class System.Net.Sockets.SocketFlags,value class System.ReadOnlySpan`1&lt;unsigned int8&gt;,int32&amp;,value class System.Net.Sockets.SocketError&amp;) (0.1%)</title><rect x="1361.3" y="533" width="1.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>?!? (0.1%)</title><rect x="1361.3" y="516" width="1.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.1%)</title><rect x="1361.3" y="499" width="1.4" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;InitializeReaderAsync&gt;d__21[System.__Canon]].MoveNext() (0.2%)</title><rect x="1366.9" y="1213" width="3.9" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.2%)</title><rect x="1366.9" y="1196" width="3.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;InitializeReaderAsync&gt;d__21[System.__Canon].MoveNext() (0.2%)</title><rect x="1366.9" y="1179" width="3.9" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.Boolean].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.2%)</title><rect x="1366.9" y="1162" width="3.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.2%)</title><rect x="1366.9" y="1145" width="3.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.2%)</title><rect x="1366.9" y="1128" width="3.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy+&lt;ExecuteAsync&gt;d__7`2[System.__Canon,System.Boolean]].MoveNext() (0.2%)</title><rect x="1366.9" y="1111" width="3.9" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.2%)</title><rect x="1366.9" y="1094" width="3.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Npgsql.EntityFrameworkCore.PostgreSQL!Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy+&lt;ExecuteAsync&gt;d__7`2[System.__Canon,System.Boolean].MoveNext() (0.2%)</title><rect x="1366.9" y="1077" width="3.9" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.2%)</title><rect x="1366.9" y="1060" width="3.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.2%)</title><rect x="1366.9" y="1043" width="3.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;MoveNextAsync&gt;d__20[System.__Canon]].MoveNext() (0.2%)</title><rect x="1366.9" y="1026" width="3.9" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.2%)</title><rect x="1366.9" y="1009" width="3.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;MoveNextAsync&gt;d__20[System.__Canon].MoveNext() (0.2%)</title><rect x="1366.9" y="992" width="3.9" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.Boolean].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.2%)</title><rect x="1366.9" y="975" width="3.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.2%)</title><rect x="1366.9" y="958" width="3.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.2%)</title><rect x="1366.9" y="941" width="3.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions+&lt;ToListAsync&gt;d__68`1[System.__Canon]].MoveNext() (0.2%)</title><rect x="1366.9" y="924" width="3.7" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.2%)</title><rect x="1366.9" y="907" width="3.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions+&lt;ToListAsync&gt;d__68`1[System.__Canon].MoveNext() (0.2%)</title><rect x="1366.9" y="890" width="3.7" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Collections.Generic.List`1[System.__Canon].AddWithResize(!0) (0.1%)</title><rect x="1366.9" y="873" width="1.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Thread.&lt;PollGC&gt;g__PollGCWorker|67_0() (0.1%)</title><rect x="1366.9" y="856" width="1.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.1%)</title><rect x="1366.9" y="839" width="1.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start(!!0&amp;) (0.1%)</title><rect x="1368.7" y="873" width="0.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Storage.RelationalDataReader+&lt;DisposeAsync&gt;d__24.MoveNext() (0.1%)</title><rect x="1368.7" y="856" width="0.9" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,Npgsql.Internal.NpgsqlConnector+&lt;AuthenticateSASL&gt;d__2].MoveNext() (0.1%)</title><rect x="1371.7" y="1604" width="1.1" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="1371.7" y="1587" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.Internal.NpgsqlConnector+&lt;AuthenticateSASL&gt;d__2.MoveNext() (0.1%)</title><rect x="1371.7" y="1570" width="1.1" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Security.Cryptography!System.Security.Cryptography.Rfc2898DeriveBytes.Pbkdf2Core(value class System.ReadOnlySpan`1&lt;wchar&gt;,value class System.ReadOnlySpan`1&lt;unsigned int8&gt;,value class System.Span`1&lt;unsigned int8&gt;,int32,value class System.Security.Cryptography.HashAlgorithmName) (0.1%)</title><rect x="1371.7" y="1553" width="0.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>UNMANAGED_CODE_TIME (0.0%)</title><rect x="1371.7" y="1536" width="0.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.7%)</title><rect x="1372.8" y="1604" width="11.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.Internal.NpgsqlConnector+&lt;ReadMessageLong&gt;d__234.MoveNext() (0.7%)</title><rect x="1372.8" y="1587" width="11.7" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.Internal.NpgsqlReadBuffer+&lt;&lt;Ensure&gt;g__EnsureLong|54_0&gt;d.MoveNext() (0.1%)</title><rect x="1372.8" y="1570" width="0.9" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,Npgsql.NpgsqlDataReader+&lt;NextResult&gt;d__52].MoveNext() (0.7%)</title><rect x="1373.7" y="1570" width="10.6" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.7%)</title><rect x="1373.7" y="1553" width="10.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.NpgsqlDataReader+&lt;NextResult&gt;d__52.MoveNext() (0.7%)</title><rect x="1373.7" y="1536" width="10.6" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.Boolean].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.7%)</title><rect x="1373.7" y="1519" width="10.5" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.7%)</title><rect x="1373.7" y="1502" width="10.5" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.7%)</title><rect x="1373.7" y="1485" width="10.5" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,Npgsql.NpgsqlCommand+&lt;ExecuteReader&gt;d__122].MoveNext() (0.7%)</title><rect x="1373.7" y="1468" width="10.5" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.7%)</title><rect x="1373.7" y="1451" width="10.5" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.NpgsqlCommand+&lt;ExecuteReader&gt;d__122.MoveNext() (0.7%)</title><rect x="1373.7" y="1434" width="10.5" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.7%)</title><rect x="1373.7" y="1417" width="10.5" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.7%)</title><rect x="1373.7" y="1400" width="10.5" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,Npgsql.NpgsqlCommand+&lt;ExecuteDbDataReaderAsync&gt;d__115].MoveNext() (0.7%)</title><rect x="1373.7" y="1383" width="10.5" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.7%)</title><rect x="1373.7" y="1366" width="10.5" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.NpgsqlCommand+&lt;ExecuteDbDataReaderAsync&gt;d__115.MoveNext() (0.7%)</title><rect x="1373.7" y="1349" width="10.5" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.__Canon].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.7%)</title><rect x="1373.7" y="1332" width="10.5" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.7%)</title><rect x="1373.7" y="1315" width="10.5" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.7%)</title><rect x="1373.7" y="1298" width="10.5" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,Microsoft.EntityFrameworkCore.Storage.RelationalCommand+&lt;ExecuteReaderAsync&gt;d__22].MoveNext() (0.7%)</title><rect x="1373.7" y="1281" width="10.5" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.7%)</title><rect x="1373.7" y="1264" width="10.5" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Storage.RelationalCommand+&lt;ExecuteReaderAsync&gt;d__22.MoveNext() (0.7%)</title><rect x="1373.7" y="1247" width="10.5" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.__Canon].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.6%)</title><rect x="1373.7" y="1230" width="10.2" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.6%)</title><rect x="1373.7" y="1213" width="10.2" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.6%)</title><rect x="1373.7" y="1196" width="10.2" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;InitializeReaderAsync&gt;d__21[System.Int32]].MoveNext() (0.6%)</title><rect x="1373.7" y="1179" width="9.3" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.6%)</title><rect x="1373.7" y="1162" width="9.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;InitializeReaderAsync&gt;d__21[System.Int32].MoveNext() (0.6%)</title><rect x="1373.7" y="1145" width="9.3" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.Boolean].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.6%)</title><rect x="1373.7" y="1128" width="9.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.6%)</title><rect x="1373.7" y="1111" width="9.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.6%)</title><rect x="1373.7" y="1094" width="9.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy+&lt;ExecuteAsync&gt;d__7`2[System.__Canon,System.Boolean]].MoveNext() (0.6%)</title><rect x="1373.7" y="1077" width="9.3" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.6%)</title><rect x="1373.7" y="1060" width="9.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Npgsql.EntityFrameworkCore.PostgreSQL!Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy+&lt;ExecuteAsync&gt;d__7`2[System.__Canon,System.Boolean].MoveNext() (0.6%)</title><rect x="1373.7" y="1043" width="9.3" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.6%)</title><rect x="1373.7" y="1026" width="9.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.6%)</title><rect x="1373.7" y="1009" width="9.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;MoveNextAsync&gt;d__20[System.Int32]].MoveNext() (0.6%)</title><rect x="1373.7" y="992" width="9.3" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.6%)</title><rect x="1373.7" y="975" width="9.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;MoveNextAsync&gt;d__20[System.Int32].MoveNext() (0.6%)</title><rect x="1373.7" y="958" width="9.3" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.Boolean].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.6%)</title><rect x="1373.7" y="941" width="9.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.6%)</title><rect x="1373.7" y="924" width="9.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.6%)</title><rect x="1373.7" y="907" width="9.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Int32,Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor+&lt;SingleAsync&gt;d__15`1[System.Int32]].MoveNext() (0.6%)</title><rect x="1373.7" y="890" width="9.3" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.6%)</title><rect x="1373.7" y="873" width="9.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor+&lt;SingleAsync&gt;d__15`1[System.Int32].MoveNext() (0.6%)</title><rect x="1373.7" y="856" width="9.3" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator[System.Int32].DisposeAsync() (0.0%)</title><rect x="1373.7" y="839" width="0.6" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Storage.RelationalDataReader+&lt;DisposeAsync&gt;d__24.MoveNext() (0.0%)</title><rect x="1373.7" y="822" width="0.6" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.5%)</title><rect x="1374.3" y="839" width="8.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.5%)</title><rect x="1374.3" y="822" width="8.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.ValueTuple`2[System.Int32,System.__Canon],PollingPlatform.Api.Polls.PollService+&lt;LoadListPartAsync&gt;d__8].MoveNext() (0.5%)</title><rect x="1374.3" y="805" width="8.7" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.5%)</title><rect x="1374.3" y="788" width="8.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Polls.PollService+&lt;LoadListPartAsync&gt;d__8.MoveNext() (0.5%)</title><rect x="1374.3" y="771" width="8.7" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start(!!0&amp;) (0.4%)</title><rect x="1374.3" y="754" width="6.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions+&lt;ToListAsync&gt;d__68`1[System.__Canon].MoveNext() (0.4%)</title><rect x="1374.3" y="737" width="6.9" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.QueryCompiler.ExecuteAsync(class System.Linq.Expressions.Expression,value class System.Threading.CancellationToken) (0.2%)</title><rect x="1374.3" y="720" width="3.5" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.CompiledQueryCache.GetOrAddQuery(class System.Object,class System.Func`1&lt;class System.Func`2&lt;class Microsoft.EntityFrameworkCore.Query.QueryContext,!!0&gt;&gt;) (0.1%)</title><rect x="1374.3" y="703" width="1.3" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Thread.&lt;PollGC&gt;g__PollGCWorker|67_0() (0.1%)</title><rect x="1374.3" y="686" width="0.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.1%)</title><rect x="1374.3" y="669" width="0.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.Visit(class System.Linq.Expressions.Expression,value class State&amp;) (0.1%)</title><rect x="1375.5" y="703" width="1.8" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitMethodCall(class System.Linq.Expressions.MethodCallExpression) (0.1%)</title><rect x="1375.5" y="686" width="1.8" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitMethodCall(class System.Linq.Expressions.MethodCallExpression) (0.1%)</title><rect x="1375.5" y="669" width="1.6" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitMethodCall(class System.Linq.Expressions.MethodCallExpression) (0.1%)</title><rect x="1375.5" y="652" width="1.5" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitMethodCall(class System.Linq.Expressions.MethodCallExpression) (0.1%)</title><rect x="1375.5" y="635" width="1.5" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitMethodCall(class System.Linq.Expressions.MethodCallExpression) (0.1%)</title><rect x="1375.5" y="618" width="1.3" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitMethodCall(class System.Linq.Expressions.MethodCallExpression) (0.1%)</title><rect x="1375.5" y="601" width="1.1" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitUnary(class System.Linq.Expressions.UnaryExpression) (0.0%)</title><rect x="1375.5" y="584" width="0.7" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitLambda(class System.Linq.Expressions.Expression`1&lt;!!0&gt;) (0.0%)</title><rect x="1375.5" y="567" width="0.7" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitBinary(class System.Linq.Expressions.BinaryExpression) (0.0%)</title><rect x="1375.5" y="550" width="0.6" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitBinary(class System.Linq.Expressions.BinaryExpression) (0.0%)</title><rect x="1375.5" y="533" width="0.6" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;MoveNextAsync&gt;d__20[System.__Canon].MoveNext() (0.2%)</title><rect x="1377.8" y="720" width="3.4" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Npgsql.EntityFrameworkCore.PostgreSQL!Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync(!!0,class System.Func`4&lt;class Microsoft.EntityFrameworkCore.DbContext,!!0,value class System.Threading.CancellationToken,class System.Threading.Tasks.Task`1&lt;!!1&gt;&gt;,class System.Func`4&lt;class Microsoft.EntityFrameworkCore.DbContext,!!0,value class System.Threading.CancellationToken,class System.Threading.Tasks.Task`1&lt;class Microsoft.EntityFrameworkCore.Storage.ExecutionResult`1&lt;!!1&gt;&gt;&gt;,value class System.Threading.CancellationToken) (0.2%)</title><rect x="1377.8" y="703" width="3.3" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Npgsql.EntityFrameworkCore.PostgreSQL!Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy+&lt;ExecuteAsync&gt;d__7`2[System.__Canon,System.Boolean].MoveNext() (0.2%)</title><rect x="1377.8" y="686" width="3.3" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator[System.__Canon].InitializeReaderAsync(class AsyncEnumerator&lt;!0&gt;,value class System.Threading.CancellationToken) (0.2%)</title><rect x="1377.8" y="669" width="3.3" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;InitializeReaderAsync&gt;d__21[System.__Canon].MoveNext() (0.2%)</title><rect x="1377.8" y="652" width="3.3" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start(!!0&amp;) (0.2%)</title><rect x="1377.8" y="635" width="3.0" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Storage.RelationalCommand+&lt;ExecuteReaderAsync&gt;d__22.MoveNext() (0.2%)</title><rect x="1377.8" y="618" width="3.0" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.NpgsqlCommand.ExecuteDbDataReaderAsync(value class System.Data.CommandBehavior,value class System.Threading.CancellationToken) (0.2%)</title><rect x="1377.8" y="601" width="2.5" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.NpgsqlCommand+&lt;ExecuteDbDataReaderAsync&gt;d__115.MoveNext() (0.2%)</title><rect x="1377.8" y="584" width="2.5" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.NpgsqlCommand+&lt;ExecuteReader&gt;d__122.MoveNext() (0.2%)</title><rect x="1377.8" y="567" width="2.4" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.NpgsqlCommand+&lt;&lt;Write&gt;g__WriteExecute|103_0&gt;d.MoveNext() (0.1%)</title><rect x="1377.8" y="550" width="1.9" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.Internal.NpgsqlWriteBuffer+&lt;Flush&gt;d__40.MoveNext() (0.1%)</title><rect x="1377.8" y="533" width="1.8" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Net.Sockets!System.Net.Sockets.Socket.SendAsync(class System.Net.Sockets.SocketAsyncEventArgs,value class System.Threading.CancellationToken) (0.1%)</title><rect x="1377.8" y="516" width="1.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Net.Sockets!System.Net.Sockets.SocketPal.TryCompleteSendTo(class System.Net.Sockets.SafeSocketHandle,value class System.ReadOnlySpan`1&lt;unsigned int8&gt;,class System.Collections.Generic.IList`1&lt;value class System.ArraySegment`1&lt;unsigned int8&gt;&gt;,int32&amp;,int32&amp;,int32&amp;,value class System.Net.Sockets.SocketFlags,value class System.ReadOnlySpan`1&lt;unsigned int8&gt;,int32&amp;,value class System.Net.Sockets.SocketError&amp;) (0.1%)</title><rect x="1377.8" y="499" width="1.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>?!? (0.1%)</title><rect x="1377.8" y="482" width="1.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.1%)</title><rect x="1377.8" y="465" width="1.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;InitializeReaderAsync&gt;d__21[System.__Canon]].MoveNext() (0.1%)</title><rect x="1383.0" y="1179" width="0.8" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="1383.0" y="1162" width="0.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;InitializeReaderAsync&gt;d__21[System.__Canon].MoveNext() (0.1%)</title><rect x="1383.0" y="1145" width="0.8" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.Boolean].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.1%)</title><rect x="1383.0" y="1128" width="0.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.1%)</title><rect x="1383.0" y="1111" width="0.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.1%)</title><rect x="1383.0" y="1094" width="0.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy+&lt;ExecuteAsync&gt;d__7`2[System.__Canon,System.Boolean]].MoveNext() (0.1%)</title><rect x="1383.0" y="1077" width="0.8" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="1383.0" y="1060" width="0.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Npgsql.EntityFrameworkCore.PostgreSQL!Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy+&lt;ExecuteAsync&gt;d__7`2[System.__Canon,System.Boolean].MoveNext() (0.1%)</title><rect x="1383.0" y="1043" width="0.8" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.1%)</title><rect x="1383.0" y="1026" width="0.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.1%)</title><rect x="1383.0" y="1009" width="0.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Boolean,Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;MoveNextAsync&gt;d__20[System.__Canon]].MoveNext() (0.1%)</title><rect x="1383.0" y="992" width="0.8" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="1383.0" y="975" width="0.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;MoveNextAsync&gt;d__20[System.__Canon].MoveNext() (0.1%)</title><rect x="1383.0" y="958" width="0.8" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.Boolean].SetExistingTaskResult(class System.Threading.Tasks.Task`1&lt;!0&gt;,!0) (0.0%)</title><rect x="1383.0" y="941" width="0.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.RunContinuations(class System.Object) (0.0%)</title><rect x="1383.0" y="924" width="0.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.AwaitTaskContinuation.RunOrScheduleAction(class System.Runtime.CompilerServices.IAsyncStateMachineBox,bool) (0.0%)</title><rect x="1383.0" y="907" width="0.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.__Canon,Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions+&lt;ToListAsync&gt;d__68`1[System.__Canon]].MoveNext() (0.0%)</title><rect x="1383.0" y="890" width="0.7" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunInternal(class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.0%)</title><rect x="1383.0" y="873" width="0.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions+&lt;ToListAsync&gt;d__68`1[System.__Canon].MoveNext() (0.0%)</title><rect x="1383.0" y="856" width="0.7" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.PortableThreadPool+WorkerThread.MaybeAddWorkingWorker(class System.Threading.PortableThreadPool) (0.1%)</title><rect x="1384.9" y="1672" width="1.0" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.0%)</title><rect x="1384.9" y="1655" width="0.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Thread.&lt;PollGC&gt;g__PollGCWorker|67_0() (0.1%)</title><rect x="1385.9" y="1672" width="0.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.1%)</title><rect x="1385.9" y="1655" width="0.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[System.Threading.Tasks.VoidTaskResult,Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol+&lt;ProcessRequests&gt;d__236`1[System.__Canon]].ExecuteFromThreadPool(class System.Threading.Thread) (3.3%)</title><rect x="1387.3" y="1689" width="52.2" height="16" fill="#7aa7d6" rx="2"/>
+<text x="1390.3" y="1701">Syste..</text>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(class System.Threading.Thread,class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (3.3%)</title><rect x="1387.3" y="1672" width="52.2" height="16" fill="#c9c38a" rx="2"/>
+<text x="1390.3" y="1684">Syste..</text>
+</g>
+<g><title>Microsoft.AspNetCore.Server.Kestrel.Core!Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol+&lt;ProcessRequests&gt;d__236`1[System.__Canon].MoveNext() (3.3%)</title><rect x="1387.3" y="1655" width="52.2" height="16" fill="#7aa7d6" rx="2"/>
+<text x="1390.3" y="1667">Micro..</text>
+</g>
+<g><title>Microsoft.AspNetCore.HostFiltering!Microsoft.AspNetCore.HostFiltering.HostFilteringMiddleware.Invoke(class Microsoft.AspNetCore.Http.HttpContext) (3.2%)</title><rect x="1387.3" y="1638" width="51.3" height="16" fill="#7aa7d6" rx="2"/>
+<text x="1390.3" y="1650">Micro..</text>
+</g>
+<g><title>Microsoft.AspNetCore.Diagnostics!Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddlewareImpl.Invoke(class Microsoft.AspNetCore.Http.HttpContext) (3.2%)</title><rect x="1387.3" y="1621" width="50.5" height="16" fill="#7aa7d6" rx="2"/>
+<text x="1390.3" y="1633">Micro..</text>
+</g>
+<g><title>Microsoft.AspNetCore.Diagnostics!Microsoft.AspNetCore.Diagnostics.StatusCodePagesMiddleware+&lt;Invoke&gt;d__3.MoveNext() (3.2%)</title><rect x="1387.3" y="1604" width="50.5" height="16" fill="#7aa7d6" rx="2"/>
+<text x="1390.3" y="1616">Micro..</text>
+</g>
+<g><title>Anonymously Hosted DynamicMethods Assembly!dynamicClass.lambda_method13(pMT: 0x7fef8e12e008,class System.Object,pMT: 0x7fef8a6f3ea8,pMT: 0x7fef8975bd60) (3.1%)</title><rect x="1387.3" y="1587" width="50.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="1390.3" y="1599">Anony..</text>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start(!!0&amp;) (3.1%)</title><rect x="1387.3" y="1570" width="50.2" height="16" fill="#c9c38a" rx="2"/>
+<text x="1390.3" y="1582">Syste..</text>
+</g>
+<g><title>Swashbuckle.AspNetCore.Swagger!Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware+&lt;Invoke&gt;d__8.MoveNext() (3.1%)</title><rect x="1387.3" y="1553" width="50.2" height="16" fill="#7aa7d6" rx="2"/>
+<text x="1390.3" y="1565">Swash..</text>
+</g>
+<g><title>Swashbuckle.AspNetCore.SwaggerUI!Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware+&lt;Invoke&gt;d__7.MoveNext() (3.1%)</title><rect x="1387.3" y="1536" width="50.2" height="16" fill="#7aa7d6" rx="2"/>
+<text x="1390.3" y="1548">Swash..</text>
+</g>
+<g><title>Microsoft.AspNetCore.Authentication!Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(class Microsoft.AspNetCore.Http.HttpContext) (3.1%)</title><rect x="1387.3" y="1519" width="50.1" height="16" fill="#7aa7d6" rx="2"/>
+<text x="1390.3" y="1531">Micro..</text>
+</g>
+<g><title>Microsoft.AspNetCore.Authentication!Microsoft.AspNetCore.Authentication.AuthenticationMiddleware+&lt;Invoke&gt;d__6.MoveNext() (3.1%)</title><rect x="1387.3" y="1502" width="50.1" height="16" fill="#7aa7d6" rx="2"/>
+<text x="1390.3" y="1514">Micro..</text>
+</g>
+<g><title>Microsoft.AspNetCore.Authorization.Policy!Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(class Microsoft.AspNetCore.Http.HttpContext) (3.0%)</title><rect x="1387.3" y="1485" width="48.4" height="16" fill="#7aa7d6" rx="2"/>
+<text x="1390.3" y="1497">Micro..</text>
+</g>
+<g><title>Microsoft.AspNetCore.Authorization.Policy!Microsoft.AspNetCore.Authorization.AuthorizationMiddleware+&lt;Invoke&gt;d__11.MoveNext() (3.0%)</title><rect x="1387.3" y="1468" width="48.4" height="16" fill="#7aa7d6" rx="2"/>
+<text x="1390.3" y="1480">Micro..</text>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Data.StickySessionsExtensions+&lt;&gt;c__DisplayClass0_0.&lt;UseStickyAfterWrite&gt;b__0(class Microsoft.AspNetCore.Http.HttpContext,class Microsoft.AspNetCore.Http.RequestDelegate) (3.0%)</title><rect x="1387.3" y="1451" width="48.4" height="16" fill="#7aa7d6" rx="2"/>
+<text x="1390.3" y="1463">Polli..</text>
+</g>
+<g><title>Microsoft.AspNetCore.Routing!Microsoft.AspNetCore.Routing.EndpointMiddleware.Invoke(class Microsoft.AspNetCore.Http.HttpContext) (3.0%)</title><rect x="1387.3" y="1434" width="48.4" height="16" fill="#7aa7d6" rx="2"/>
+<text x="1390.3" y="1446">Micro..</text>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeAsync() (3.0%)</title><rect x="1387.3" y="1417" width="48.4" height="16" fill="#7aa7d6" rx="2"/>
+<text x="1390.3" y="1429">Micro..</text>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeFilterPipelineAsync() (3.0%)</title><rect x="1387.3" y="1400" width="48.4" height="16" fill="#7aa7d6" rx="2"/>
+<text x="1390.3" y="1412">Micro..</text>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(value class State&amp;,value class Scope&amp;,class System.Object&amp;,bool&amp;) (3.0%)</title><rect x="1387.3" y="1383" width="48.4" height="16" fill="#7aa7d6" rx="2"/>
+<text x="1390.3" y="1395">Micro..</text>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync() (3.0%)</title><rect x="1387.3" y="1366" width="48.4" height="16" fill="#7aa7d6" rx="2"/>
+<text x="1390.3" y="1378">Micro..</text>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Controllers.ControllerFactoryProvider+&lt;&gt;c__DisplayClass6_0.&lt;CreateControllerFactory&gt;g__CreateController|0(class Microsoft.AspNetCore.Mvc.ControllerContext) (0.1%)</title><rect x="1387.3" y="1349" width="1.4" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Anonymously Hosted DynamicMethods Assembly!dynamicClass.lambda_method136(pMT: 0x7fef8e12e008,pMT: 0x7fef8975bd60,class System.Object[]) (0.1%)</title><rect x="1387.3" y="1332" width="1.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope.GetService(class System.Type) (0.1%)</title><rect x="1387.3" y="1315" width="1.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!dynamicClass.ResolveService(pMT: 0x7fef8d8c0160,pMT: 0x7fef8d42f210) (0.1%)</title><rect x="1387.3" y="1298" width="1.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!dynamicClass.ResolveService(pMT: 0x7fef8d8c0160,pMT: 0x7fef8d42f210) (0.0%)</title><rect x="1387.3" y="1281" width="0.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Monitor.Enter_Slowpath(class System.Object) (0.0%)</title><rect x="1387.9" y="1281" width="0.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.0%)</title><rect x="1387.9" y="1264" width="0.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.BindArgumentsAsync() (0.3%)</title><rect x="1388.6" y="1349" width="4.1" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Controllers.ControllerBinderDelegateProvider+&lt;&gt;c__DisplayClass0_0+&lt;&lt;CreateBinderDelegate&gt;g__Bind|0&gt;d.MoveNext() (0.3%)</title><rect x="1388.6" y="1332" width="4.1" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.ModelBinding.ParameterBinder+&lt;BindModelAsync&gt;d__8.MoveNext() (0.2%)</title><rect x="1388.6" y="1315" width="3.9" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.ModelBinding.Binders.ComplexObjectModelBinder.BindModelAsync(class Microsoft.AspNetCore.Mvc.ModelBinding.ModelBindingContext) (0.0%)</title><rect x="1388.6" y="1298" width="0.8" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.ModelBinding.Binders.ComplexObjectModelBinder+&lt;BindModelCoreAsync&gt;d__9.MoveNext() (0.0%)</title><rect x="1388.6" y="1281" width="0.8" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.ModelBinding.Binders.ComplexObjectModelBinder+&lt;BindPropertiesAsync&gt;d__13.MoveNext() (0.0%)</title><rect x="1388.6" y="1264" width="0.8" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.ModelBinding.Binders.ComplexObjectModelBinder+&lt;BindPropertyAsync&gt;d__15.MoveNext() (0.0%)</title><rect x="1388.6" y="1247" width="0.7" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.ModelBinding.Binders.ServicesModelBinder.BindModelAsync(class Microsoft.AspNetCore.Mvc.ModelBinding.ModelBindingContext) (0.1%)</title><rect x="1389.4" y="1298" width="1.5" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!dynamicClass.ResolveService(pMT: 0x7fef8d8c0160,pMT: 0x7fef8d42f210) (0.1%)</title><rect x="1389.4" y="1281" width="1.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Polls.PollListQueryValidator..ctor() (0.1%)</title><rect x="1389.4" y="1264" width="1.2" height="16" fill="#6cbf6a" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.ModelBinding.QueryStringValueProvider.ContainsPrefix(class System.String) (0.1%)</title><rect x="1390.9" y="1298" width="1.0" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Thread.&lt;PollGC&gt;g__PollGCWorker|67_0() (0.1%)</title><rect x="1390.9" y="1281" width="1.0" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.1%)</title><rect x="1390.9" y="1264" width="1.0" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeNextActionFilterAsync() (2.7%)</title><rect x="1392.7" y="1349" width="42.8" height="16" fill="#7aa7d6" rx="2"/>
+<text x="1395.7" y="1361">Micr..</text>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeNextActionFilterAsync() (2.7%)</title><rect x="1392.7" y="1332" width="42.8" height="16" fill="#7aa7d6" rx="2"/>
+<text x="1395.7" y="1344">Micr..</text>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeActionMethodAsync() (2.7%)</title><rect x="1392.7" y="1315" width="42.8" height="16" fill="#7aa7d6" rx="2"/>
+<text x="1395.7" y="1327">Micr..</text>
+</g>
+<g><title>Microsoft.AspNetCore.Mvc.Core!Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor+AwaitableObjectResultExecutor+&lt;Execute&gt;d__0.MoveNext() (2.7%)</title><rect x="1392.7" y="1298" width="42.7" height="16" fill="#7aa7d6" rx="2"/>
+<text x="1395.7" y="1310">Micr..</text>
+</g>
+<g><title>Anonymously Hosted DynamicMethods Assembly!dynamicClass.lambda_method135(pMT: 0x7fef8e12e008,class System.Object,class System.Object[]) (2.7%)</title><rect x="1392.7" y="1281" width="42.4" height="16" fill="#c9c38a" rx="2"/>
+<text x="1395.7" y="1293">Anon..</text>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start(!!0&amp;) (2.7%)</title><rect x="1392.7" y="1264" width="42.4" height="16" fill="#c9c38a" rx="2"/>
+<text x="1395.7" y="1276">Syst..</text>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Polls.PollsController+&lt;List&gt;d__3.MoveNext() (2.7%)</title><rect x="1392.7" y="1247" width="42.4" height="16" fill="#6cbf6a" rx="2"/>
+<text x="1395.7" y="1259">Poll..</text>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Polls.PollService+&lt;ListAsync&gt;d__6.MoveNext() (2.6%)</title><rect x="1392.7" y="1230" width="42.2" height="16" fill="#6cbf6a" rx="2"/>
+<text x="1395.7" y="1242">Poll..</text>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Polls.PollService+&lt;LoadShardPartAsync&gt;d__7.MoveNext() (2.6%)</title><rect x="1392.7" y="1213" width="42.0" height="16" fill="#6cbf6a" rx="2"/>
+<text x="1395.7" y="1225">Poll..</text>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Data.ReadDb+&lt;EventualAsync&gt;d__7`1[System.ValueTuple`2[System.Int32,System.__Canon]].MoveNext() (2.6%)</title><rect x="1392.7" y="1196" width="41.6" height="16" fill="#6cbf6a" rx="2"/>
+<text x="1395.7" y="1208">Poll..</text>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start(!!0&amp;) (2.6%)</title><rect x="1392.7" y="1179" width="41.5" height="16" fill="#c9c38a" rx="2"/>
+<text x="1395.7" y="1191">Syst..</text>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Data.ReadDb+&lt;ReadAsync&gt;d__9`1[System.ValueTuple`2[System.Int32,System.__Canon]].MoveNext() (2.6%)</title><rect x="1392.7" y="1162" width="41.5" height="16" fill="#6cbf6a" rx="2"/>
+<text x="1395.7" y="1174">Poll..</text>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.DbContext..ctor(class Microsoft.EntityFrameworkCore.DbContextOptions) (0.1%)</title><rect x="1392.7" y="1145" width="1.9" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.1%)</title><rect x="1392.7" y="1128" width="1.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start(!!0&amp;) (2.5%)</title><rect x="1394.6" y="1145" width="39.5" height="16" fill="#c9c38a" rx="2"/>
+<text x="1397.6" y="1157">Sys..</text>
+</g>
+<g><title>PollingPlatform.Api!PollingPlatform.Api.Polls.PollService+&lt;LoadListPartAsync&gt;d__8.MoveNext() (2.5%)</title><rect x="1394.6" y="1128" width="39.5" height="16" fill="#6cbf6a" rx="2"/>
+<text x="1397.6" y="1140">Pol..</text>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.DbContext.Set() (0.9%)</title><rect x="1394.6" y="1111" width="14.1" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.DbContext.get_DbContextDependencies() (0.9%)</title><rect x="1394.6" y="1094" width="14.1" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.DbContext.get_ContextServices() (0.9%)</title><rect x="1394.6" y="1077" width="14.0" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.DbContext.get_DbContextDependencies() (0.7%)</title><rect x="1394.6" y="1060" width="11.9" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!dynamicClass.ResolveService(pMT: 0x7fef8d8c0160,pMT: 0x7fef8d42f210) (0.7%)</title><rect x="1394.6" y="1043" width="11.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!dynamicClass.ResolveService(pMT: 0x7fef8d8c0160,pMT: 0x7fef8d42f210) (0.7%)</title><rect x="1394.6" y="1026" width="11.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!dynamicClass.ResolveService(pMT: 0x7fef8d8c0160,pMT: 0x7fef8d42f210) (0.7%)</title><rect x="1394.6" y="1009" width="10.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!dynamicClass.ResolveService(pMT: 0x7fef8d8c0160,pMT: 0x7fef8d42f210) (0.6%)</title><rect x="1394.6" y="992" width="10.2" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!dynamicClass.ResolveService(pMT: 0x7fef8d8c0160,pMT: 0x7fef8d42f210) (0.6%)</title><rect x="1394.6" y="975" width="9.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!dynamicClass.ResolveService(pMT: 0x7fef8d8c0160,pMT: 0x7fef8d42f210) (0.5%)</title><rect x="1394.6" y="958" width="8.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Infrastructure.EntityFrameworkServicesBuilder+&lt;&gt;c.&lt;TryAddCoreServices&gt;b__8_1(class System.IServiceProvider) (0.0%)</title><rect x="1394.6" y="941" width="0.6" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection.Abstractions!Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService(class System.IServiceProvider,class System.Type) (0.0%)</title><rect x="1394.6" y="924" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!dynamicClass.ResolveService(pMT: 0x7fef8d8c0160,pMT: 0x7fef8d42f210) (0.0%)</title><rect x="1394.6" y="907" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Infrastructure.EntityFrameworkServicesBuilder+&lt;&gt;c.&lt;TryAddCoreServices&gt;b__8_4(class System.IServiceProvider) (0.1%)</title><rect x="1395.1" y="941" width="1.5" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Internal.DbContextServices.CreateModel(bool) (0.1%)</title><rect x="1395.1" y="924" width="1.5" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Internal.DbContextServices.&lt;CreateModel&gt;g__FindCompiledModel|6_0(class System.Type) (0.0%)</title><rect x="1395.1" y="907" width="0.5" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Reflection.CustomAttribute.AddCustomAttributes(value class ListBuilder`1&lt;class System.Object&gt;&amp;,class System.Reflection.RuntimeModule,int32,class System.RuntimeType,bool,value class ListBuilder`1&lt;class System.Object&gt;) (0.0%)</title><rect x="1395.1" y="890" width="0.5" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!dynamicClass.ResolveService(pMT: 0x7fef8d8c0160,pMT: 0x7fef8d42f210) (0.0%)</title><rect x="1395.7" y="907" width="0.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!dynamicClass.ResolveService(pMT: 0x7fef8d8c0160,pMT: 0x7fef8d42f210) (0.0%)</title><rect x="1395.7" y="890" width="0.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!dynamicClass.ResolveService(pMT: 0x7fef8d8c0160,pMT: 0x7fef8d42f210) (0.3%)</title><rect x="1396.7" y="941" width="4.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!dynamicClass.ResolveService(pMT: 0x7fef8d8c0160,pMT: 0x7fef8d42f210) (0.3%)</title><rect x="1396.7" y="924" width="4.0" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!dynamicClass.ResolveService(pMT: 0x7fef8d8c0160,pMT: 0x7fef8d42f210) (0.2%)</title><rect x="1396.7" y="907" width="3.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!dynamicClass.ResolveService(pMT: 0x7fef8d8c0160,pMT: 0x7fef8d42f210) (0.2%)</title><rect x="1396.7" y="890" width="3.4" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!dynamicClass.ResolveService(pMT: 0x7fef8d8c0160,pMT: 0x7fef8d42f210) (0.2%)</title><rect x="1396.7" y="873" width="3.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!dynamicClass.ResolveService(pMT: 0x7fef8d8c0160,pMT: 0x7fef8d42f210) (0.2%)</title><rect x="1396.7" y="856" width="3.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Npgsql.EntityFrameworkCore.PostgreSQL!Npgsql.EntityFrameworkCore.PostgreSQL.Query.ExpressionTranslators.Internal.NpgsqlMemberTranslatorProvider..ctor(class Microsoft.EntityFrameworkCore.Query.RelationalMemberTranslatorProviderDependencies,class Microsoft.EntityFrameworkCore.Metadata.IModel,class Microsoft.EntityFrameworkCore.Storage.IRelationalTypeMappingSource,class Microsoft.EntityFrameworkCore.Infrastructure.IDbContextOptions) (0.1%)</title><rect x="1396.7" y="839" width="1.0" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Collections.Generic.List`1[System.__Canon].InsertRange(int32,class System.Collections.Generic.IEnumerable`1&lt;!0&gt;) (0.0%)</title><rect x="1396.7" y="822" width="0.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.SZArrayHelper.CopyTo(!!0[],int32) (0.0%)</title><rect x="1396.7" y="805" width="0.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Thread.&lt;PollGC&gt;g__PollGCWorker|67_0() (0.0%)</title><rect x="1396.7" y="788" width="0.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.0%)</title><rect x="1396.7" y="771" width="0.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Npgsql.EntityFrameworkCore.PostgreSQL!Npgsql.EntityFrameworkCore.PostgreSQL.Query.ExpressionTranslators.Internal.NpgsqlMethodCallTranslatorProvider..ctor(class Microsoft.EntityFrameworkCore.Query.RelationalMethodCallTranslatorProviderDependencies,class Microsoft.EntityFrameworkCore.Metadata.IModel,class Microsoft.EntityFrameworkCore.Infrastructure.IDbContextOptions) (0.1%)</title><rect x="1397.6" y="839" width="1.6" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Collections.Generic.List`1[System.__Canon].InsertRange(int32,class System.Collections.Generic.IEnumerable`1&lt;!0&gt;) (0.1%)</title><rect x="1397.6" y="822" width="1.4" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Thread.&lt;PollGC&gt;g__PollGCWorker|67_0() (0.1%)</title><rect x="1397.6" y="805" width="1.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.1%)</title><rect x="1397.6" y="788" width="1.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Npgsql.EntityFrameworkCore.PostgreSQL!Microsoft.Extensions.DependencyInjection.NpgsqlServiceCollectionExtensions+&lt;&gt;c.&lt;AddEntityFrameworkNpgsql&gt;b__1_1(class System.IServiceProvider) (0.1%)</title><rect x="1400.9" y="941" width="0.9" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!dynamicClass.ResolveService(pMT: 0x7fef8d8c0160,pMT: 0x7fef8d42f210) (0.1%)</title><rect x="1400.9" y="924" width="0.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Monitor.Enter_Slowpath(class System.Object) (0.0%)</title><rect x="1401.8" y="941" width="0.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.0%)</title><rect x="1401.8" y="924" width="0.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Internal.DbContextServices.Initialize(class System.IServiceProvider,class Microsoft.EntityFrameworkCore.DbContextOptions,class Microsoft.EntityFrameworkCore.DbContext) (0.0%)</title><rect x="1406.4" y="1060" width="0.6" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection.Abstractions!Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService(class System.IServiceProvider,class System.Type) (0.1%)</title><rect x="1407.0" y="1060" width="1.2" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!dynamicClass.ResolveService(pMT: 0x7fef8d8c0160,pMT: 0x7fef8d42f210) (0.1%)</title><rect x="1407.0" y="1043" width="1.2" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Monitor.Enter_Slowpath(class System.Object) (0.1%)</title><rect x="1407.0" y="1026" width="1.2" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.1%)</title><rect x="1407.0" y="1009" width="1.2" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.AsNoTracking(class System.Linq.IQueryable`1&lt;!!0&gt;) (0.1%)</title><rect x="1408.7" y="1111" width="1.9" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1[System.__Canon].CreateEntityQueryable() (0.0%)</title><rect x="1408.7" y="1094" width="0.8" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.RuntimeType.MakeGenericType(class System.Type[]) (0.0%)</title><rect x="1408.7" y="1077" width="0.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Reflection.RuntimeMethodInfo.MakeGenericMethod(class System.Type[]) (0.0%)</title><rect x="1409.5" y="1094" width="0.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ExecuteAsync(class System.Reflection.MethodInfo,class System.Linq.IQueryable`1&lt;!!0&gt;,class System.Linq.Expressions.Expression,value class System.Threading.CancellationToken) (1.3%)</title><rect x="1410.6" y="1111" width="20.5" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.QueryCompiler.ExecuteAsync(class System.Linq.Expressions.Expression,value class System.Threading.CancellationToken) (1.3%)</title><rect x="1410.6" y="1094" width="20.1" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Anonymously Hosted DynamicMethods Assembly!dynamicClass.lambda_method150(pMT: 0x7fef8e12e008,pMT: 0x7fef8ff43f90) (0.8%)</title><rect x="1410.6" y="1077" width="12.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Reflection.Emit.DynamicMethod.CreateDelegate(class System.Type,class System.Object) (0.1%)</title><rect x="1410.6" y="1060" width="1.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.1%)</title><rect x="1410.6" y="1043" width="1.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start(!!0&amp;) (0.7%)</title><rect x="1411.9" y="1060" width="11.4" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor+&lt;SingleAsync&gt;d__15`1[System.Int32].MoveNext() (0.7%)</title><rect x="1411.9" y="1043" width="11.4" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start(!!0&amp;) (0.7%)</title><rect x="1411.9" y="1026" width="11.3" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;MoveNextAsync&gt;d__20[System.Int32].MoveNext() (0.7%)</title><rect x="1411.9" y="1009" width="11.3" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Npgsql.EntityFrameworkCore.PostgreSQL!Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync(!!0,class System.Func`4&lt;class Microsoft.EntityFrameworkCore.DbContext,!!0,value class System.Threading.CancellationToken,class System.Threading.Tasks.Task`1&lt;!!1&gt;&gt;,class System.Func`4&lt;class Microsoft.EntityFrameworkCore.DbContext,!!0,value class System.Threading.CancellationToken,class System.Threading.Tasks.Task`1&lt;class Microsoft.EntityFrameworkCore.Storage.ExecutionResult`1&lt;!!1&gt;&gt;&gt;,value class System.Threading.CancellationToken) (0.7%)</title><rect x="1411.9" y="992" width="11.2" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Npgsql.EntityFrameworkCore.PostgreSQL!Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy+&lt;ExecuteAsync&gt;d__7`2[System.__Canon,System.Boolean].MoveNext() (0.7%)</title><rect x="1411.9" y="975" width="11.2" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;&gt;c[System.Int32].&lt;MoveNextAsync&gt;b__20_0(class Microsoft.EntityFrameworkCore.DbContext,class AsyncEnumerator&lt;!0&gt;,value class System.Threading.CancellationToken) (0.7%)</title><rect x="1411.9" y="958" width="11.0" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1+AsyncEnumerator+&lt;InitializeReaderAsync&gt;d__21[System.Int32].MoveNext() (0.7%)</title><rect x="1411.9" y="941" width="11.0" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start(!!0&amp;) (0.7%)</title><rect x="1411.9" y="924" width="10.5" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Storage.RelationalCommand+&lt;ExecuteReaderAsync&gt;d__22.MoveNext() (0.7%)</title><rect x="1411.9" y="907" width="10.5" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Storage.RelationalCommand.CreateDbCommand(value class Microsoft.EntityFrameworkCore.Storage.RelationalCommandParameterObject,value class System.Guid,value class Microsoft.EntityFrameworkCore.Diagnostics.DbCommandMethod) (0.1%)</title><rect x="1411.9" y="890" width="1.2" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Thread.&lt;PollGC&gt;g__PollGCWorker|67_0() (0.1%)</title><rect x="1411.9" y="873" width="1.0" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.1%)</title><rect x="1411.9" y="856" width="1.0" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Storage.RelationalConnection+&lt;OpenAsync&gt;d__68.MoveNext() (0.1%)</title><rect x="1413.1" y="890" width="1.2" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore.Relational!Microsoft.EntityFrameworkCore.Storage.RelationalConnection.get_DbConnection() (0.1%)</title><rect x="1413.1" y="873" width="0.8" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.NpgsqlCommand.ExecuteDbDataReaderAsync(value class System.Data.CommandBehavior,value class System.Threading.CancellationToken) (0.5%)</title><rect x="1414.3" y="890" width="7.6" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.NpgsqlCommand+&lt;ExecuteDbDataReaderAsync&gt;d__115.MoveNext() (0.5%)</title><rect x="1414.3" y="873" width="7.6" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.NpgsqlCommand+&lt;ExecuteReader&gt;d__122.MoveNext() (0.5%)</title><rect x="1414.3" y="856" width="7.6" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.Internal.NpgsqlConnector.ResetCancellation() (0.1%)</title><rect x="1414.3" y="839" width="0.9" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Monitor.Enter_Slowpath(class System.Object) (0.1%)</title><rect x="1414.3" y="822" width="0.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.1%)</title><rect x="1414.3" y="805" width="0.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.NpgsqlCommand+&lt;&lt;Write&gt;g__WriteExecute|103_0&gt;d.MoveNext() (0.3%)</title><rect x="1415.2" y="839" width="5.3" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.Internal.NpgsqlWriteBuffer+&lt;Flush&gt;d__40.MoveNext() (0.3%)</title><rect x="1415.2" y="822" width="5.3" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Net.Sockets!System.Net.Sockets.Socket.SendAsync(class System.Net.Sockets.SocketAsyncEventArgs,value class System.Threading.CancellationToken) (0.3%)</title><rect x="1415.2" y="805" width="4.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Net.Sockets!System.Net.Sockets.SocketPal.TryCompleteSendTo(class System.Net.Sockets.SafeSocketHandle,value class System.ReadOnlySpan`1&lt;unsigned int8&gt;,class System.Collections.Generic.IList`1&lt;value class System.ArraySegment`1&lt;unsigned int8&gt;&gt;,int32&amp;,int32&amp;,int32&amp;,value class System.Net.Sockets.SocketFlags,value class System.ReadOnlySpan`1&lt;unsigned int8&gt;,int32&amp;,value class System.Net.Sockets.SocketError&amp;) (0.3%)</title><rect x="1415.2" y="788" width="4.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>?!? (0.3%)</title><rect x="1415.2" y="771" width="4.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.3%)</title><rect x="1415.2" y="754" width="4.5" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.NpgsqlDataReader+&lt;NextResult&gt;d__52.MoveNext() (0.1%)</title><rect x="1420.4" y="839" width="1.3" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.Internal.NpgsqlConnector.ReadMessage(bool,value class Npgsql.Internal.DataRowLoadingMode) (0.1%)</title><rect x="1420.4" y="822" width="1.1" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.Internal.NpgsqlConnector+&lt;ReadMessageLong&gt;d__234.MoveNext() (0.1%)</title><rect x="1420.4" y="805" width="1.1" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.Internal.NpgsqlConnector.ReadMessageLong(bool,value class Npgsql.Internal.DataRowLoadingMode,bool,bool) (0.1%)</title><rect x="1420.4" y="788" width="1.0" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.Internal.NpgsqlConnector+&lt;ReadMessageLong&gt;d__234.MoveNext() (0.1%)</title><rect x="1420.4" y="771" width="1.0" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Npgsql!Npgsql.Internal.NpgsqlReadBuffer+&lt;&lt;Ensure&gt;g__EnsureLong|54_0&gt;d.MoveNext() (0.1%)</title><rect x="1420.4" y="754" width="0.8" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.CompiledQueryCache.GetOrAddQuery(class System.Object,class System.Func`1&lt;class System.Func`2&lt;class Microsoft.EntityFrameworkCore.Query.QueryContext,!!0&gt;&gt;) (0.2%)</title><rect x="1423.3" y="1077" width="2.7" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Thread.&lt;PollGC&gt;g__PollGCWorker|67_0() (0.1%)</title><rect x="1423.3" y="1060" width="2.4" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.1%)</title><rect x="1423.3" y="1043" width="2.4" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.Visit(class System.Linq.Expressions.Expression,value class State&amp;) (0.3%)</title><rect x="1426.1" y="1077" width="4.1" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitMethodCall(class System.Linq.Expressions.MethodCallExpression) (0.3%)</title><rect x="1426.1" y="1060" width="4.1" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitMethodCall(class System.Linq.Expressions.MethodCallExpression) (0.2%)</title><rect x="1426.1" y="1043" width="4.0" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitMethodCall(class System.Linq.Expressions.MethodCallExpression) (0.2%)</title><rect x="1426.1" y="1026" width="3.1" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitMethodCall(class System.Linq.Expressions.MethodCallExpression) (0.0%)</title><rect x="1426.1" y="1009" width="0.6" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitUnary(class System.Linq.Expressions.UnaryExpression) (0.1%)</title><rect x="1426.7" y="1009" width="2.0" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitLambda(class System.Linq.Expressions.Expression`1&lt;!!0&gt;) (0.1%)</title><rect x="1426.7" y="992" width="2.0" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitBinary(class System.Linq.Expressions.BinaryExpression) (0.1%)</title><rect x="1426.7" y="975" width="1.7" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitBinary(class System.Linq.Expressions.BinaryExpression) (0.1%)</title><rect x="1426.7" y="958" width="1.7" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.ProcessEvaluatableRoot(class System.Linq.Expressions.Expression,value class State&amp;,bool) (0.0%)</title><rect x="1426.7" y="941" width="0.5" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Collections.Generic.Dictionary`2[System.__Canon,System.__Canon].TryInsert(!0,!1,value class System.Collections.Generic.InsertionBehavior) (0.0%)</title><rect x="1426.7" y="924" width="0.5" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.ExpressionEqualityComparer.GetHashCode(class System.Linq.Expressions.Expression) (0.0%)</title><rect x="1426.7" y="907" width="0.5" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.ExpressionEqualityComparer.GetHashCode(class System.Linq.Expressions.Expression) (0.0%)</title><rect x="1426.7" y="890" width="0.5" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitMember(class System.Linq.Expressions.MemberExpression) (0.1%)</title><rect x="1427.2" y="941" width="0.9" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitConstant(class System.Linq.Expressions.ConstantExpression) (0.1%)</title><rect x="1427.2" y="924" width="0.9" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Reflection.CustomAttribute.IsDefined(class System.RuntimeType,class System.RuntimeType,bool) (0.1%)</title><rect x="1427.2" y="907" width="0.9" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.0%)</title><rect x="1427.2" y="890" width="0.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitUnary(class System.Linq.Expressions.UnaryExpression) (0.0%)</title><rect x="1429.2" y="1026" width="0.6" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitLambda(class System.Linq.Expressions.Expression`1&lt;!!0&gt;) (0.0%)</title><rect x="1429.2" y="1009" width="0.6" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.EntityFrameworkCore!Microsoft.EntityFrameworkCore.Query.Internal.ExpressionTreeFuncletizer.VisitBinary(class System.Linq.Expressions.BinaryExpression) (0.0%)</title><rect x="1429.2" y="992" width="0.5" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Npgsql.EntityFrameworkCore.PostgreSQL!Npgsql.EntityFrameworkCore.PostgreSQL.Query.Internal.NpgsqlCompiledQueryCacheKeyGenerator.GenerateCacheKey(class System.Linq.Expressions.Expression,bool) (0.0%)</title><rect x="1430.1" y="1077" width="0.6" height="16" fill="#e7a14b" rx="2"/>
+</g>
+<g><title>System.Linq.Queryable!System.Linq.Queryable.Where(class System.Linq.IQueryable`1&lt;!!0&gt;,class System.Linq.Expressions.Expression`1&lt;class System.Func`2&lt;!!0,bool&gt;&gt;) (0.1%)</title><rect x="1431.2" y="1111" width="1.0" height="16" fill="#d67a5c" rx="2"/>
+</g>
+<g><title>Microsoft.Extensions.DependencyInjection!dynamicClass.ResolveService(pMT: 0x7fef8d8c0160,pMT: 0x7fef8d42f210) (0.1%)</title><rect x="1435.7" y="1485" width="1.0" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Monitor.Enter_Slowpath(class System.Object) (0.1%)</title><rect x="1435.7" y="1468" width="1.0" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.1%)</title><rect x="1435.7" y="1451" width="1.0" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>Microsoft.AspNetCore.Routing!Microsoft.AspNetCore.Routing.Matching.DfaMatcher.MatchAsync(class Microsoft.AspNetCore.Http.HttpContext) (0.0%)</title><rect x="1437.8" y="1621" width="0.7" height="16" fill="#7aa7d6" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Thread.&lt;PollGC&gt;g__PollGCWorker|67_0() (0.0%)</title><rect x="1437.8" y="1604" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.0%)</title><rect x="1437.8" y="1587" width="0.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.PortableThreadPool+WorkerThread.MaybeAddWorkingWorker(class System.Threading.PortableThreadPool) (0.3%)</title><rect x="1439.5" y="1689" width="4.7" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>CPU_TIME (0.2%)</title><rect x="1439.5" y="1672" width="3.6" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>UNMANAGED_CODE_TIME (0.1%)</title><rect x="1443.1" y="1672" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.Tasks.Task.ExecuteWithThreadLocal(class System.Threading.Tasks.Task&amp;,class System.Threading.Thread) (0.1%)</title><rect x="1444.2" y="1689" width="1.1" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(class System.Threading.Thread,class System.Threading.ExecutionContext,class System.Threading.ContextCallback,class System.Object) (0.1%)</title><rect x="1444.2" y="1672" width="1.0" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Net.NameResolution!System.Net.Dns+&lt;&gt;c.&lt;GetHostEntryOrAddressesCoreAsync&gt;b__34_0(class System.Object,value class System.Net.NameResolutionActivity) (0.1%)</title><rect x="1444.2" y="1655" width="1.0" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Net.NameResolution!System.Net.Dns.GetHostEntryOrAddressesCore(class System.String,bool,value class System.Net.Sockets.AddressFamily,value class System.Nullable`1&lt;value class System.Net.NameResolutionActivity&gt;) (0.1%)</title><rect x="1444.2" y="1638" width="1.0" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Net.NameResolution!Interop+Sys.GetHostEntryForName(class System.String,value class System.Net.Sockets.AddressFamily,value class HostEntry*) (0.1%)</title><rect x="1444.2" y="1621" width="1.0" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>UNMANAGED_CODE_TIME (0.0%)</title><rect x="1444.2" y="1604" width="0.8" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>UNMANAGED_CODE_TIME (1.2%)</title><rect x="1445.8" y="1706" width="19.0" height="16" fill="#c9c38a" rx="2"/>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.TimerQueue.TimerThread() (8.3%)</title><rect x="1465.3" y="1723" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="1468.3" y="1735">System.Private.Cor..</text>
+</g>
+<g><title>System.Private.CoreLib!System.Threading.WaitHandle.WaitOneNoCheck(int32,bool,class System.Object,value class WaitHandleWaitSourceMap) (8.3%)</title><rect x="1465.3" y="1706" width="133.3" height="16" fill="#c9c38a" rx="2"/>
+<text x="1468.3" y="1718">System.Private.Cor..</text>
+</g>
+<g><title>UNMANAGED_CODE_TIME (8.3%)</title><rect x="1465.3" y="1689" width="133.2" height="16" fill="#c9c38a" rx="2"/>
+<text x="1468.3" y="1701">UNMANAGED_CODE_TIM..</text>
+</g>
+</svg>
