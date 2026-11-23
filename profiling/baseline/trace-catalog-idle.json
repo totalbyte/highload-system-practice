@@ -1,19 +1,19 @@
 {
- "traceID": "79112b4b69f1ca5ad3f0c9ca3135f470",
+ "traceID": "c32505b9891dc97a86a9d814c31ec500",
  "spans": [
   {
-   "traceID": "79112b4b69f1ca5ad3f0c9ca3135f470",
-   "spanID": "40ce1bb58e4555e6",
+   "traceID": "c32505b9891dc97a86a9d814c31ec500",
+   "spanID": "c6ac3ea6e1075534",
    "operationName": "postgresql",
    "references": [
     {
      "refType": "CHILD_OF",
-     "traceID": "79112b4b69f1ca5ad3f0c9ca3135f470",
-     "spanID": "ec7a4f1fbe74177b"
+     "traceID": "c32505b9891dc97a86a9d814c31ec500",
+     "spanID": "770093dc12ee65d0"
     }
    ],
-   "startTime": 1795004341648199,
-   "duration": 2126,
+   "startTime": 1795460331771654,
+   "duration": 574,
    "tags": [
     {
      "key": "db.namespace",
@@ -23,157 +23,7 @@
     {
      "key": "db.npgsql.connection_id",
      "type": "int64",
-     "value": 54
-    },
-    {
-     "key": "db.npgsql.data_source",
-     "type": "string",
-     "value": "Host=postgres-shard-b-replica;Port=5432;Database=polling;Username=polling;GSS Encryption Mode=Disable;Maximum Pool Size=30;Max Auto Prepare=0"
-    },
-    {
-     "key": "db.query.text",
-     "type": "string",
-     "value": "SELECT count(*)::int\nFROM polls AS p\nWHERE p.is_public AND p.status <> 'draft' AND p.status = @status"
-    },
-    {
-     "key": "db.system.name",
-     "type": "string",
-     "value": "postgresql"
-    },
-    {
-     "key": "otel.scope.name",
-     "type": "string",
-     "value": "Npgsql"
-    },
-    {
-     "key": "otel.scope.version",
-     "type": "string",
-     "value": "10.0.3+d3768398c17877b3a916c3c4d87e8e11698991fc"
-    },
-    {
-     "key": "server.address",
-     "type": "string",
-     "value": "postgres-shard-b-replica"
-    },
-    {
-     "key": "span.kind",
-     "type": "string",
-     "value": "client"
-    }
-   ],
-   "logs": [
-    {
-     "timestamp": 1795004341650279,
-     "fields": [
-      {
-       "key": "event",
-       "type": "string",
-       "value": "received-first-response"
-      }
-     ]
-    }
-   ],
-   "processID": "p1",
-   "warnings": null
-  },
-  {
-   "traceID": "79112b4b69f1ca5ad3f0c9ca3135f470",
-   "spanID": "73404f3cc9524408",
-   "operationName": "postgresql",
-   "references": [
-    {
-     "refType": "CHILD_OF",
-     "traceID": "79112b4b69f1ca5ad3f0c9ca3135f470",
-     "spanID": "ec7a4f1fbe74177b"
-    }
-   ],
-   "startTime": 1795004341649209,
-   "duration": 1690,
-   "tags": [
-    {
-     "key": "db.namespace",
-     "type": "string",
-     "value": "polling"
-    },
-    {
-     "key": "db.npgsql.connection_id",
-     "type": "int64",
-     "value": 61
-    },
-    {
-     "key": "db.npgsql.data_source",
-     "type": "string",
-     "value": "Host=postgres-replica;Port=5432;Database=polling;Username=polling;GSS Encryption Mode=Disable;Maximum Pool Size=30;Max Auto Prepare=0"
-    },
-    {
-     "key": "db.query.text",
-     "type": "string",
-     "value": "SELECT p.id, p.title, p.status, p.is_public, p.creator_id, p.creator_username, (\n    SELECT count(*)::int\n    FROM options AS o\n    WHERE p.id = o.poll_id), p.starts_at, p.ends_at, p.created_at\nFROM polls AS p\nWHERE p.is_public AND p.status <> 'draft' AND p.status = @status\nORDER BY p.created_at DESC, p.id DESC\nLIMIT @p"
-    },
-    {
-     "key": "db.system.name",
-     "type": "string",
-     "value": "postgresql"
-    },
-    {
-     "key": "otel.scope.name",
-     "type": "string",
-     "value": "Npgsql"
-    },
-    {
-     "key": "otel.scope.version",
-     "type": "string",
-     "value": "10.0.3+d3768398c17877b3a916c3c4d87e8e11698991fc"
-    },
-    {
-     "key": "server.address",
-     "type": "string",
-     "value": "postgres-replica"
-    },
-    {
-     "key": "span.kind",
-     "type": "string",
-     "value": "client"
-    }
-   ],
-   "logs": [
-    {
-     "timestamp": 1795004341650834,
-     "fields": [
-      {
-       "key": "event",
-       "type": "string",
-       "value": "received-first-response"
-      }
-     ]
-    }
-   ],
-   "processID": "p1",
-   "warnings": null
-  },
-  {
-   "traceID": "79112b4b69f1ca5ad3f0c9ca3135f470",
-   "spanID": "aa4c1ef9902e2e2e",
-   "operationName": "postgresql",
-   "references": [
-    {
-     "refType": "CHILD_OF",
-     "traceID": "79112b4b69f1ca5ad3f0c9ca3135f470",
-     "spanID": "ec7a4f1fbe74177b"
-    }
-   ],
-   "startTime": 1795004341650667,
-   "duration": 2490,
-   "tags": [
-    {
-     "key": "db.namespace",
-     "type": "string",
-     "value": "polling"
-    },
-    {
-     "key": "db.npgsql.connection_id",
-     "type": "int64",
-     "value": 54
+     "value": 56
     },
     {
      "key": "db.npgsql.data_source",
@@ -213,7 +63,7 @@
    ],
    "logs": [
     {
-     "timestamp": 1795004341652902,
+     "timestamp": 1795460331772205,
      "fields": [
       {
        "key": "event",
@@ -227,12 +77,12 @@
    "warnings": null
   },
   {
-   "traceID": "79112b4b69f1ca5ad3f0c9ca3135f470",
-   "spanID": "ec7a4f1fbe74177b",
+   "traceID": "c32505b9891dc97a86a9d814c31ec500",
+   "spanID": "770093dc12ee65d0",
    "operationName": "GET api/polls",
    "references": [],
-   "startTime": 1795004341644071,
-   "duration": 9675,
+   "startTime": 1795460331769604,
+   "duration": 2924,
    "tags": [
     {
      "key": "http.request.method",
@@ -295,18 +145,18 @@
    "warnings": null
   },
   {
-   "traceID": "79112b4b69f1ca5ad3f0c9ca3135f470",
-   "spanID": "82c9b942a39b1296",
+   "traceID": "c32505b9891dc97a86a9d814c31ec500",
+   "spanID": "f532b0b989fdedc9",
    "operationName": "postgresql",
    "references": [
     {
      "refType": "CHILD_OF",
-     "traceID": "79112b4b69f1ca5ad3f0c9ca3135f470",
-     "spanID": "ec7a4f1fbe74177b"
+     "traceID": "c32505b9891dc97a86a9d814c31ec500",
+     "spanID": "770093dc12ee65d0"
     }
    ],
-   "startTime": 1795004341647185,
-   "duration": 1502,
+   "startTime": 1795460331770566,
+   "duration": 569,
    "tags": [
     {
      "key": "db.namespace",
@@ -316,7 +166,7 @@
     {
      "key": "db.npgsql.connection_id",
      "type": "int64",
-     "value": 61
+     "value": 56
     },
     {
      "key": "db.npgsql.data_source",
@@ -356,7 +206,157 @@
    ],
    "logs": [
     {
-     "timestamp": 1795004341648625,
+     "timestamp": 1795460331771069,
+     "fields": [
+      {
+       "key": "event",
+       "type": "string",
+       "value": "received-first-response"
+      }
+     ]
+    }
+   ],
+   "processID": "p1",
+   "warnings": null
+  },
+  {
+   "traceID": "c32505b9891dc97a86a9d814c31ec500",
+   "spanID": "146f2be97f4f76cc",
+   "operationName": "postgresql",
+   "references": [
+    {
+     "refType": "CHILD_OF",
+     "traceID": "c32505b9891dc97a86a9d814c31ec500",
+     "spanID": "770093dc12ee65d0"
+    }
+   ],
+   "startTime": 1795460331771005,
+   "duration": 511,
+   "tags": [
+    {
+     "key": "db.namespace",
+     "type": "string",
+     "value": "polling"
+    },
+    {
+     "key": "db.npgsql.connection_id",
+     "type": "int64",
+     "value": 56
+    },
+    {
+     "key": "db.npgsql.data_source",
+     "type": "string",
+     "value": "Host=postgres-shard-b-replica;Port=5432;Database=polling;Username=polling;GSS Encryption Mode=Disable;Maximum Pool Size=30;Max Auto Prepare=0"
+    },
+    {
+     "key": "db.query.text",
+     "type": "string",
+     "value": "SELECT count(*)::int\nFROM polls AS p\nWHERE p.is_public AND p.status <> 'draft' AND p.status = @status"
+    },
+    {
+     "key": "db.system.name",
+     "type": "string",
+     "value": "postgresql"
+    },
+    {
+     "key": "otel.scope.name",
+     "type": "string",
+     "value": "Npgsql"
+    },
+    {
+     "key": "otel.scope.version",
+     "type": "string",
+     "value": "10.0.3+d3768398c17877b3a916c3c4d87e8e11698991fc"
+    },
+    {
+     "key": "server.address",
+     "type": "string",
+     "value": "postgres-shard-b-replica"
+    },
+    {
+     "key": "span.kind",
+     "type": "string",
+     "value": "client"
+    }
+   ],
+   "logs": [
+    {
+     "timestamp": 1795460331771500,
+     "fields": [
+      {
+       "key": "event",
+       "type": "string",
+       "value": "received-first-response"
+      }
+     ]
+    }
+   ],
+   "processID": "p1",
+   "warnings": null
+  },
+  {
+   "traceID": "c32505b9891dc97a86a9d814c31ec500",
+   "spanID": "4c15c3915de86e7c",
+   "operationName": "postgresql",
+   "references": [
+    {
+     "refType": "CHILD_OF",
+     "traceID": "c32505b9891dc97a86a9d814c31ec500",
+     "spanID": "770093dc12ee65d0"
+    }
+   ],
+   "startTime": 1795460331771358,
+   "duration": 579,
+   "tags": [
+    {
+     "key": "db.namespace",
+     "type": "string",
+     "value": "polling"
+    },
+    {
+     "key": "db.npgsql.connection_id",
+     "type": "int64",
+     "value": 56
+    },
+    {
+     "key": "db.npgsql.data_source",
+     "type": "string",
+     "value": "Host=postgres-replica;Port=5432;Database=polling;Username=polling;GSS Encryption Mode=Disable;Maximum Pool Size=30;Max Auto Prepare=0"
+    },
+    {
+     "key": "db.query.text",
+     "type": "string",
+     "value": "SELECT p.id, p.title, p.status, p.is_public, p.creator_id, p.creator_username, (\n    SELECT count(*)::int\n    FROM options AS o\n    WHERE p.id = o.poll_id), p.starts_at, p.ends_at, p.created_at\nFROM polls AS p\nWHERE p.is_public AND p.status <> 'draft' AND p.status = @status\nORDER BY p.created_at DESC, p.id DESC\nLIMIT @p"
+    },
+    {
+     "key": "db.system.name",
+     "type": "string",
+     "value": "postgresql"
+    },
+    {
+     "key": "otel.scope.name",
+     "type": "string",
+     "value": "Npgsql"
+    },
+    {
+     "key": "otel.scope.version",
+     "type": "string",
+     "value": "10.0.3+d3768398c17877b3a916c3c4d87e8e11698991fc"
+    },
+    {
+     "key": "server.address",
+     "type": "string",
+     "value": "postgres-replica"
+    },
+    {
+     "key": "span.kind",
+     "type": "string",
+     "value": "client"
+    }
+   ],
+   "logs": [
+    {
+     "timestamp": 1795460331771905,
      "fields": [
       {
        "key": "event",

@@ -25,9 +25,18 @@ configuration drifted by tens of percent in lab 5 / 6 / 8, so single runs are no
   - **read (regression):** +44 … +136 % RPS, p95 −35 … −63 %; after the change the backends reach ≈ 200 % of their two
     cores — the bottleneck of this path moved from the replicas to the backend;
   - backend memory unchanged (≈ 120–166 MiB in both configurations).
-- Per-step CPU is an average of `docker stats` samples every 5 s; at 50 VUs both configurations show only ≈ 65 % on the
-  replicas, which disagrees with 25 and 100 VUs — likely because the samples of that step partly fall into the 5 s pause between
-  steps (not verified).
-  The RPS / latency numbers come from k6 and are not affected.
+- Per-step CPU comes from `docker stats`, which with all containers takes ≈ 13 s per sample, so a 30 s step has 1–3 samples per
+  run; a sample near the step's edge can catch the pause between steps. After the PR review the report uses only samples at
+  least 3 s inside the step and shows how many there were; CPU says "at the ceiling or not", not an exact percentage. RPS /
+  latency come from k6 and are not affected.
+- **Spread (PR review):** `ab-report.py` prints min–max per configuration and the worst … best delta over the repeats. Catalog:
+  +35 … +47 % at 10 / 25 / 100 / 200 VUs, so the effect is larger than the spread; the +57.5 % mean at 50 VUs is inflated by
+  one weak "before" run (307 RPS) — the summary figure is ≈ +41 %. The write / read regression runs are one per configuration.
+- **Raw results in the repository (PR review):** k6 summaries, resource samples and environment of every run in
+  `profiling/ab-results/` (≈ 370 KB); `ab-report.py` reads them from there, `ab-series.sh` copies new runs there.
+- **Absolute level depends on the day:** on 2026-11-23 the same "before" catalog gave ≈ 1300–1400 RPS at 50 VUs instead of
+  ≈ 400 (same limits; `pgbench` 3749 vs 717), and the optimization again gave +49 … +53 %. A 2 × 2 check (planner statistics
+  present / absent × prepare on / off) showed statistics account for only 6–9 % (`profiling/stats-check.md`). Only
+  configurations measured on the same day, interleaved, are compared.
 - No negative side effect found in the measured paths. The trade-offs of ADR 0068 (lighter reset statements, per-connection
   memory for plans, generic plans, PgBouncer transaction mode) remain the known costs.

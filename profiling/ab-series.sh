@@ -49,6 +49,10 @@ if [ "${ONLY_CATALOG:-0}" != 1 ]; then
 fi
 rm -f load-tests/results/.login
 
+# Сирі результати — у репозиторій (load-tests/results/ у .gitignore): зведення k6 кожного прогону, заміри ресурсів, середовище.
+mkdir -p profiling/ab-results
+cp load-tests/results/scenario-shards-*-ab-*.json load-tests/results/scenario-shards-ab-*-resources.tsv   load-tests/results/scenario-shards-ab-*-env.txt profiling/ab-results/
+
 python profiling/ab-report.py
 
 # Назад до звичайного стеку (оптимізацію ввімкнено за замовчуванням).

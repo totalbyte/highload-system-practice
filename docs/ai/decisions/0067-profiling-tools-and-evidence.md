@@ -33,8 +33,15 @@ and the containers are not privileged (no `perf`).
   thread-pool queue 0.2, CPU_TIME only 10.9 % of sampled thread time (threads mostly wait for the database); Npgsql
   `prepared_ratio` 0 on both replica pools; `pg_stat_statements`: planning 48 % (A) / 19 % (B) of the page query's time and
   56–61 % of the count query's, plus one `DISCARD ALL` per pool return; EXPLAIN: index scan, the correlated `count(options)`
-  is 20 × 0.017 ms. `pgbench` (`profiling/pgbench/results.txt`, replica limited to exactly one core): 822 tps simple, 717 extended,
-  **1723 prepared** (×2.4); an exploratory run the same day gave 1003 / 950 / 2514 (×2.6).
+  is 20 × 0.017 ms. `pgbench`, first single run 2026-11-18 on replica A: 822 tps simple, 717 extended, 1723 prepared (×2.4). After the
+  PR review `profiling/pgbench/run.sh` runs both replicas, 3 interleaved runs per mode, after waiting for WAL replay
+  (2026-11-23, `results.txt`): A 4337 / 3749 / **9194** (×2.45 prepared / extended), B 3326 / 3055 / **6443** (×2.1),
+  spread 1–5 %. Same ratio, 5× higher absolute numbers: the whole machine was slower on 11-18 (see ADR 0069).
+- Shard B (review question): planning is the same on both replicas (0.38–0.44 ms per page call), but the page *executes*
+  at 1.82 ms on B vs 0.41 ms on A under load. B holds 20 active public polls (a full page, 20 correlated subqueries), A
+  only 12; idle EXPLAIN 0.110 vs 0.087 ms, `pgbench` 1.2–1.4× fewer requests per second on B. So B reaches 100 % of its core
+  first (101 % vs 90 % in the baseline) and its statements queue for the CPU, which `pg_stat_statements` and the traces count as
+  execution time (B 16.4 ms vs A 1.6 ms per statement under 50 VUs). Hence the lower planning share on B (19 % vs 48 %).
 - Verdict: H1 refuted (index used, idle execution 0.5 ms), H2 present but cheap, H4 a consequence (the slow replica keeps
   ≈ 24 of 30 connections busy), H5 refuted (GC < 1 %, no heap growth, threads wait); **H3 is the root cause** (ADR 0068).
 - `dotnet-gcdump` warns that lossless buffering needs .NET 11; the heap here is ~10 MB, so the snapshots are complete enough.

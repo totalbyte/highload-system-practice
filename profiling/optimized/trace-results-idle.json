@@ -1,0 +1,186 @@
+{
+ "traceID": "602a81efa28c4897dce9d901cdbd727d",
+ "spans": [
+  {
+   "traceID": "602a81efa28c4897dce9d901cdbd727d",
+   "spanID": "c7b28a4140c22a6a",
+   "operationName": "GET api/polls/{id:long}/results",
+   "references": [],
+   "startTime": 1795460458317035,
+   "duration": 903,
+   "tags": [
+    {
+     "key": "http.request.method",
+     "type": "string",
+     "value": "GET"
+    },
+    {
+     "key": "http.response.status_code",
+     "type": "int64",
+     "value": 200
+    },
+    {
+     "key": "http.route",
+     "type": "string",
+     "value": "api/polls/{id:long}/results"
+    },
+    {
+     "key": "network.protocol.version",
+     "type": "string",
+     "value": "1.1"
+    },
+    {
+     "key": "otel.scope.name",
+     "type": "string",
+     "value": "Microsoft.AspNetCore"
+    },
+    {
+     "key": "server.address",
+     "type": "string",
+     "value": "127.0.0.1"
+    },
+    {
+     "key": "server.port",
+     "type": "int64",
+     "value": 8080
+    },
+    {
+     "key": "span.kind",
+     "type": "string",
+     "value": "server"
+    },
+    {
+     "key": "url.path",
+     "type": "string",
+     "value": "/api/polls/30/results"
+    },
+    {
+     "key": "url.scheme",
+     "type": "string",
+     "value": "http"
+    }
+   ],
+   "logs": [],
+   "processID": "p1",
+   "warnings": null
+  },
+  {
+   "traceID": "602a81efa28c4897dce9d901cdbd727d",
+   "spanID": "5c9872c3f20d8ef5",
+   "operationName": "EVAL",
+   "references": [
+    {
+     "refType": "CHILD_OF",
+     "traceID": "602a81efa28c4897dce9d901cdbd727d",
+     "spanID": "c7b28a4140c22a6a"
+    }
+   ],
+   "startTime": 1795460458317310,
+   "duration": 397,
+   "tags": [
+    {
+     "key": "db.redis.database_index",
+     "type": "int64",
+     "value": 0
+    },
+    {
+     "key": "db.statement",
+     "type": "string",
+     "value": "EVAL"
+    },
+    {
+     "key": "db.system",
+     "type": "string",
+     "value": "redis"
+    },
+    {
+     "key": "otel.scope.name",
+     "type": "string",
+     "value": "OpenTelemetry.Instrumentation.StackExchangeRedis"
+    },
+    {
+     "key": "otel.scope.version",
+     "type": "string",
+     "value": "1.21.0-beta.1"
+    },
+    {
+     "key": "server.address",
+     "type": "string",
+     "value": "redis"
+    },
+    {
+     "key": "server.port",
+     "type": "int64",
+     "value": 6379
+    },
+    {
+     "key": "span.kind",
+     "type": "string",
+     "value": "client"
+    }
+   ],
+   "logs": [
+    {
+     "timestamp": 1795460458317334,
+     "fields": [
+      {
+       "key": "event",
+       "type": "string",
+       "value": "Enqueued"
+      }
+     ]
+    },
+    {
+     "timestamp": 1795460458317360,
+     "fields": [
+      {
+       "key": "event",
+       "type": "string",
+       "value": "Sent"
+      }
+     ]
+    },
+    {
+     "timestamp": 1795460458317706,
+     "fields": [
+      {
+       "key": "event",
+       "type": "string",
+       "value": "ResponseReceived"
+      }
+     ]
+    }
+   ],
+   "processID": "p1",
+   "warnings": null
+  }
+ ],
+ "processes": {
+  "p1": {
+   "serviceName": "polling-api",
+   "tags": [
+    {
+     "key": "service.instance.id",
+     "type": "string",
+     "value": "backend-1"
+    },
+    {
+     "key": "telemetry.sdk.language",
+     "type": "string",
+     "value": "dotnet"
+    },
+    {
+     "key": "telemetry.sdk.name",
+     "type": "string",
+     "value": "opentelemetry"
+    },
+    {
+     "key": "telemetry.sdk.version",
+     "type": "string",
+     "value": "1.21.0"
+    }
+   ]
+  }
+ },
+ "warnings": null
+}

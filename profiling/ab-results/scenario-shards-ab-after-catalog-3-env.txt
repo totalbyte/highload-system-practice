@@ -1,0 +1,38 @@
+=== Host (Docker engine) ===
+CPUs: 24  RAM: 12071362560 bytes  OS: Docker Desktop  Docker: 28.5.1
+
+=== Containers: CPU set / CPU limit / memory limit ===
+container                          cpuset   cpus   memory     image
+polling-platform-backend-1-1       2-3      2      1024M      polling-platform/backend:latest
+polling-platform-backend-2-1       4-5      2      1024M      polling-platform/backend:latest
+polling-platform-jaeger-1          -        -      -          jaegertracing/jaeger:2.12.0
+polling-platform-lb-1              0-1      2      256M       haproxy:3.4.6-alpine
+polling-platform-pgadmin-1         13       -      -          dpage/pgadmin4:9.17.0
+polling-platform-postgres-1        6        1      1024M      postgres:17-alpine
+polling-platform-postgres-replica-1 7        1      512M       postgres:17-alpine
+polling-platform-postgres-shard-b-1 8        1      1024M      postgres:17-alpine
+polling-platform-postgres-shard-b-replica-1 9        1      512M       postgres:17-alpine
+polling-platform-redis-1           12       1      256M       redis:8.10.2-alpine
+polling-platform-web-1             13       -      -          polling-platform/web:latest
+
+=== Backend pool (HAProxy) ===
+backend-1 UP  backend-2 UP  backend-3 MAINT (resolution)  
+balance: roundrobin
+
+=== Backend config (backend-1) ===
+Maximum Pool Size=30
+ResultsCache__Enabled=true
+ReadReplica__Enabled=true
+ReadAfterWrite__StickyTtlSeconds=5
+postgres-replica running: 1
+Sharding: count 2, strategy Buckets, range 1000, buckets 64
+Diagnostics__ArtificialDelayMs=unset
+
+=== PostgreSQL ===
+version 17.11, max_connections 100, shared_buffers 128MB
+postgres: users 500, polls 18, votes 1937
+postgres-shard-b: users 0, polls 32, votes 3659
+
+=== Redis ===
+redis_version:8.10.2
+keys: 1, save: '', maxmemory-policy: noeviction

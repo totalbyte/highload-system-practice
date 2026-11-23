@@ -1,4 +1,5 @@
-"""Звіт A/B лаби 9 (пункт 2.4): прогони profiling/ab-series.sh → profiling/ab-report.md.
+"""Звіт A/B лаби 9 (пункт 2.4): прогони profiling/ab-series.sh (сирі зведення k6 і заміри ресурсів — profiling/ab-results/)
+→ profiling/ab-report.md.
 
 Для кожного режиму (catalog, write, read) і ступеня: середнє по повторах RPS, p95, p99, помилки, CPU кожного вузла БД
 і backend-ів, пам'ять backend-ів; дельта «після» відносно «до». Точка насичення — останній ступінь, після якого RPS
@@ -11,7 +12,8 @@ import re
 import sys
 from pathlib import Path
 
-RESULTS = Path(__file__).parent.parent / "load-tests" / "results"
+# Сирі результати лежать у репозиторії (ab-series.sh копіює їх сюди): звіт можна перевірити без 40-хвилинного прогону.
+RESULTS = Path(__file__).parent / "ab-results"
 OUT = Path(__file__).parent / "ab-report.md"
 NODES = [("A pri", "postgres"), ("A rep", "postgres-replica"), ("B pri", "postgres-shard-b"), ("B rep", "postgres-shard-b-replica")]
 TITLES = {"catalog": "Каталог (fan-out, симптом лаби 9)", "write": "Регресія: запис голосів (Primary шардів)",
@@ -43,8 +45,13 @@ def one_run(mode, tag):
         begin = started + sched["warmup"] + sched["gap"] + i * (sched["step"] + sched["gap"])
         end = begin + sched["step"]
 
+        # docker stats з усіма контейнерами відповідає ≈ 13 с, тож на 30-секундний ступінь лише 2–3 заміри. Заміри біля
+        # країв ступеня можуть захопити паузу між ступенями — беремо лише ті, що всередині, з відступом 3 с.
+        def inside(service):
+            return [s for s in samples if s[1] == service and begin + 3 <= s[0] <= end - 1]
+
         def avg(service, field):
-            values = [s[field] for s in samples if s[1] == service and begin <= s[0] <= end]
+            values = [s[field] for s in inside(service)]
             return sum(values) / len(values) if values else None
 
         d = m[f"http_req_duration{{scenario:{name}}}"]["values"]
@@ -57,6 +64,7 @@ def one_run(mode, tag):
             "cpu": {label: avg(service, 2) for label, service in NODES},
             "backend": sum(backends) / len(backends) if backends else None,
             "memory": sum(memory) / len(memory) if memory else None,
+            "cpu_samples": len(inside("postgres-replica")),
         }
     return rows
 
@@ -74,6 +82,7 @@ def mean_runs(runs):
         result[vus]["cpu"] = {label: mean_of([g["cpu"][label] for g in group]) for label, _ in NODES}
         result[vus]["spread"] = (min(g["rps"] for g in group), max(g["rps"] for g in group))
         result[vus]["n"] = len(group)
+        result[vus]["cpu_samples"] = sum(g["cpu_samples"] for g in group)
     return result
 
 
@@ -102,7 +111,10 @@ def main():
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     lines = ["# Лабораторна 9: A/B — до і після `Max Auto Prepare`", "",
              "Згенеровано `profiling/ab-report.py` з прогонів `profiling/ab-series.sh`. «До» — `DB_MAX_AUTO_PREPARE=0`, "
-             "«після» — `20`. Кожна комірка — середнє по повторах; стенд — одне ядро на вузол БД.", ""]
+             "«після» — `20`. Кожна комірка — середнє по повторах; стенд — одне ядро на вузол БД. Каталог — 3 повтори кожної "
+             "конфігурації через один, регресія запису й читання — по одному прогону, тож її числа менш надійні.", "",
+             "«Δ RPS, межі» — найгірший і найкращий випадок з окремих повторів: (мінімум «після» − максимум «до») / максимум «до» "
+             "і (максимум «після» − мінімум «до») / мінімум «до». Якщо нижня межа вище нуля, ефект більший за розкид між повторами.", ""]
     charts = []
     for mode, title in TITLES.items():
         repeats = sorted({int(x) for x in re.findall(rf"scenario-shards-{mode}-ab-before-{mode}-(\d+)-",
@@ -113,23 +125,27 @@ def main():
             continue
         n = max(v["n"] for v in before.values())
         lines += [f"## {title}", "", f"Повторів кожної конфігурації: {n}.", "",
-                  "| VUs | RPS до | RPS після | Δ RPS | p95 до / після, мс | Δ p95 | p99 до / після, мс | Δ p99 | помилки до / після, % |",
-                  "|---|---|---|---|---|---|---|---|---|"]
+                  "| VUs | RPS до (min–max) | RPS після (min–max) | Δ RPS | Δ RPS, межі | p95 до / після, мс | Δ p95 | p99 до / після, мс | Δ p99 | помилки до / після, % |",
+                  "|---|---|---|---|---|---|---|---|---|---|"]
         for vus in sorted(before):
             b, a = before[vus], after.get(vus)
             if not a:
                 continue
-            lines.append(f"| {vus} | {f(b['rps'], 0)} | {f(a['rps'], 0)} | {delta(b['rps'], a['rps'])} | "
+            (b_lo, b_hi), (a_lo, a_hi) = b["spread"], a["spread"]
+            lines.append(f"| {vus} | {f(b['rps'], 0)} ({b_lo:.0f}–{b_hi:.0f}) | {f(a['rps'], 0)} ({a_lo:.0f}–{a_hi:.0f}) | "
+                         f"{delta(b['rps'], a['rps'])} | {delta(b_hi, a_lo)} … {delta(b_lo, a_hi)} | "
                          f"{f(b['p95'])} / {f(a['p95'])} | {delta(b['p95'], a['p95'])} | {f(b['p99'])} / {f(a['p99'])} | "
                          f"{delta(b['p99'], a['p99'])} | {f(b['errors'], 2)} / {f(a['errors'], 2)} |")
-        lines += ["", "CPU, % одного ядра (вузли БД обмежені одним ядром, backend — двома, тобто 200 % = повністю), пам'ять backend:", "",
-                  "| VUs | конфігурація | " + " | ".join(l for l, _ in NODES) + " | backend CPU | backend RAM, МіБ |",
-                  "|---|---|" + "---|" * len(NODES) + "---|---|"]
+        lines += ["", "CPU, % одного ядра (вузли БД обмежені одним ядром, backend — двома, тобто 200 % = повністю), пам'ять backend. "
+                  "`docker stats` дає замір раз на ≈ 13 с, тож на ступінь припадає 1–3 заміри на прогін (стовпець «замірів CPU» — "
+                  "сума по повторах): CPU показує, чи вузол на стелі, але не точний відсоток.", "",
+                  "| VUs | конфігурація | " + " | ".join(l for l, _ in NODES) + " | backend CPU | backend RAM, МіБ | замірів CPU |",
+                  "|---|---|" + "---|" * len(NODES) + "---|---|---|"]
         for vus in sorted(before):
             for label, r in (("до", before[vus]), ("після", after.get(vus))):
                 if r:
                     lines.append(f"| {vus} | {label} | " + " | ".join(f(r["cpu"][l], 0) for l, _ in NODES)
-                                 + f" | {f(r['backend'], 0)} | {f(r['memory'], 0)} |")
+                                 + f" | {f(r['backend'], 0)} | {f(r['memory'], 0)} | {r['cpu_samples']} |")
         for label, rows in (("До", before), ("Після", after)):
             point = saturation(rows)
             lines.append("" if label == "До" else "")
