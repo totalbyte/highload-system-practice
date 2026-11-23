@@ -38,34 +38,57 @@ Stampede на кеші результатів відтворено (500 одно
 
 ## 4. Distributed lock (2.4)
 
+**Задача.** У нас два однакові backend-інстанси (A і B). Коли голос скидає кеш гарячого опитування, сотні читачів на
+**кожному** з них промахуються одночасно. Single-flight з лаби 4 об'єднує промахи лише всередині одного інстансу, тож у
+БД однаково йде по запиту від кожного — 2 на два інстанси, N на N інстансів. Методичка вимагає довести до **одного**.
+
+**Ідея.** Перед читанням БД інстанс бере в Redis «замок» (lock) — спільний для всіх інстансів ключ, який може мати лише
+один інстанс одночасно. Хто взяв замок — читає БД і кладе результат у кеш. Хто не взяв — не йде в БД, а чекає, поки
+результат з'явиться в кеші.
+
+Замок бере **backend-інстанс** (наш сервіс), а не база даних: PostgreSQL про замок нічого не знає. Redis тут — просто
+спільне місце, яке бачать усі інстанси (пам'ять кожного інстансу окрема, тож домовитися «через себе» вони не можуть).
+
+**Як це працює (кроки з боку двох інстансів; блок-схема нижче — те саме з боку одного інстансу):**
+1. A і B одночасно просять у Redis замок: `SET lock … NX PX 1000` — «створи ключ, лише якщо його ще немає, і видали
+   сам через 1 с».
+2. Redis відповідає A `OK` (замок у A), а B — `nil` (замок уже зайнятий).
+3. A читає агрегат з PostgreSQL — **це єдине звернення до БД на весь кластер** — кладе результат у кеш і знімає замок.
+4. B тим часом кожні 10–20 мс перевіряє кеш і, щойно результат з'явився, бере його звідти.
+5. Обидва інстанси віддають своїм читачам той самий результат.
+
+**Чому не буває вічного очікування (deadlock).** Замок має термін дії 1 с (lease): якщо A аварійно зупиниться, не
+знявши замок, Redis сам видалить ключ через 1 с, і замок візьме B. Крім того, B не чекає довше 2 с — після цього
+читає БД сам. Знімає замок лише той, хто його взяв: у ключі записана випадкова мітка (token) інстансу, і видалення
+відбувається, тільки якщо мітка збігається.
+
 ```mermaid
-sequenceDiagram
-    participant A as Інстанс A
-    participant B as Інстанс B
-    participant Redis
-    participant PG as PostgreSQL
-    Note over A,Redis: голос збільшив покоління до g, сотні читачів<br/>обох інстансів промахнулися разом. Single-flight:<br/>від кожного інстансу далі йде лише один запит
-    A->>Redis: SET lock:{poll}:g{g} token-A NX PX 1000
-    Redis-->>A: OK, lock у A
-    B->>Redis: SET lock:{poll}:g{g} token-B NX PX 1000
-    Redis-->>B: nil, lock зайнятий
-    A->>PG: агрегат результатів
-    PG-->>A: одне читання на весь кластер
-    A->>Redis: SET значення покоління g
-    A->>Redis: DEL lock, лише якщо там token-A (Lua)
-    loop кожні 10–20 мс, доки значення немає
-        B->>Redis: GET значення покоління g
-        Redis-->>B: немає, потім є
-    end
-    Note over A,Redis: обидва інстанси віддають своїм читачам той самий агрегат
-    Note over A,PG: без deadlock: якщо A впав, lock зникне сам через 1 с (lease) і його візьме B,<br/>а якщо B чекає довше 2 с, він читає БД сам
+flowchart TD
+    M["Дії одного backend-інстансу (A чи B):<br/>голос скинув кеш, сотні читачів промахнулися"] --> SF["Single-flight: з усіх промахів інстансу<br/>далі йде лише один запит"]
+    SF --> C{"Результат уже є в кеші?"}
+    C -- так --> R["Віддати читачам результат"]
+    C -- ні --> L{"Інстанс узяв замок у Redis?<br/>(замок живе 1 с)"}
+    L -- "так" --> DB["Прочитати БД — єдине звернення на кластер"]
+    DB --> W["Покласти результат у кеш<br/>і зняти свій замок"]
+    W --> R
+    L -- "ні, замок в іншого інстансу" --> T{"Чекаю вже довше 2 с?"}
+    T -- ні --> P["Почекати 10–20 мс"]
+    P --> C
+    T -- так --> DB2["Прочитати БД самому"]
+    DB2 --> R
 ```
 
-| Відмова самого lock | Як перевірено | Результат |
+**Що це дає на практиці.** На двох інстансах різниця «2 звернення проти 1» для БД майже непомітна: у серії вимірювань
+Lock дав навіть на 9 % менше RPS, ніж single-flight, зате нижчий p95 (розділ 7). Користь замка росте з кількістю
+інстансів: single-flight дає по зверненню від кожного (N), замок — завжди одне.
+
+**Що буде, якщо щось піде не так** (критерій «без deadlock, коректні таймаути»):
+
+| Ситуація | Як перевірено | Результат |
 |---|---|---|
-| власник lock помер і не звільнив його | `scripts/lock-check.py`: скрипт сам ставить «мертвий» lock із чужим token і lease 1 с, потім 50 одночасних читачів (і окремо 200) | кожен читач отримав відповідь `HTTP 200` через 1.01–1.02 с, тобто одразу після спливу lease; 1 звернення до БД; ключів lock не лишилося |
-| читання довше за lease | затримка читання 1.5 с при lease 1 с | 2 звернення до БД замість 1, 0 % помилок; чужий lock ніхто не зняв (звільнення — Lua зі звіркою token) |
-| Redis недоступний | `scripts/redis-outage-check.py` | lock не використовується, результати читаються з БД (`X-Cache: BYPASS`) |
+| інстанс, що взяв замок, аварійно зупинився і не зняв його | `scripts/lock-check.py`: скрипт сам ставить у Redis замок від імені неіснуючого інстансу (його ніхто ніколи не зніме), потім 50 одночасних читачів (і окремо 200) | замок зник сам через 1 с; кожен читач отримав відповідь `HTTP 200` через 1.01–1.02 с; 1 звернення до БД; зайвих ключів не лишилося |
+| читання з БД триває довше за термін замка | затримка читання 1.5 с при терміні замка 1 с | замок встигає зникнути, і його бере другий інстанс: 2 звернення до БД замість 1, але 0 % помилок; перший інстанс не зняв чужий замок |
+| Redis недоступний | `scripts/redis-outage-check.py` | замок не використовується, результати читаються прямо з БД (`X-Cache: BYPASS`), сервіс працює |
 
 ## 5. Cache Avalanche і TTL Jitter (2.3, 2.5)
 
@@ -121,7 +144,7 @@ sequenceDiagram
 | Bloom filter | m бітів, k хешів: «точно немає» або «можливо є», без хибно-негативних; ≈ 9.6 біта на елемент при 1 % хибних спрацювань |
 | XFetch | дострокове оновлення з імовірністю, що росте до спливання TTL і з вартістю перерахунку: `now − delta·β·ln(rand()) ≥ expiry`; проти stampede через TTL (у нас його дає інвалідація) |
 
-## 9. Live-демо
+## 9. Live-демо (§4: пп. 1–3 процедури захисту)
 
 ```bash
 docker compose down -v && docker compose -f docker-compose.yml -f load-tests/docker-compose.loadtest-lab8.yml up -d --build
@@ -139,3 +162,70 @@ bash load-tests/penetration.sh true                                           # 
 | 2. Live-демо захисту, зменшення до 1 | `stampede.sh Lock burst`, `lock-check.py`, матриця з розділу 7 |
 | 3. Демо Negative Caching | `negative-cache-check.py`, `penetration.sh false` / `true` |
 | 4. Теорія | розділ 8 цієї сторінки |
+
+## 10. Вивід команд — пп. 1–3 процедури (записано під час прогонів)
+
+Справжній вивід терміналу — на випадок захисту без піднятого стеку. Генеральний прогін 2026-11-18 з холодного старту
+(стек здоровий за 23 с, усе демо ≈ 3 хв); `lock-check` і `negative-cache-check` — 2026-11-17.
+
+**П. 1 — Stampede без захисту** (`RESULTS_LOAD_DELAY_MS=50 bash load-tests/stampede.sh None burst -e ROUNDS=1`):
+
+```text
+  latency ms: avg 1196.2  p50 1246.3  p95 1386.1  p99 1393.9  max 1397.3
+RESULT None burst, load delay 50 ms: 500 DB loads (pg_stat_statements, warm-up 0 excluded) for 1 invalidations = 500.0 per invalidation
+```
+
+**П. 2 — захист** (`… stampede.sh SingleFlight burst -e ROUNDS=1`, потім `… Lock burst -e ROUNDS=1`):
+
+```text
+  latency ms: avg 226.6  p50 177.6  p95 410.3  p99 415.0  max 418.0
+RESULT SingleFlight burst, load delay 50 ms: 2 DB loads (pg_stat_statements, warm-up 1 excluded) for 1 invalidations = 2.0 per invalidation
+  latency ms: avg 161.1  p50 163.9  p95 193.4  p99 210.2  max 220.7
+RESULT Lock burst, load delay 50 ms: 1 DB loads (pg_stat_statements, warm-up 0 excluded) for 1 invalidations = 1.0 per invalidation
+```
+
+Та сама кількість — прямо з PostgreSQL після прогону `Lock`:
+
+```text
+ calls | ms
+-------+-----
+     1 | 0.1
+(1 row)
+```
+
+`python scripts/lock-check.py` — замок від інстансу, що аварійно зупинився (сам не знімається):
+
+```text
+poll 1: generation -> 141, planted polling:results:lock:1:g141 = dead-owner, PX 1000 (never released)
+  50 simultaneous readers: statuses [200], latency ms min 989 / median 1000 / max 1009, answered 1011-1024 ms after the dead lock was planted
+  distinct generatedAt: 1, DB loads (pg_stat_statements): 1, lock keys left in Redis: 0
+  OK   all readers got 200
+  OK   nobody answered before the lease expired
+  OK   nobody waited much longer than the lease
+  OK   exactly one DB load
+  OK   no lock keys left
+ALL CHECKS PASSED
+```
+
+**П. 3 — Negative Caching**, `python scripts/negative-cache-check.py`:
+
+```text
+1. GET /api/polls/9999999/results: 150 reads, statuses [404], DB loads 1, polling:results:v1:9999999:g0 = not-found, PTTL 24618 ms
+2. next id 62: before create 404 (negative entry: True), created id 62, author reads results: 200 draft
+3. delete draft 62: 204, results afterwards: 404
+  OK   missing poll: all 404
+  OK   missing poll: one DB load for 150 reads
+  OK   missing poll: negative entry with TTL <= 36 s
+  OK   future poll id: 404 and a negative entry before create
+  OK   created poll got that id
+  OK   created poll: results 200 at once, not the cached 404
+  OK   deleted draft: results 404
+ALL CHECKS PASSED
+```
+
+`RESULTS_STAMPEDE_PROTECTION=None bash load-tests/penetration.sh false`, потім `bash load-tests/penetration.sh true`:
+
+```text
+RESULT None, negative caching false, ids 100: 27442 DB lookups for 27442 requests (100.00 %), Redis +0 keys, +1 KiB
+RESULT Lock, negative caching true, ids 100: 151 DB lookups for 93593 requests (0.16 %), Redis +88 keys, +10 KiB
+```
